@@ -177,7 +177,7 @@ TYPED_TEST(InGroupsTest, InGroupsConstructors)
   {
     {
       auto X = TypeParam();
-      MatrixEquality(X.L(), TypeParam::MatrixType::Identity());
+      MatrixEquality(X.K(), TypeParam::MatrixType::Identity());
     }
     double fx = 500 * randDouble();
     double fy = 500 * randDouble();
@@ -187,19 +187,19 @@ TYPED_TEST(InGroupsTest, InGroupsConstructors)
     L << fx, 0.0, cx, 0.0, fy, cy, 0.0, 0.0, 1.0;
     {
       auto X = TypeParam(L);
-      MatrixEquality(X.L(), L);
+      MatrixEquality(X.K(), L);
     }
     {
       typename TypeParam::VectorType l;
       l << fx, fy, cx, cy;
       auto X = TypeParam(l);
-      MatrixEquality(X.L(), L);
+      MatrixEquality(X.K(), L);
     }
     {
       auto X = TypeParam(fx, fy, cx, cy);
-      MatrixEquality(X.L(), L);
+      MatrixEquality(X.K(), L);
       auto Y = X;
-      MatrixEquality(X.L(), Y.L());
+      MatrixEquality(X.K(), Y.K());
     }
   }
 }
@@ -214,7 +214,7 @@ TYPED_TEST(InGroupsTest, InAction)
     double cy = 250 * randDouble();
     typename TypeParam::Vector3Type x = TypeParam::Vector3Type::Random();
     auto X = TypeParam(fx, fy, cx, cy);
-    MatrixEquality(X * x, X.L() * x);
+    MatrixEquality(X * x, X.K() * x);
   }
 }
 
