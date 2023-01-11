@@ -12,6 +12,8 @@
 #ifndef MSCEQF_HPP
 #define MSCEQF_HPP
 
+#include "state/state.hpp"
+
 namespace msceqf
 {
 
