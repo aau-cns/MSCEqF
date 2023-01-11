@@ -9,8 +9,8 @@
 //
 // You can contact the authors at <alessandro.fornasier@ieee.org>
 
-#ifndef FPTYPE_HPP
-#define FPTYPE_HPP
+#ifndef FPTYPES_HPP
+#define FPTYPES_HPP
 
 #include "groups/In.hpp"
 #include "groups/SDB.hpp"
@@ -33,7 +33,17 @@ using Vector15 = Eigen::Matrix<float, 15, 1>;
 using Vector21 = Eigen::Matrix<float, 21, 1>;
 using Vector25 = Eigen::Matrix<float, 25, 1>;
 using VectorX = Eigen::VectorXf;
+using Matrix3 = Eigen::Matrix3d;
+using Matrix4 = Eigen::Matrix4d;
+using Matrix5 = Eigen::Matrix<float, 5, 5>;
+using Matrix6 = Eigen::Matrix<float, 6, 6>;
+using Matrix9 = Eigen::Matrix<float, 9, 9>;
+using Matrix15 = Eigen::Matrix<float, 15, 15>;
+using Matrix21 = Eigen::Matrix<float, 21, 21>;
+using Matrix25 = Eigen::Matrix<float, 25, 25>;
 using MatrixX = Eigen::MatrixXf;
+using Quaternion = Eigen::Quaternionf;
+using fp = float;
 #else
 using SO3 = group::SO3d;
 using SE3 = group::SE3d;
@@ -49,8 +59,18 @@ using Vector15 = Eigen::Matrix<double, 15, 1>;
 using Vector21 = Eigen::Matrix<double, 21, 1>;
 using Vector25 = Eigen::Matrix<double, 25, 1>;
 using VectorX = Eigen::VectorXd;
+using Matrix3 = Eigen::Matrix3d;
+using Matrix4 = Eigen::Matrix4d;
+using Matrix5 = Eigen::Matrix<double, 5, 5>;
+using Matrix6 = Eigen::Matrix<double, 6, 6>;
+using Matrix9 = Eigen::Matrix<double, 9, 9>;
+using Matrix15 = Eigen::Matrix<double, 15, 15>;
+using Matrix21 = Eigen::Matrix<double, 21, 21>;
+using Matrix25 = Eigen::Matrix<double, 25, 25>;
 using MatrixX = Eigen::MatrixXd;
+using Quaternion = Eigen::Quaterniond;
+using fp = double;
 #endif
 }  // namespace msceqf
 
-#endif  // FPTYPE_HPP
+#endif  // FPTYPES_HPP
