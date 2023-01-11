@@ -22,7 +22,7 @@ namespace group
 /**
  * @brief The Special orthogonal group of dimension 3 (SO3) representing 3D rotations
  *
- * @tparam FPType. Floating point type (float, double, long double)
+ * @tparam FPType. Floating point type (float, FPType, long FPType)
  *
  * @note Group Formulation for Consistent Non-Linear Estiamtion
  * @note State Estimation for Robotics [http://asrl.utias.utoronto.ca/~tdb/bib/barfoot_ser17.pdf]
@@ -101,14 +101,14 @@ class SO3
    */
   [[nodiscard]] static const TMatrixType leftJacobian(const VectorType& u)
   {
-    double ang = u.norm();
+    FPType ang = u.norm();
     if (ang < eps_)
     {
       return TMatrixType::Identity() + 0.5 * wedge(u);
     }
     VectorType ax = u / ang;
-    double s = sin(ang) / ang;
-    double c = cos(ang);
+    FPType s = sin(ang) / ang;
+    FPType c = cos(ang);
     return s * TMatrixType::Identity() + ((1.0 - c) / ang) * wedge(ax) + (1.0 - s) * ax * ax.transpose();
   }
 
@@ -131,7 +131,7 @@ class SO3
    */
   [[nodiscard]] static const SO3 exp(const VectorType& u)
   {
-    double ang = 0.5 * u.norm();
+    FPType ang = 0.5 * u.norm();
     QuaternionType q;
     if (ang < eps_)
     {
@@ -168,8 +168,8 @@ class SO3
   [[nodiscard]] static const VectorType log(const SO3& X)
   {
     VectorType qv = X.q_.vec();
-    double qw = X.q_.w();
-    double ang = qv.norm();
+    FPType qw = X.q_.w();
+    FPType ang = qv.norm();
     VectorType u;
     if (ang < eps_)
     {
@@ -330,7 +330,7 @@ class SO3
   static constexpr FPType eps_ = 1e-6;  //!< Epsilon
 };
 
-using SO3d = SO3<double>;  //!< The SO3 group with double precision floating point
+using SO3d = SO3<double>;  //!< The SO3 group with FPType precision floating point
 using SO3f = SO3<float>;   //!< The SO3 group with single precision floating point
 
 }  // namespace group

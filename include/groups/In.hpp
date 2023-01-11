@@ -132,7 +132,7 @@ class In
    *
    * @return const Eigen::Matrix<FPType, 4, 1>
    */
-  [[nodiscard]] static const VectorType log(const In& X) { return vee(X.L().log()); }
+  [[nodiscard]] static const VectorType log(const In& X) { return vee(X.K().log()); }
 
   /**
    * @brief get a constant copy of the inverse of the In object
@@ -149,7 +149,7 @@ class In
    *
    * @return const Eigen::Matrix<FPType, 3, 3>&
    */
-  [[nodiscard]] const MatrixType L() const
+  [[nodiscard]] const MatrixType K() const
   {
     MatrixType L;
     L << fx_, 0.0, cx_, 0.0, fy_, cy_, 0.0, 0.0, 1.0;
@@ -161,7 +161,7 @@ class In
    *
    * @return const Eigen::Matrix<FPType, 3, 3>&
    */
-  [[nodiscard]] const MatrixType asMatrix() const { return L(); }
+  [[nodiscard]] const MatrixType asMatrix() const { return K(); }
 
   /**
    * @brief In Adjoint matrix
@@ -208,7 +208,7 @@ class In
    *
    * @return const Eigen::Matrix<FPType, 3, 3>
    */
-  [[nodiscard]] const MatrixType operator*(const MatrixType& other) const { return L() * other; }
+  [[nodiscard]] const MatrixType operator*(const MatrixType& other) const { return K() * other; }
 
   /**
    * @brief Operator * overloading.
