@@ -1,4 +1,4 @@
-// Copyright (C) 2023 Alessandro Fornasier, Pieter van Goor.
+// Copyright (C) 2023 Alessandro Fornasier.
 // Control of Networked Systems, University of Klagenfurt, Austria.
 //
 // All rights reserved.
@@ -15,7 +15,6 @@
 #include <memory>
 
 #include "types/fptypes.hpp"
-#include "utils/utils.hpp"
 
 namespace msceqf
 {
@@ -39,13 +38,25 @@ enum class SystemStateElementName
  * @brief This struct represent the base struct for a general element of the system state.
  *
  */
-struct SystemStateElement
+class SystemStateElement
 {
+ public:
+  virtual ~SystemStateElement() = default;
+
   /**
-   * @brief Destroy the SystemStateElement object
+   * @brief Clone
    *
+   * @return std::unique_ptr<SystemStateElement>
    */
-  virtual ~SystemStateElement(){};
+  virtual std::unique_ptr<SystemStateElement> clone() const = 0;
+
+ protected:
+  /// @brief Rule of Five
+  SystemStateElement() = default;
+  SystemStateElement(const SystemStateElement&) = default;
+  SystemStateElement(SystemStateElement&&) = default;
+  SystemStateElement& operator=(const SystemStateElement&) = default;
+  SystemStateElement& operator=(SystemStateElement&&) = default;
 };
 
 /**
@@ -55,6 +66,14 @@ struct SystemStateElement
 struct ExtendedPoseState final : public SystemStateElement
 {
   ExtendedPoseState() : T_(){};
+  ExtendedPoseState(const SE23& T) : T_(T){};
+
+  /**
+   * @brief Clone the extended pose state element of the system
+   *
+   * @return std::unique_ptr<SystemStateElement>
+   */
+  std::unique_ptr<SystemStateElement> clone() const override { return std::make_unique<ExtendedPoseState>(*this); }
 
   SE23 T_;  //!< The extended pose of the system (R, v, p)
 };
@@ -66,6 +85,14 @@ struct ExtendedPoseState final : public SystemStateElement
 struct BiasState final : public SystemStateElement
 {
   BiasState() : b_(Vector6::Zero()){};
+  BiasState(const Vector6& b) : b_(b){};
+
+  /**
+   * @brief Clone the bias state element of the system
+   *
+   * @return std::unique_ptr<SystemStateElement>
+   */
+  std::unique_ptr<SystemStateElement> clone() const override { return std::make_unique<BiasState>(*this); }
 
   Vector6 b_;  //!< The Inertial Measurement Unit (IMU) biases (bw, ba)
 };
@@ -79,9 +106,14 @@ struct CameraExtrinsicState final : public SystemStateElement
   CameraExtrinsicState() : S_(){};
   CameraExtrinsicState(const Quaternion& q, const Vector3& t) : S_(q, {t}){};
   CameraExtrinsicState(const Matrix3& R, const Vector3& t) : S_(R, {t}){};
-  CameraExtrinsicState(const SO3& C, const Vector3& t) : S_(C, {t}){};
-  CameraExtrinsicState(const SE3& S) : S_(S){};
   CameraExtrinsicState(const Matrix4& S) : S_(S){};
+
+  /**
+   * @brief Clone the camera extrinsic state element of the system
+   *
+   * @return std::unique_ptr<SystemStateElement>
+   */
+  std::unique_ptr<SystemStateElement> clone() const override { return std::make_unique<CameraExtrinsicState>(*this); }
 
   SE3 S_;  //!< The camera extrinsic calibration (SR, St)
 };
@@ -97,6 +129,13 @@ struct CameraIntrinsicState final : public SystemStateElement
   CameraIntrinsicState(const Vector4& intr) : K_(intr){};
   CameraIntrinsicState(const Matrix3& K) : K_(K){};
 
+  /**
+   * @brief Clone the camera instirnsic state element of the system
+   *
+   * @return std::unique_ptr<SystemStateElement>
+   */
+  std::unique_ptr<SystemStateElement> clone() const override { return std::make_unique<CameraIntrinsicState>(*this); }
+
   In K_;  //!< The camera intrinsic calibration (K)
 };
 
@@ -110,6 +149,13 @@ struct FeatureState final : public SystemStateElement
   FeatureState() : f_(Vector3::Zero()){};
   FeatureState(const Vector3& f) : f_(f){};
   FeatureState(const fp& x, const fp& y, const fp& z) : f_({x, y, z}){};
+
+  /**
+   * @brief Clone the persistent feature state element of the system
+   *
+   * @return std::unique_ptr<SystemStateElement>
+   */
+  std::unique_ptr<SystemStateElement> clone() const override { return std::make_unique<FeatureState>(*this); }
 
   Vector3 f_;  //!< The persistent feature (f)
 };

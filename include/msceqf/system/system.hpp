@@ -1,4 +1,4 @@
-// Copyright (C) 2023 Alessandro Fornasier, Pieter van Goor.
+// Copyright (C) 2023 Alessandro Fornasier.
 // Control of Networked Systems, University of Klagenfurt, Austria.
 //
 // All rights reserved.
@@ -15,6 +15,7 @@
 #include <variant>
 
 #include "msceqf/msceqf_options.hpp"
+#include "msceqf/state/state.hpp"
 #include "msceqf/system/system_elements.hpp"
 
 namespace msceqf
@@ -30,6 +31,11 @@ class SystemState
  public:
   using SystemStateKey = std::variant<SystemStateElementName, uint>;  //!< Key to access the system state map
   using SystemStateMap = std::unordered_map<SystemStateKey, SystemStateElementSharedPtr>;  //!< System state map
+
+  /**
+   * @brief Deleted default constructor
+   */
+  SystemState() = delete;
 
   /**
    * @brief Construct system state given a multiple pairs of key-pointer of states element. This methods preallocate
@@ -62,7 +68,49 @@ class SystemState
     (insertSystemStateElement(std::forward<decltype(pairs_of_key_ptr)>(pairs_of_key_ptr)), ...);
   }
 
-  SystemStateMap state_;  //!< MSCEqF State elements mapped by their names
+  /// Rule of Five
+  SystemState(const SystemState& other);
+  SystemState(SystemState&& other) noexcept;
+  SystemState& operator=(const SystemState& other);
+  SystemState& operator=(SystemState&& other) noexcept;
+  ~SystemState();
+
+  /**
+   * @brief return a constant reference to the extended pose element of the system state as a SE23-torsor
+   *
+   * @return const SE23&
+   */
+  [[nodiscard]] const SE23& T() const;
+
+  /**
+   * @brief return a constant reference to the bias element of the system state as a vector
+   *
+   * @return const Vector6&
+   */
+  [[nodiscard]] const Vector6& b() const;
+
+  /**
+   * @brief return a constant reference to the camera extrinsic element of the system state as a SE3-torsor
+   *
+   * @return const SE3&
+   */
+  [[nodiscard]] const SE3& S() const;
+
+  /**
+   * @brief return a constant reference to the camera intrinsic element of the system state as a In-torsor
+   *
+   * @return const In&
+   */
+  [[nodiscard]] const In& K() const;
+
+  /**
+   * @brief return a constant reference to a persistent feature element of the system state as a vector, given the
+   * feature id
+   *
+   * @param feat_id id of the persistent feature
+   * @return const Vector3&
+   */
+  [[nodiscard]] const Vector3& f(const uint& feat_id) const;
 
  private:
   /**
@@ -80,6 +128,8 @@ class SystemState
    * @param keys_ptrs vector of pairs of key-ptr.
    */
   void insertSystemStateElement(std::vector<std::pair<SystemStateKey, SystemStateElementUniquePtr>>& keys_ptrs);
+
+  SystemStateMap state_;  //!< MSCEqF State elements mapped by their names
 };
 
 }  // namespace msceqf
