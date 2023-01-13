@@ -1,4 +1,4 @@
-// Copyright (C) 2023 Alessandro Fornasier, Pieter van Goor.
+// Copyright (C) 2023 Alessandro Fornasier.
 // Control of Networked Systems, University of Klagenfurt, Austria.
 //
 // All rights reserved.
@@ -31,6 +31,7 @@ class MSCEqFState
   using MSCEqFStateKey = std::variant<MSCEqFStateElementName, uint>;  //!< Key to access the msceqf state map
   using MSCEqFStateMap = std::unordered_map<MSCEqFStateKey, MSCEqFStateElementSharedPtr>;  //!< MSCEqF state map
   using MSCEqFClonesMap = std::unordered_map<fp, MSCEqFSE3StateSharedPtr>;                 //!< MSCEqF clones map
+
   /**
    * @brief Deleted default constructor
    */
@@ -46,10 +47,19 @@ class MSCEqFState
    */
   MSCEqFState(const StateOptions& opts);
 
+  /// Rule of Five
+  MSCEqFState(const MSCEqFState& other);
+  MSCEqFState(MSCEqFState&& other) noexcept;
+  MSCEqFState& operator=(const MSCEqFState& other);
+  MSCEqFState& operator=(MSCEqFState&& other) noexcept;
+  ~MSCEqFState();
+
   /**
    * @brief Get a reference to the SE23 component of the Semi Direct Bias Group element of the MSCEqF state
    *
    * @return const SE23&
+   *
+   * @note This function does not introduce any runtime overhead due to casting, because it uses static_pointer_cast
    */
   [[nodiscard]] const SE23& D() const;
 
@@ -58,6 +68,8 @@ class MSCEqFState
    * the rotational component (R) and the first isometry (v)
    *
    * @return const SE3
+   *
+   * @note This function does not introduce any runtime overhead due to casting, because it uses static_pointer_cast
    */
   [[nodiscard]] const SE3 B() const;
 
@@ -66,6 +78,8 @@ class MSCEqFState
    * the rotational component (R) and the second isometry (p)
    *
    * @return const SE3
+   *
+   * @note This function does not introduce any runtime overhead due to casting, because it uses static_pointer_cast
    */
   [[nodiscard]] const SE3 C() const;
 
@@ -73,6 +87,8 @@ class MSCEqFState
    * @brief Get a reference to the R6 component of the Semi Direct Bias Group element of the MSCEqF state
    *
    * @return const Vector6&
+   *
+   * @note This function does not introduce any runtime overhead due to casting, because it uses static_pointer_cast
    */
   [[nodiscard]] const Vector6& delta() const;
 
@@ -80,6 +96,8 @@ class MSCEqFState
    * @brief Get a reference to the SE3 element of the MSCEqF state
    *
    * @return const SE3&
+   *
+   * @note This function does not introduce any runtime overhead due to casting, because it uses static_pointer_cast
    */
   [[nodiscard]] const SE3& E() const;
 
@@ -87,6 +105,8 @@ class MSCEqFState
    * @brief Get a reference to the In element of the MSCEqF state
    *
    * @return const In&
+   *
+   * @note This function does not introduce any runtime overhead due to casting, because it uses static_pointer_cast
    */
   [[nodiscard]] const In& L() const;
 
@@ -95,6 +115,8 @@ class MSCEqFState
    *
    * @param feat_id feature id
    * @return const SOT3&
+   *
+   * @note This function does not introduce any runtime overhead due to casting, because it uses static_pointer_cast
    */
   [[nodiscard]] const SOT3& Q(const uint& feat_id) const;
 
@@ -106,6 +128,14 @@ class MSCEqFState
   [[nodiscard]] const MatrixX& Cov() const;
 
   /**
+   * @brief get a constant copy of the covariance block relative to the element corresponding to the given key
+   *
+   * @param key state element name or feature id
+   * @return const MatrixX
+   */
+  [[nodiscard]] const MatrixX CovBlock(const MSCEqFStateKey& key) const;
+
+  /**
    * @brief Initialize MSCEqF state element into the state map, and the relative covariance block.
    *
    * @param key state element name or feature id
@@ -115,14 +145,6 @@ class MSCEqFState
    * "controls" how close to ground truth these are.
    */
   void initializeStateElement(const MSCEqFStateKey& key, const MatrixX& cov_block);
-
-  /**
-   * @brief get a constant copy of the covariance block relative to the element corresponding to the given key
-   *
-   * @param key state element name or feature id
-   * @return const MatrixX
-   */
-  [[nodiscard]] const MatrixX CovBlock(const MSCEqFStateKey& key);
 
  private:
   /**
@@ -140,31 +162,6 @@ class MSCEqFState
    * @return const MSCEqFStateElementSharedPtr&
    */
   [[nodiscard]] const MSCEqFStateElementSharedPtr& getPtr(const MSCEqFStateKey& key) const;
-
-  /**
-   * @brief Get the MSCEqF element pointer (casted to specific element) given the key
-   *
-   * @tparam T
-   * @param key state element name or feature id
-   * @return const std::shared_ptr<T>
-   */
-  template <typename T>
-  [[nodiscard]] const std::shared_ptr<T> getCastedPtr(const MSCEqFStateKey& key) const
-  {
-    assert(key.valueless_by_exception() == false);
-    if (std::holds_alternative<MSCEqFStateElementName>(key))
-    {
-      auto ptr = std::dynamic_pointer_cast<T>(state_.at(std::get<MSCEqFStateElementName>(key)));
-      assert(ptr != nullptr);
-      return ptr;
-    }
-    else
-    {
-      auto ptr = std::dynamic_pointer_cast<T>(state_.at(std::get<uint>(key)));
-      assert(ptr != nullptr);
-      return ptr;
-    }
-  }
 
   MatrixX cov_;             //!< MSCEqF State covariance (Sigma matrix)
   MSCEqFStateMap state_;    //!< MSCEqF State elements mapped by their names

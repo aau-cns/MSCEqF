@@ -1,4 +1,4 @@
-// Copyright (C) 2023 Alessandro Fornasier, Pieter van Goor.
+// Copyright (C) 2023 Alessandro Fornasier.
 // Control of Networked Systems, University of Klagenfurt, Austria.
 //
 // All rights reserved.
@@ -18,6 +18,7 @@
 
 namespace msceqf
 {
+
 /**
  * @brief This enum class define the names of the MSCEqF state elements.
  * This is used to create a map of state element mapped by the name,
@@ -42,11 +43,7 @@ enum class MSCEqFStateElementName
 class MSCEqFStateElement
 {
  public:
-  /**
-   * @brief Destroy the MSCEqFStateElement object
-   *
-   */
-  virtual ~MSCEqFStateElement(){};
+  virtual ~MSCEqFStateElement() = default;
 
   /**
    * @brief Get the starting index of the state element in the residual, and in the covariance
@@ -69,12 +66,20 @@ class MSCEqFStateElement
    */
   virtual void update(const VectorX& delta) = 0;
 
- protected:
   /**
-   * @brief Deleted default constructor
+   * @brief Clone
    *
+   * @return std::unique_ptr<MSCEqFStateElement>
    */
+  virtual std::unique_ptr<MSCEqFStateElement> clone() const = 0;
+
+ protected:
+  /// Rule of Five
   MSCEqFStateElement() = delete;
+  MSCEqFStateElement(const MSCEqFStateElement&) = default;
+  MSCEqFStateElement(MSCEqFStateElement&&) = default;
+  MSCEqFStateElement& operator=(const MSCEqFStateElement&) = default;
+  MSCEqFStateElement& operator=(MSCEqFStateElement&&) = default;
 
   /**
    * @brief Construct a MSCEqFStateElement object
@@ -116,6 +121,13 @@ class MSCEqFSDBState final : public MSCEqFStateElement
   void update(const VectorX& delta) override { Dd_ *= SDB::exp(delta); }
 
   /**
+   * @brief Clone the Semi Direct bias (SDB) element of state of the MSCEqF
+   *
+   * @return std::unique_ptr<MSCEqFStateElement>
+   */
+  std::unique_ptr<MSCEqFStateElement> clone() const override { return std::make_unique<MSCEqFSDBState>(*this); }
+
+  /**
    * @brief Get a reference to the SDB element
    *
    * @return const SDB&
@@ -147,11 +159,18 @@ class MSCEqFSE3State final : public MSCEqFStateElement
   MSCEqFSE3State(const uint& idx) : MSCEqFStateElement(idx, 6), E_(){};
 
   /**
-   * @brief Update the Special Euclidean Group of dimension 3 element of the state
+   * @brief Update the Special Euclidean Group element of the state
    *
    * @param delta scaled residual
    */
   void update(const VectorX& delta) override { E_ *= SE3::exp(delta); }
+
+  /**
+   * @brief Clone the Special Euclidean Group (SE3) element of state of the MSCEqF
+   *
+   * @return std::unique_ptr<MSCEqFStateElement>
+   */
+  std::unique_ptr<MSCEqFStateElement> clone() const override { return std::make_unique<MSCEqFSE3State>(*this); }
 
   /**
    * @brief Get a reference to the SE3 element
@@ -192,6 +211,13 @@ class MSCEqFInState final : public MSCEqFStateElement
   void update(const VectorX& delta) override { L_ *= In::exp(delta); }
 
   /**
+   * @brief Clone the Special Intrinsic (In) element of state of the MSCEqF
+   *
+   * @return std::unique_ptr<MSCEqFStateElement>
+   */
+  std::unique_ptr<MSCEqFStateElement> clone() const override { return std::make_unique<MSCEqFInState>(*this); }
+
+  /**
    * @brief Get a reference to the In element
    *
    * @return const In&
@@ -228,6 +254,13 @@ class MSCEqFSOT3State final : public MSCEqFStateElement
    * @param delta scaled residual
    */
   void update(const VectorX& delta) override { Q_ *= SOT3::exp(delta); }
+
+  /**
+   * @brief Clone the Scaled Orthogonal Transforms (SOT3) element of state of the MSCEqF
+   *
+   * @return std::unique_ptr<MSCEqFStateElement>
+   */
+  std::unique_ptr<MSCEqFStateElement> clone() const override { return std::make_unique<MSCEqFSOT3State>(*this); }
 
   /**
    * @brief Get a reference to the SOT3 element
