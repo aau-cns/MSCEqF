@@ -19,7 +19,8 @@
 #include "groups/SDB.hpp"
 #include "groups/SOT3.hpp"
 
-using namespace group;
+namespace group
+{
 
 typedef Types<SO3f, SO3d> SO3Groups;
 typedef Types<SOT3f, SOT3d> SOT3Groups;
@@ -691,5 +692,7 @@ TYPED_TEST(MSCEqFBaseGroupsWithJacobiansTest, leftJacobian)
     MatrixEquality(A, B);
   }
 }
+
+}  // namespace group
 
 #endif  // TEST_GROUPS_HPP

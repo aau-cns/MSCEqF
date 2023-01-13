@@ -16,7 +16,7 @@
 #include <ctime>
 
 #include "test_common.hpp"
-#include "test_groups.hpp"
+// #include "test_groups.hpp"
 #include "test_state.hpp"
 
 int main(int argc, char **argv)
