@@ -1,4 +1,4 @@
-// Copyright (C) 2023 Alessandro Fornasier, Pieter van Goor.
+// Copyright (C) 2023 Alessandro Fornasier.
 // Control of Networked Systems, University of Klagenfurt, Austria.
 //
 // All rights reserved.
@@ -48,6 +48,71 @@ MSCEqFState::MSCEqFState(const StateOptions& opts) : cov_(), state_(), clones_()
   }
 }
 
+MSCEqFState::MSCEqFState(const MSCEqFState& other) : cov_(), state_(), clones_(), opts_(other.opts_)
+{
+  // Copy state_
+  for (const auto& [key, element] : other.state_)
+  {
+    state_[key] = element->clone();
+  }
+
+  // Copy clones_
+  for (const auto& [key, element] : other.clones_)
+  {
+    clones_[key] = std::make_unique<MSCEqFSE3State>(*element);
+  }
+
+  // Copy covariance
+  cov_ = other.cov_;
+}
+
+MSCEqFState::MSCEqFState(MSCEqFState&& other) noexcept
+    : cov_(std::move(other.cov_))
+    , state_(std::move(other.state_))
+    , clones_(std::move(other.clones_))
+    , opts_(std::move(other.opts_))
+{
+}
+
+MSCEqFState& MSCEqFState::operator=(const MSCEqFState& other)
+{
+  // Copy state_
+  state_.clear();
+  for (const auto& [key, element] : other.state_)
+  {
+    state_[key] = element->clone();
+  }
+
+  // Copy clones_
+  clones_.clear();
+  for (const auto& [key, element] : other.clones_)
+  {
+    clones_[key] = std::make_unique<MSCEqFSE3State>(*element);
+  }
+
+  // Copy covariance
+  cov_.resize(other.cov_.rows(), other.cov_.cols());
+  cov_ = other.cov_;
+
+  return *this;
+}
+
+MSCEqFState& MSCEqFState::operator=(MSCEqFState&& other) noexcept
+{
+  opts_ = std::move(other.opts_);
+  state_ = std::move(other.state_);
+  clones_ = std::move(other.clones_);
+  cov_ = std::move(other.cov_);
+  return *this;
+}
+
+MSCEqFState ::~MSCEqFState()
+{
+  state_.clear();
+  clones_.clear();
+  cov_.resize(0, 0);
+}
+
 void MSCEqFState::initializeStateElement(const MSCEqFStateKey& key, const MatrixX& cov_block)
 {
   assert(key.valueless_by_exception() == false);
@@ -69,9 +134,6 @@ void MSCEqFState::initializeStateElement(const MSCEqFStateKey& key, const Matrix
       case MSCEqFStateElementName::L:
         insertStateElement(key, std::move(createMSCEqFStateElement<MSCEqFInState>(idx)));
         break;
-      default:
-        // [TODO] needed?
-        throw std::invalid_argument("Impossible to create MSCEqF state element, invalid MSCEqF state name provided");
     }
   }
   else
@@ -80,7 +142,7 @@ void MSCEqFState::initializeStateElement(const MSCEqFStateKey& key, const Matrix
   }
 
   // Resize covariance
-  uint size_increment = state_.at(key)->getDof();
+  uint size_increment = state_[key]->getDof();
   cov_.conservativeResize(idx + size_increment, idx + size_increment);
 
   assert(cov_block.rows() == cov_block.cols());
@@ -109,26 +171,44 @@ const MSCEqFStateElementSharedPtr& MSCEqFState::getPtr(const MSCEqFStateKey& key
   }
 }
 
-const SE23& MSCEqFState::D() const { return getCastedPtr<MSCEqFSDBState>(MSCEqFStateElementName::Dd)->getDd().D(); }
+const SE23& MSCEqFState::D() const
+{
+  return std::static_pointer_cast<MSCEqFSDBState>(state_.at(MSCEqFStateElementName::Dd))->getDd().D();
+}
 
-const SE3 MSCEqFState::B() const { return getCastedPtr<MSCEqFSDBState>(MSCEqFStateElementName::Dd)->getDd().B(); }
+const SE3 MSCEqFState::B() const
+{
+  return std::static_pointer_cast<MSCEqFSDBState>(state_.at(MSCEqFStateElementName::Dd))->getDd().B();
+}
 
-const SE3 MSCEqFState::C() const { return getCastedPtr<MSCEqFSDBState>(MSCEqFStateElementName::Dd)->getDd().C(); }
+const SE3 MSCEqFState::C() const
+{
+  return std::static_pointer_cast<MSCEqFSDBState>(state_.at(MSCEqFStateElementName::Dd))->getDd().C();
+}
 
 const Vector6& MSCEqFState::delta() const
 {
-  return getCastedPtr<MSCEqFSDBState>(MSCEqFStateElementName::Dd)->getDd().delta();
+  return std::static_pointer_cast<MSCEqFSDBState>(state_.at(MSCEqFStateElementName::Dd))->getDd().delta();
 }
 
-const SE3& MSCEqFState::E() const { return getCastedPtr<MSCEqFSE3State>(MSCEqFStateElementName::E)->getE(); }
+const SE3& MSCEqFState::E() const
+{
+  return std::static_pointer_cast<MSCEqFSE3State>(state_.at(MSCEqFStateElementName::E))->getE();
+}
 
-const In& MSCEqFState::L() const { return getCastedPtr<MSCEqFInState>(MSCEqFStateElementName::L)->getL(); }
+const In& MSCEqFState::L() const
+{
+  return std::static_pointer_cast<MSCEqFInState>(state_.at(MSCEqFStateElementName::L))->getL();
+}
 
-const SOT3& MSCEqFState::Q(const uint& feat_id) const { return getCastedPtr<MSCEqFSOT3State>(feat_id)->getQ(); }
+const SOT3& MSCEqFState::Q(const uint& feat_id) const
+{
+  return std::static_pointer_cast<MSCEqFSOT3State>(state_.at(feat_id))->getQ();
+}
 
 const MatrixX& MSCEqFState::Cov() const { return cov_; }
 
-const MatrixX MSCEqFState::CovBlock(const MSCEqFStateKey& key)
+const MatrixX MSCEqFState::CovBlock(const MSCEqFStateKey& key) const
 {
   return cov_.block(getPtr(key)->getIndex(), getPtr(key)->getIndex(), getPtr(key)->getDof(), getPtr(key)->getDof());
 }
