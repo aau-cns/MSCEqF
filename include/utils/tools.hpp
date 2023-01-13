@@ -1,4 +1,4 @@
-// Copyright (C) 2023 Alessandro Fornasier, Pieter van Goor.
+// Copyright (C) 2023 Alessandro Fornasier.
 // Control of Networked Systems, University of Klagenfurt, Austria.
 //
 // All rights reserved.
@@ -11,6 +11,10 @@
 
 #ifndef UTILS_HPP
 #define UTILS_HPP
+
+#include <array>
+#include <iterator>
+#include <vector>
 
 namespace utils
 {
@@ -41,6 +45,57 @@ class unpackCaller
     return f(pre_args..., other_args[I]..., post_args...);
   }
 };
+
+/**
+ * @brief Stream a std::vector
+ *
+ * @tparam T type of data to be streamed
+ * @param stream (reference to std::ostream)
+ * @param x data to be streamed (const reference to T)
+ */
+template <typename T>
+std::ostream& operator<<(std::ostream& stream, const std::vector<T>& v)
+{
+  // Check container is not empty
+  if (!v.empty())
+  {
+    // Beginning bracket
+    stream << "[";
+
+    // Copy element of container into output stream
+    std::copy(v.begin(), v.end() - 1, std::ostream_iterator<T>(stream, ", "));
+
+    // Last element and end bracket
+    stream << v.back() << "]";
+  }
+  return stream;
+}
+
+/**
+ * @brief Stream a std::array
+ *
+ * @tparam T type of data to be streamed
+ * @param stream (reference to std::ostream)
+ * @param x data to be streamed (const reference to T)
+ */
+template <typename T, std::size_t N>
+std::ostream& operator<<(std::ostream& stream, const std::array<T, N>& v)
+{
+  // Check container is not empty
+  if (!v.empty())
+  {
+    // Beginning bracket
+    stream << "[";
+
+    // Copy element of container into output stream
+    std::copy(v.begin(), v.end() - 1, std::ostream_iterator<T>(stream, ", "));
+
+    // Last element and end bracket
+    stream << v.back() << "]";
+  }
+  return stream;
+}
+
 }  // namespace utils
 
 #endif  // UTILS_HPP
