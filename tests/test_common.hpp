@@ -19,28 +19,63 @@
 
 #include <eigen3/Eigen/Dense>
 
-using testing::Types;
-using namespace std;
-using namespace Eigen;
+#include "msceqf/state/state.hpp"
+#include "msceqf/system/system.hpp"
+#include "utils/tools.hpp"
+
+namespace msceqf
+{
 
 constexpr double EPS = 1e-6;
 constexpr int N_TESTS = 100;
 
 template <typename Derived, typename OtherDerived>
-void MatrixEquality(const MatrixBase<Derived>& A, const MatrixBase<OtherDerived>& B)
+void MatrixEquality(const Eigen::MatrixBase<Derived>& A, const Eigen::MatrixBase<OtherDerived>& B)
 {
   // The check on the norm is to cover the cases in which both A, and B are close to zero
   EXPECT_TRUE(A.isApprox(B, EPS) || (A - B).norm() < EPS);
 }
 
 template <typename FPType>
-void QuaternionEquality(const Quaternion<FPType>& a, const Quaternion<FPType>& b)
+void QuaternionEquality(const Eigen::Quaternion<FPType>& a, const Eigen::Quaternion<FPType>& b)
 {
   EXPECT_TRUE(a.coeffs().isApprox(b.coeffs(), EPS) || a.coeffs().isApprox(-b.coeffs(), EPS));
 }
 
-void ScalarEquality(const double& a, const double& b) { EXPECT_TRUE(norm(a - b) < EPS); }
+void ScalarEquality(const fp& a, const fp& b) { EXPECT_TRUE(std::norm(a - b) < EPS); }
 
-double randDouble() { return static_cast<double>(rand()) / static_cast<double>(RAND_MAX); }
+void SystemStateEquality(const msceqf::SystemState& xi1,
+                         const msceqf::SystemState& xi2,
+                         const std::vector<uint>& feat_ids = std::vector<uint>())
+{
+  MatrixEquality(xi1.T().asMatrix(), xi2.T().asMatrix());
+  MatrixEquality(xi1.b(), xi2.b());
+  MatrixEquality(xi1.S().asMatrix(), xi2.S().asMatrix());
+  MatrixEquality(xi1.K().asMatrix(), xi2.K().asMatrix());
+  for (const auto& id : feat_ids)
+  {
+    MatrixEquality(xi1.f(id), xi2.f(id));
+  }
+}
+
+void MSCEqFStateEquality(const msceqf::MSCEqFState& X1,
+                         const msceqf::MSCEqFState& X2,
+                         const std::vector<uint>& feat_ids = std::vector<uint>())
+{
+  MatrixEquality(X1.D().asMatrix(), X2.D().asMatrix());
+  MatrixEquality(X1.delta(), X2.delta());
+  MatrixEquality(X1.E().asMatrix(), X2.E().asMatrix());
+  MatrixEquality(X1.L().asMatrix(), X2.L().asMatrix());
+  MatrixEquality(X1.CovBlock(msceqf::MSCEqFStateElementName::Dd), X2.CovBlock(msceqf::MSCEqFStateElementName::Dd));
+  MatrixEquality(X1.CovBlock(msceqf::MSCEqFStateElementName::E), X2.CovBlock(msceqf::MSCEqFStateElementName::E));
+  MatrixEquality(X1.CovBlock(msceqf::MSCEqFStateElementName::L), X2.CovBlock(msceqf::MSCEqFStateElementName::L));
+  for (const auto& id : feat_ids)
+  {
+    MatrixEquality(X1.Q(id).asMatrix(), X2.Q(id).asMatrix());
+    MatrixEquality(X1.CovBlock(id), X2.CovBlock(id));
+  }
+}
+
+}  // namespace msceqf
 
 #endif  // TEST_COMMON_HPP

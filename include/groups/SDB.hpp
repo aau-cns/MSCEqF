@@ -118,6 +118,8 @@ class SemiDirectBias
    * @param other const SemiDirectBias&
    *
    * @return const SemiDirectBias
+   *
+   * @note usage: z = x * y
    */
   [[nodiscard]] const SemiDirectBias operator*(const SemiDirectBias& other) const
   {
@@ -125,20 +127,30 @@ class SemiDirectBias
   }
 
   /**
-   * @brief Operator *= overloading.
-   * Implements the SemiDirectBias composition this = other * this
+   * @brief Implements the SemiDirectBias composition this = this * other
    *
    * @param other const SemiDirectBias&
    *
    * @return const SemiDirectBias&
-   *
-   * @note This is different from operator* overloading since this implements a left multiplication other * this and
-   * assignment while operator* returns a copy of the right multiplication this * other
    */
-  const SemiDirectBias& operator*=(const SemiDirectBias& other)
+  const SemiDirectBias& multiplyRight(const SemiDirectBias& other)
+  {
+    delta_ = (delta_ + B().Adjoint() * other.delta_).eval();
+    D_.multiplyRight(other.D_);  // D_ * other.D_
+    return *this;
+  }
+
+  /**
+   * @brief Implements the SemiDirectBias composition this = other * this
+   *
+   * @param other const SemiDirectBias&
+   *
+   * @return const SemiDirectBias&
+   */
+  const SemiDirectBias& multiplyLeft(const SemiDirectBias& other)
   {
     delta_ = (other.delta_ + other.B().Adjoint() * delta_).eval();
-    D_ *= other.D_;
+    D_.multiplyLeft(other.D_);  // other.D_ * th.D_
     return *this;
   }
 

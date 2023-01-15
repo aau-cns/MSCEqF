@@ -202,6 +202,8 @@ class SOT3
    * @param other const SOT3<FPType>&
    *
    * @return const SOT3<FPType>
+   *
+   * @note usage: z = x * y
    */
   [[nodiscard]] const SOT3 operator*(const SOT3& other) const { return SOT3(C_ * other.C_, s_ * other.s_); }
 
@@ -212,6 +214,8 @@ class SOT3
    * @param other const Eigen::Matrix<FPType, 4, 4>&
    *
    * @return const Eigen::Matrix<FPType, 4, 4>
+   *
+   * @note usage: z = x * y
    */
   [[nodiscard]] const MatrixType operator*(const MatrixType& other) const
   {
@@ -235,19 +239,29 @@ class SOT3
   }
 
   /**
-   * @brief Operator *= overloading.
-   * Implements the SOT3 composition this = other * this
+   * @brief Implements the SOT3 composition this = this * other
    *
    * @param other const SOT3<FPType>&
    *
    * @return const SOT3<FPType>&
-   *
-   * @note This is different from operator* overloading since this implements a left multiplication other * this and
-   * assignment while operator* returns a copy of the right multiplication this * other.
    */
-  const SOT3& operator*=(const SOT3& other)
+  const SOT3& multiplyRight(const SOT3& other)
   {
-    C_ *= other.C_;
+    C_.multiplyRight(other.C_);  // C_ * other.C_
+    s_ *= other.s_;
+    return *this;
+  }
+
+  /**
+   * @brief Implements the SOT3 composition this = other * this
+   *
+   * @param other const SOT3<FPType>&
+   *
+   * @return const SOT3<FPType>&
+   */
+  const SOT3& multiplyLeft(const SOT3& other)
+  {
+    C_.multiplyLeft(other.C_);  // other.C_ * th.C_
     s_ *= other.s_;
     return *this;
   }

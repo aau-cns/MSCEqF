@@ -194,6 +194,8 @@ class In
    * @param other const In&
    *
    * @return const In
+   *
+   * @note usage: z = x * y
    */
   [[nodiscard]] const In operator*(const In& other) const
   {
@@ -226,17 +228,29 @@ class In
   }
 
   /**
-   * @brief Operator *= overloading.
-   * Implements the In composition this = other * this
+   * @brief Implements the In composition this = this * other
    *
    * @param other const In&
    *
    * @return const In&
-   *
-   * @note This is different from operator* overloading since this implements a left multiplication other * this and
-   * assignment while operator* returns a copy of the right multiplication this * other
    */
-  const In& operator*=(const In& other)
+  const In& multiplyRight(const In& other)
+  {
+    cx_ = fx_ * other.cx_ + cx_;
+    cy_ = fy_ * other.cy_ + cy_;
+    fx_ *= other.fx_;
+    fy_ *= other.fy_;
+    return *this;
+  }
+
+  /**
+   * @brief Implements the In composition this = other * this
+   *
+   * @param other const In&
+   *
+   * @return const In&
+   */
+  const In& multiplyLeft(const In& other)
   {
     cx_ = other.fx_ * cx_ + other.cx_;
     cy_ = other.fy_ * cy_ + other.cy_;

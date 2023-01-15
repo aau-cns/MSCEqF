@@ -19,17 +19,19 @@
 #include "groups/SDB.hpp"
 #include "groups/SOT3.hpp"
 
-namespace group
+namespace msceqf
 {
 
-typedef Types<SO3f, SO3d> SO3Groups;
-typedef Types<SOT3f, SOT3d> SOT3Groups;
-typedef Types<SE3d, SE3f> SE3Groups;
-typedef Types<SE3d, SE3f, SE23f, SE23d> SEn3Groups;
-typedef Types<SDBf, SDBd> SDBGroups;
-typedef Types<Inf, Ind> INGroups;
-typedef Types<SO3f, SO3d, SOT3f, SOT3d, SE3d, SE3f, SE23f, SE23d, Inf, Ind> MSCEqFBaseGroups;
-typedef Types<SO3f, SO3d, SOT3f, SOT3d, SE3d, SE3f, SE23f, SE23d> MSCEqFBaseGroupsWithJacobians;
+using namespace group;
+
+typedef testing::Types<SO3f, SO3d> SO3Groups;
+typedef testing::Types<SOT3f, SOT3d> SOT3Groups;
+typedef testing::Types<SE3d, SE3f> SE3Groups;
+typedef testing::Types<SE3d, SE3f, SE23f, SE23d> SEn3Groups;
+typedef testing::Types<SDBf, SDBd> SDBGroups;
+typedef testing::Types<Inf, Ind> INGroups;
+typedef testing::Types<SO3f, SO3d, SOT3f, SOT3d, SE3d, SE3f, SE23f, SE23d, Inf, Ind> MSCEqFBaseGroups;
+typedef testing::Types<SO3f, SO3d, SOT3f, SOT3d, SE3d, SE3f, SE23f, SE23d> MSCEqFBaseGroupsWithJacobians;
 
 /**
  * @brief Semi Direct Bias group specific tests
@@ -145,6 +147,7 @@ TYPED_TEST(SDBGroupsTest, TestGroupProduct)
     auto X = TypeParam::exp(TypeParam::VectorType::Random());
     auto Y = TypeParam::exp(TypeParam::VectorType::Random());
 
+    // X * Y
     auto Z = X * Y;
 
     MatrixEquality(Z.D().asMatrix(), X.D().asMatrix() * Y.D().asMatrix());
@@ -154,12 +157,23 @@ TYPED_TEST(SDBGroupsTest, TestGroupProduct)
     auto X = TypeParam::exp(TypeParam::VectorType::Random());
     auto Y = TypeParam::exp(TypeParam::VectorType::Random());
 
-    // Left multiplication in place
-    auto Z = Y * X;
-    X *= Y;
+    auto Z = X * Y;
+    auto W = Y * X;
 
-    MatrixEquality(Z.D().asMatrix(), X.D().asMatrix());
-    MatrixEquality(Z.delta(), X.delta());
+    auto X1 = X;
+    auto X2 = X;
+
+    // X1 = X1 * Y
+    X1.multiplyRight(Y);
+
+    MatrixEquality(Z.D().asMatrix(), X1.D().asMatrix());
+    MatrixEquality(Z.delta(), X1.delta());
+
+    // X2 = Y * X2
+    X2.multiplyLeft(Y);
+
+    MatrixEquality(W.D().asMatrix(), X2.D().asMatrix());
+    MatrixEquality(W.delta(), X2.delta());
   }
 }
 
@@ -180,10 +194,10 @@ TYPED_TEST(InGroupsTest, InGroupsConstructors)
       auto X = TypeParam();
       MatrixEquality(X.K(), TypeParam::MatrixType::Identity());
     }
-    double fx = 500 * randDouble();
-    double fy = 500 * randDouble();
-    double cx = 250 * randDouble();
-    double cy = 250 * randDouble();
+    fp fx = utils::random<fp>(400, 800);
+    fp fy = utils::random<fp>(400, 800);
+    fp cx = utils::random<fp>(200, 400);
+    fp cy = utils::random<fp>(200, 400);
     typename TypeParam::MatrixType L;
     L << fx, 0.0, cx, 0.0, fy, cy, 0.0, 0.0, 1.0;
     {
@@ -209,10 +223,10 @@ TYPED_TEST(InGroupsTest, InAction)
 {
   for (int i = 0; i < N_TESTS; ++i)
   {
-    double fx = 500 * randDouble();
-    double fy = 500 * randDouble();
-    double cx = 250 * randDouble();
-    double cy = 250 * randDouble();
+    fp fx = utils::random<fp>(400, 800);
+    fp fy = utils::random<fp>(400, 800);
+    fp cx = utils::random<fp>(200, 400);
+    fp cy = utils::random<fp>(200, 400);
     typename TypeParam::Vector3Type x = TypeParam::Vector3Type::Random();
     auto X = TypeParam(fx, fy, cx, cy);
     MatrixEquality(X * x, X.K() * x);
@@ -302,7 +316,7 @@ TYPED_TEST(SOT3GroupsTest, SOT3Constructors)
       ScalarEquality(X.s(), 1.0);
     }
     auto q = TypeParam::SO3Type::QuaternionType::UnitRandom();
-    double s = 3 * randDouble();
+    fp s = utils::random<fp>(0.1, 10);
     typename TypeParam::MatrixType Q = TypeParam::MatrixType::Identity();
     Q.template block<3, 3>(0, 0) = q.toRotationMatrix();
     Q(3, 3) = s;
@@ -348,7 +362,7 @@ TYPED_TEST(SOT3GroupsTest, SOT3Setters)
   {
     auto X = TypeParam();
     auto q = TypeParam::SO3Type::QuaternionType::UnitRandom();
-    double s = 3 * randDouble();
+    fp s = utils::random<fp>(0.1, 10);
     typename TypeParam::MatrixType Q = TypeParam::MatrixType::Identity();
     Q.template block<3, 3>(0, 0) = q.toRotationMatrix();
     Q(3, 3) = s;
@@ -365,7 +379,7 @@ TYPED_TEST(SOT3GroupsTest, SOT3Action)
   for (int i = 0; i < N_TESTS; ++i)
   {
     auto q = TypeParam::SO3Type::QuaternionType::UnitRandom();
-    double s = 3 * randDouble();
+    fp s = utils::random<fp>(0.1, 10);
     auto X = TypeParam(q, s);
     typename TypeParam::SO3Type::VectorType x = TypeParam::SO3Type::VectorType::Random();
     MatrixEquality(X * x, s * q.toRotationMatrix() * x);
@@ -613,11 +627,17 @@ TYPED_TEST(MSCEqFBaseGroupsTest, TestGroupProduct)
     auto X = TypeParam::exp(TypeParam::VectorType::Random());
     auto Y = TypeParam::exp(TypeParam::VectorType::Random());
 
-    // Left multiplication in place
-    auto Z = Y * X;
-    X *= Y;
+    auto Z = X * Y;
+    auto W = Y * X;
 
-    MatrixEquality(Z.asMatrix(), X.asMatrix());
+    auto X1 = X;
+    auto X2 = X;
+
+    X1.multiplyRight(Y);
+    X2.multiplyLeft(Y);
+
+    MatrixEquality(Z.asMatrix(), X1.asMatrix());
+    MatrixEquality(W.asMatrix(), X2.asMatrix());
   }
 }
 
@@ -693,6 +713,6 @@ TYPED_TEST(MSCEqFBaseGroupsWithJacobiansTest, leftJacobian)
   }
 }
 
-}  // namespace group
+}  // namespace msceqf
 
 #endif  // TEST_GROUPS_HPP

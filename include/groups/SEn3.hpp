@@ -243,6 +243,8 @@ class SEn3
    * @param other const SEn3<FPType, n>&
    *
    * @return const SEn3<FPType, n>
+   *
+   * @note usage: z = x * y
    */
   [[nodiscard]] const SEn3 operator*(const SEn3& other) const
   {
@@ -261,6 +263,8 @@ class SEn3
    * @param other const Eigen::Matrix<FPType, 3 + n, 3 + n>&
    *
    * @return const Eigen::Matrix<FPType, 3 + n, 3 + n>
+   *
+   * @note usage: z = x * y
    */
   [[nodiscard]] const MatrixType operator*(const MatrixType& other) const
   {
@@ -288,23 +292,36 @@ class SEn3
   }
 
   /**
-   * @brief Operator *= overloading.
-   * Implements the SEn3 composition this = other * this
+   * @brief Implements the SEn3 composition this = this * other
    *
    * @param other const SEn3<FPType, n>&
    *
    * @return const SEn3<FPType, n>&
-   *
-   * @note This is different from operator* overloading since this implements a left multiplication other * this and
-   * assignment while operator* returns a copy of the right multiplication this * other
    */
-  const SEn3& operator*=(const SEn3& other)
+  const SEn3& multiplyRight(const SEn3& other)
+  {
+    for (int i = 0; i < n; ++i)
+    {
+      t_[i] = (C_.R() * other.t_[i] + t_[i]).eval();
+    }
+    C_.multiplyRight(other.C_);  // C_ * other.C_
+    return *this;
+  }
+
+  /**
+   * @brief Implements the SEn3 composition this = other * this
+   *
+   * @param other const SEn3<FPType, n>&
+   *
+   * @return const SEn3<FPType, n>&
+   */
+  const SEn3& multiplyLeft(const SEn3& other)
   {
     for (int i = 0; i < n; ++i)
     {
       t_[i] = (other.C_.R() * t_[i] + other.t_[i]).eval();
     }
-    C_ *= other.C_;
+    C_.multiplyLeft(other.C_);  // other.C_ * th.C_
     return *this;
   }
 

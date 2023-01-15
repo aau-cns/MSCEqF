@@ -60,11 +60,18 @@ class MSCEqFStateElement
   [[nodiscard]] int getDof() { return dof_; }
 
   /**
-   * @brief update function to update the state element
+   * @brief update function to update the value of the state element by right multiplication
    *
-   * @param delta scaled residual
+   * @param delta delta value to update with
    */
-  virtual void update(const VectorX& delta) = 0;
+  virtual void updateRight(const VectorX& delta) = 0;
+
+  /**
+   * @brief update function to update the value of the state element by left multiplication
+   *
+   * @param delta delta value to update with
+   */
+  virtual void updateLeft(const VectorX& delta) = 0;
 
   /**
    * @brief Clone
@@ -94,12 +101,11 @@ class MSCEqFStateElement
 };
 
 /**
- * @brief This class represent the Semi Direct bias state of the MSCEqF
+ * @brief This struct represent the Semi Direct bias state of the MSCEqF
  *
  */
-class MSCEqFSDBState final : public MSCEqFStateElement
+struct MSCEqFSDBState final : public MSCEqFStateElement
 {
- public:
   /**
    * @brief Deleted default constructor
    *
@@ -114,11 +120,18 @@ class MSCEqFSDBState final : public MSCEqFStateElement
   MSCEqFSDBState(const uint& idx) : MSCEqFStateElement(idx, 15), Dd_(){};
 
   /**
-   * @brief Update the Semi Direct Bias element of the state
+   * @brief Update the Semi Direct Bias element of the state by right multiplication
    *
-   * @param delta scaled residual
+   * @param delta delta vector to update the state element with
    */
-  void update(const VectorX& delta) override { Dd_ *= SDB::exp(delta); }
+  void updateRight(const VectorX& delta) override { Dd_.multiplyRight(SDB::exp(delta)); }
+
+  /**
+   * @brief Update the Semi Direct Bias element of the state by left multiplication
+   *
+   * @param delta delta vector to update the state element with
+   */
+  void updateLeft(const VectorX& delta) override { Dd_.multiplyLeft(SDB::exp(delta)); }
 
   /**
    * @brief Clone the Semi Direct bias (SDB) element of state of the MSCEqF
@@ -127,24 +140,15 @@ class MSCEqFSDBState final : public MSCEqFStateElement
    */
   std::unique_ptr<MSCEqFStateElement> clone() const override { return std::make_unique<MSCEqFSDBState>(*this); }
 
-  /**
-   * @brief Get a reference to the SDB element
-   *
-   * @return const SDB&
-   */
-  [[nodiscard]] const SDB& getDd() { return Dd_; }
-
- private:
   SDB Dd_;  //!< The Semi Direct Bias element of the state
 };
 
 /**
- * @brief This class represent the Special Euclidean Group of dimension 3 state of the MSCEqF
+ * @brief This struct represent the Special Euclidean Group of dimension 3 state of the MSCEqF
  *
  */
-class MSCEqFSE3State final : public MSCEqFStateElement
+struct MSCEqFSE3State final : public MSCEqFStateElement
 {
- public:
   /**
    * @brief Deleted default constructor
    *
@@ -159,11 +163,18 @@ class MSCEqFSE3State final : public MSCEqFStateElement
   MSCEqFSE3State(const uint& idx) : MSCEqFStateElement(idx, 6), E_(){};
 
   /**
-   * @brief Update the Special Euclidean Group element of the state
+   * @brief Update the Special Euclidean Group element of the state by right multiplication
    *
-   * @param delta scaled residual
+   * @param delta delta vector to update the state element with
    */
-  void update(const VectorX& delta) override { E_ *= SE3::exp(delta); }
+  void updateRight(const VectorX& delta) override { E_.multiplyRight(SE3::exp(delta)); }
+
+  /**
+   * @brief Update the Special Euclidean Group element of the state by left multiplication
+   *
+   * @param delta delta vector to update the state element with
+   */
+  void updateLeft(const VectorX& delta) override { E_.multiplyLeft(SE3::exp(delta)); }
 
   /**
    * @brief Clone the Special Euclidean Group (SE3) element of state of the MSCEqF
@@ -172,24 +183,15 @@ class MSCEqFSE3State final : public MSCEqFStateElement
    */
   std::unique_ptr<MSCEqFStateElement> clone() const override { return std::make_unique<MSCEqFSE3State>(*this); }
 
-  /**
-   * @brief Get a reference to the SE3 element
-   *
-   * @return const SE3&
-   */
-  [[nodiscard]] const SE3& getE() { return E_; }
-
- private:
   SE3 E_;  //!< The Special Euclidean element of the state
 };
 
 /**
- * @brief This class represent the Intrinsic state of the MSCEqF
+ * @brief This struct represent the Intrinsic state of the MSCEqF
  *
  */
-class MSCEqFInState final : public MSCEqFStateElement
+struct MSCEqFInState final : public MSCEqFStateElement
 {
- public:
   /**
    * @brief Deleted default constructor
    *
@@ -204,11 +206,18 @@ class MSCEqFInState final : public MSCEqFStateElement
   MSCEqFInState(const uint& idx) : MSCEqFStateElement(idx, 4), L_(){};
 
   /**
-   * @brief Update the Intrinsic element of the state
+   * @brief Update the Intrinsic element of the state by right multiplication
    *
-   * @param delta scaled residual
+   * @param delta delta vector to update the state element with
    */
-  void update(const VectorX& delta) override { L_ *= In::exp(delta); }
+  void updateRight(const VectorX& delta) override { L_.multiplyRight(In::exp(delta)); }
+
+  /**
+   * @brief Update the Intrinsic element of the state by left multiplication
+   *
+   * @param delta delta vector to update the state element with
+   */
+  void updateLeft(const VectorX& delta) override { L_.multiplyLeft(In::exp(delta)); }
 
   /**
    * @brief Clone the Special Intrinsic (In) element of state of the MSCEqF
@@ -217,24 +226,15 @@ class MSCEqFInState final : public MSCEqFStateElement
    */
   std::unique_ptr<MSCEqFStateElement> clone() const override { return std::make_unique<MSCEqFInState>(*this); }
 
-  /**
-   * @brief Get a reference to the In element
-   *
-   * @return const In&
-   */
-  [[nodiscard]] const In& getL() { return L_; }
-
- private:
   In L_;  //!< The Intrinsic element of the state
 };
 
 /**
- * @brief This class represent the Scaled Orthogonal Transforms state of the MSCEqF
+ * @brief This struct represent the Scaled Orthogonal Transforms state of the MSCEqF
  *
  */
-class MSCEqFSOT3State final : public MSCEqFStateElement
+struct MSCEqFSOT3State final : public MSCEqFStateElement
 {
- public:
   /**
    * @brief Deleted default constructor
    *
@@ -249,11 +249,18 @@ class MSCEqFSOT3State final : public MSCEqFStateElement
   MSCEqFSOT3State(const uint& idx) : MSCEqFStateElement(idx, 4), Q_(){};
 
   /**
-   * @brief Update the Scaled Orthogonal Transforms element of the state
+   * @brief Update the Scaled Orthogonal Transforms element of the state by right multiplication
    *
-   * @param delta scaled residual
+   * @param delta delta vector to update the state element with
    */
-  void update(const VectorX& delta) override { Q_ *= SOT3::exp(delta); }
+  void updateRight(const VectorX& delta) override { Q_.multiplyRight(SOT3::exp(delta)); }
+
+  /**
+   * @brief Update the Scaled Orthogonal Transforms element of the state by left multiplication
+   *
+   * @param delta delta vector to update the state element with
+   */
+  void updateLeft(const VectorX& delta) override { Q_.multiplyLeft(SOT3::exp(delta)); }
 
   /**
    * @brief Clone the Scaled Orthogonal Transforms (SOT3) element of state of the MSCEqF
@@ -262,14 +269,6 @@ class MSCEqFSOT3State final : public MSCEqFStateElement
    */
   std::unique_ptr<MSCEqFStateElement> clone() const override { return std::make_unique<MSCEqFSOT3State>(*this); }
 
-  /**
-   * @brief Get a reference to the SOT3 element
-   *
-   * @return const SOT3&
-   */
-  [[nodiscard]] const SOT3& getQ() { return Q_; }
-
- private:
   SOT3 Q_;  //!< The Scaled Orthogonal Transforms element of the state
 };
 
