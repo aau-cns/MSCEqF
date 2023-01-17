@@ -50,8 +50,19 @@ void SystemStateEquality(const msceqf::SystemState& xi1,
 {
   MatrixEquality(xi1.T().asMatrix(), xi2.T().asMatrix());
   MatrixEquality(xi1.b(), xi2.b());
-  MatrixEquality(xi1.S().asMatrix(), xi2.S().asMatrix());
-  MatrixEquality(xi1.K().asMatrix(), xi2.K().asMatrix());
+
+  assert(xi1.opts_.enable_camera_extrinsic_calibration_ == xi2.opts_.enable_camera_extrinsic_calibration_);
+  if (xi1.opts_.enable_camera_extrinsic_calibration_)
+  {
+    MatrixEquality(xi1.S().asMatrix(), xi2.S().asMatrix());
+  }
+
+  assert(xi1.opts_.enable_camera_intrinsic_calibration_ == xi2.opts_.enable_camera_intrinsic_calibration_);
+  if (xi1.opts_.enable_camera_intrinsic_calibration_)
+  {
+    MatrixEquality(xi1.K().asMatrix(), xi2.K().asMatrix());
+  }
+
   for (const auto& id : feat_ids)
   {
     MatrixEquality(xi1.f(id), xi2.f(id));
@@ -64,11 +75,21 @@ void MSCEqFStateEquality(const msceqf::MSCEqFState& X1,
 {
   MatrixEquality(X1.D().asMatrix(), X2.D().asMatrix());
   MatrixEquality(X1.delta(), X2.delta());
-  MatrixEquality(X1.E().asMatrix(), X2.E().asMatrix());
-  MatrixEquality(X1.L().asMatrix(), X2.L().asMatrix());
   MatrixEquality(X1.CovBlock(msceqf::MSCEqFStateElementName::Dd), X2.CovBlock(msceqf::MSCEqFStateElementName::Dd));
-  MatrixEquality(X1.CovBlock(msceqf::MSCEqFStateElementName::E), X2.CovBlock(msceqf::MSCEqFStateElementName::E));
-  MatrixEquality(X1.CovBlock(msceqf::MSCEqFStateElementName::L), X2.CovBlock(msceqf::MSCEqFStateElementName::L));
+
+  assert(X1.opts_.enable_camera_extrinsic_calibration_ == X2.opts_.enable_camera_extrinsic_calibration_);
+  if (X1.opts_.enable_camera_extrinsic_calibration_)
+  {
+    MatrixEquality(X1.E().asMatrix(), X2.E().asMatrix());
+    MatrixEquality(X1.CovBlock(msceqf::MSCEqFStateElementName::E), X2.CovBlock(msceqf::MSCEqFStateElementName::E));
+  }
+  assert(X1.opts_.enable_camera_intrinsic_calibration_ == X2.opts_.enable_camera_intrinsic_calibration_);
+  if (X1.opts_.enable_camera_intrinsic_calibration_)
+  {
+    MatrixEquality(X1.L().asMatrix(), X2.L().asMatrix());
+    MatrixEquality(X1.CovBlock(msceqf::MSCEqFStateElementName::L), X2.CovBlock(msceqf::MSCEqFStateElementName::L));
+  }
+
   for (const auto& id : feat_ids)
   {
     MatrixEquality(X1.Q(id).asMatrix(), X2.Q(id).asMatrix());

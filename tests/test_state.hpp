@@ -15,6 +15,7 @@
 #include <iostream>
 
 #include "msceqf/state/state.hpp"
+#include "msceqf/symmetry/symmetry.hpp"
 #include "msceqf/system/system.hpp"
 
 namespace msceqf
@@ -31,18 +32,33 @@ TEST(SystemStateTest, SystemStateConstructionTest)
 
   for (int i = 0; i < N_TESTS; ++i)
   {
-    // Camera Extrinsics
+    // Camera Extrinsic
     Quaternion Sq = Quaternion::UnitRandom();
     Vector3 St = Vector3::Random();
-    Matrix4 S = SE3(Sq, {St}).asMatrix();
 
-    // Camera Intrinsics
-    Vector4 intrinsics = Vector4::Random().cwiseAbs();
-    Matrix3 K = In(intrinsics).asMatrix();
+    opts.state_options_.initial_camera_extrinsic_ = SE3(Sq, {St});
+    Matrix4 S = opts.state_options_.initial_camera_extrinsic_.asMatrix();
 
-    // Features
+    // Camera Intrinsic
+    Vector4 intrinsic = Vector4::Random().cwiseAbs();
+
+    opts.state_options_.initial_camera_intrinsic_ = In(intrinsic);
+    Matrix3 K = opts.state_options_.initial_camera_intrinsic_.asMatrix();
+
+    // Feature
     Vector3 feat = Vector3::Random();
-    uint feat_id = 0;
+    uint feat_id = utils::random<int>(0, 1000);
+
+    // Features ids
+    std::vector<uint> feat_ids;
+    while (feat_ids.size() != opts.state_options_.num_persistent_features_)
+    {
+      uint id = utils::random<int>(0, 1000);
+      if (std::find(feat_ids.begin(), feat_ids.end(), id) == feat_ids.end())
+      {
+        feat_ids.emplace_back(id);
+      }
+    }
 
     // Default construction
     {
@@ -61,20 +77,76 @@ TEST(SystemStateTest, SystemStateConstructionTest)
       MatrixEquality(state.f(feat_id), Vector3::Zero());
     }
 
-    // Parametric construction (1)
+    // Default construction without persistent features
+    {
+      SystemState state(
+          opts.state_options_,
+          std::make_pair(SystemStateElementName::T, createSystemStateElement<ExtendedPoseState>(std::make_tuple())),
+          std::make_pair(SystemStateElementName::b, createSystemStateElement<BiasState>(std::make_tuple())),
+          std::make_pair(SystemStateElementName::S, createSystemStateElement<CameraExtrinsicState>(std::make_tuple())),
+          std::make_pair(SystemStateElementName::K, createSystemStateElement<CameraIntrinsicState>(std::make_tuple())));
+
+      MatrixEquality(state.T().asMatrix(), Matrix5::Identity());
+      MatrixEquality(state.b(), Vector6::Zero());
+      MatrixEquality(state.S().asMatrix(), Matrix4::Identity());
+      MatrixEquality(state.K().asMatrix(), Matrix3::Identity());
+    }
+
+    // Default construction without camera intrinsic, extrinsic, and persistent features
+    {
+      SystemState state(
+          opts.state_options_,
+          std::make_pair(SystemStateElementName::T, createSystemStateElement<ExtendedPoseState>(std::make_tuple())),
+          std::make_pair(SystemStateElementName::b, createSystemStateElement<BiasState>(std::make_tuple())),
+          std::make_pair(feat_id, createSystemStateElement<FeatureState>(std::make_tuple())));
+
+      MatrixEquality(state.T().asMatrix(), Matrix5::Identity());
+      MatrixEquality(state.b(), Vector6::Zero());
+      MatrixEquality(state.f(feat_id), Vector3::Zero());
+    }
+
+    // Default construction without camera intrinsic, extrinsic, but with persistent features
+    {
+      SystemState state(
+          opts.state_options_,
+          std::make_pair(SystemStateElementName::T, createSystemStateElement<ExtendedPoseState>(std::make_tuple())),
+          std::make_pair(SystemStateElementName::b, createSystemStateElement<BiasState>(std::make_tuple())));
+
+      MatrixEquality(state.T().asMatrix(), Matrix5::Identity());
+      MatrixEquality(state.b(), Vector6::Zero());
+    }
+
+    // Implicit extrinsic and intrinsic construction
     {
       SystemState state(opts.state_options_,
                         std::make_pair(SystemStateElementName::T,
                                        createSystemStateElement<ExtendedPoseState>(std::make_tuple(SE23()))),
                         std::make_pair(SystemStateElementName::b,
                                        createSystemStateElement<BiasState>(std::make_tuple(Vector6::Zero()))),
-                        std::make_pair(SystemStateElementName::S,
-                                       createSystemStateElement<CameraExtrinsicState>(std::make_tuple(Sq, St))),
-                        std::make_pair(SystemStateElementName::K,
-                                       createSystemStateElement<CameraIntrinsicState>(std::make_tuple(
-                                           intrinsics.x(), intrinsics.y(), intrinsics.z(), intrinsics.w()))),
                         std::make_pair(feat_id, createSystemStateElement<FeatureState>(
                                                     std::make_tuple(feat.x(), feat.y(), feat.z()))));
+
+      MatrixEquality(state.T().asMatrix(), Matrix5::Identity());
+      MatrixEquality(state.b(), Vector6::Zero());
+      MatrixEquality(state.S().asMatrix(), S);
+      MatrixEquality(state.K().asMatrix(), K);
+      MatrixEquality(state.f(feat_id), feat);
+    }
+
+    // Parametric construction (1)
+    {
+      SystemState state(
+          opts.state_options_,
+          std::make_pair(SystemStateElementName::T,
+                         createSystemStateElement<ExtendedPoseState>(std::make_tuple(SE23()))),
+          std::make_pair(SystemStateElementName::b,
+                         createSystemStateElement<BiasState>(std::make_tuple(Vector6::Zero()))),
+          std::make_pair(SystemStateElementName::S,
+                         createSystemStateElement<CameraExtrinsicState>(std::make_tuple(Sq, St))),
+          std::make_pair(SystemStateElementName::K, createSystemStateElement<CameraIntrinsicState>(std::make_tuple(
+                                                        intrinsic.x(), intrinsic.y(), intrinsic.z(), intrinsic.w()))),
+          std::make_pair(feat_id,
+                         createSystemStateElement<FeatureState>(std::make_tuple(feat.x(), feat.y(), feat.z()))));
 
       MatrixEquality(state.T().asMatrix(), Matrix5::Identity());
       MatrixEquality(state.b(), Vector6::Zero());
@@ -92,7 +164,7 @@ TEST(SystemStateTest, SystemStateConstructionTest)
           std::make_pair(SystemStateElementName::S,
                          createSystemStateElement<CameraExtrinsicState>(std::make_tuple(Sq.toRotationMatrix(), St))),
           std::make_pair(SystemStateElementName::K,
-                         createSystemStateElement<CameraIntrinsicState>(std::make_tuple(intrinsics))),
+                         createSystemStateElement<CameraIntrinsicState>(std::make_tuple(intrinsic))),
           std::make_pair(feat_id, createSystemStateElement<FeatureState>(std::make_tuple(feat))));
 
       MatrixEquality(state.T().asMatrix(), Matrix5::Identity());
@@ -122,10 +194,10 @@ TEST(SystemStateTest, SystemStateConstructionTest)
     // Parametric construction vector
     {
       std::vector<std::pair<SystemState::SystemStateKey, SystemStateElementUniquePtr>> feat_initializer_vector;
-      for (uint i = 0; i < opts.state_options_.num_persistent_features_; ++i)
+      for (const auto& id : feat_ids)
       {
         feat_initializer_vector.emplace_back(
-            std::make_pair(i, createSystemStateElement<FeatureState>(std::make_tuple(feat))));
+            std::make_pair(id, createSystemStateElement<FeatureState>(std::make_tuple(feat))));
       }
 
       SystemState state(
@@ -135,26 +207,26 @@ TEST(SystemStateTest, SystemStateConstructionTest)
           std::make_pair(SystemStateElementName::S,
                          createSystemStateElement<CameraExtrinsicState>(std::make_tuple(Sq, St))),
           std::make_pair(SystemStateElementName::K,
-                         createSystemStateElement<CameraIntrinsicState>(std::make_tuple(intrinsics))),
+                         createSystemStateElement<CameraIntrinsicState>(std::make_tuple(intrinsic))),
           feat_initializer_vector);
 
       MatrixEquality(state.T().asMatrix(), Matrix5::Identity());
       MatrixEquality(state.b(), Vector6::Zero());
       MatrixEquality(state.S().asMatrix(), S);
       MatrixEquality(state.K().asMatrix(), K);
-      for (uint i = 0; i < opts.state_options_.num_persistent_features_; ++i)
+      for (const auto& id : feat_ids)
       {
-        MatrixEquality(state.f(i), feat);
+        MatrixEquality(state.f(id), feat);
       }
     }
 
     // Copy and assignment
     {
       std::vector<std::pair<SystemState::SystemStateKey, SystemStateElementUniquePtr>> feat_initializer_vector;
-      for (uint i = 0; i < opts.state_options_.num_persistent_features_; ++i)
+      for (const auto& id : feat_ids)
       {
         feat_initializer_vector.emplace_back(
-            std::make_pair(i, createSystemStateElement<FeatureState>(std::make_tuple(feat))));
+            std::make_pair(id, createSystemStateElement<FeatureState>(std::make_tuple(feat))));
       }
 
       SystemState state(
@@ -164,42 +236,26 @@ TEST(SystemStateTest, SystemStateConstructionTest)
           std::make_pair(SystemStateElementName::S,
                          createSystemStateElement<CameraExtrinsicState>(std::make_tuple(Sq, St))),
           std::make_pair(SystemStateElementName::K,
-                         createSystemStateElement<CameraIntrinsicState>(std::make_tuple(intrinsics))),
+                         createSystemStateElement<CameraIntrinsicState>(std::make_tuple(intrinsic))),
           feat_initializer_vector);
 
       SystemState state_copy(state);
-
-      MatrixEquality(state.T().asMatrix(), state_copy.T().asMatrix());
-      MatrixEquality(state.b(), state_copy.b());
-      MatrixEquality(state.S().asMatrix(), state_copy.S().asMatrix());
-      MatrixEquality(state.K().asMatrix(), state_copy.K().asMatrix());
-      for (uint i = 0; i < opts.state_options_.num_persistent_features_; ++i)
-      {
-        MatrixEquality(state.f(i), state_copy.f(i));
-      }
+      SystemStateEquality(state, state_copy, feat_ids);
 
       SystemState state_copy_2 = state;
-
-      MatrixEquality(state.T().asMatrix(), state_copy_2.T().asMatrix());
-      MatrixEquality(state.b(), state_copy_2.b());
-      MatrixEquality(state.S().asMatrix(), state_copy_2.S().asMatrix());
-      MatrixEquality(state.K().asMatrix(), state_copy_2.K().asMatrix());
-      for (uint i = 0; i < opts.state_options_.num_persistent_features_; ++i)
-      {
-        MatrixEquality(state.f(i), state_copy_2.f(i));
-      }
+      SystemStateEquality(state, state_copy_2, feat_ids);
     }
+  }
 
-    // Assertation tests
-    {
-      ASSERT_DEATH(
-          {
-            SystemState state(opts.state_options_,
-                              std::make_pair(SystemStateElementName::T,
-                                             createSystemStateElement<ExtendedPoseState>(std::make_tuple(Sq))));
-          },
-          "");
-    }
+  // Assertation tests
+  {
+    ASSERT_DEATH(
+        {
+          SystemState state(opts.state_options_,
+                            std::make_pair(SystemStateElementName::T, createSystemStateElement<ExtendedPoseState>(
+                                                                          std::make_tuple(Quaternion::UnitRandom()))));
+        },
+        "");
   }
 }
 
@@ -232,24 +288,10 @@ TEST(MSCEqFStateTest, MSCEqFStateConstructionTest)
       MatrixEquality(state.CovBlock(MSCEqFStateElementName::L), opts.state_options_.L_init_cov_);
 
       MSCEqFState state_copy(state);
-
-      MatrixEquality(state_copy.D().asMatrix(), state.D().asMatrix());
-      MatrixEquality(state_copy.delta(), state.delta());
-      MatrixEquality(state_copy.E().asMatrix(), state.E().asMatrix());
-      MatrixEquality(state_copy.L().asMatrix(), state.L().asMatrix());
-      MatrixEquality(state_copy.CovBlock(MSCEqFStateElementName::Dd), state.CovBlock(MSCEqFStateElementName::Dd));
-      MatrixEquality(state_copy.CovBlock(MSCEqFStateElementName::E), state.CovBlock(MSCEqFStateElementName::E));
-      MatrixEquality(state_copy.CovBlock(MSCEqFStateElementName::L), state.CovBlock(MSCEqFStateElementName::L));
+      MSCEqFStateEquality(state, state_copy);
 
       MSCEqFState state_copy_2 = state;
-
-      MatrixEquality(state_copy_2.D().asMatrix(), state.D().asMatrix());
-      MatrixEquality(state_copy_2.delta(), state.delta());
-      MatrixEquality(state_copy_2.E().asMatrix(), state.E().asMatrix());
-      MatrixEquality(state_copy_2.L().asMatrix(), state.L().asMatrix());
-      MatrixEquality(state_copy_2.CovBlock(MSCEqFStateElementName::Dd), state.CovBlock(MSCEqFStateElementName::Dd));
-      MatrixEquality(state_copy_2.CovBlock(MSCEqFStateElementName::E), state.CovBlock(MSCEqFStateElementName::E));
-      MatrixEquality(state_copy_2.CovBlock(MSCEqFStateElementName::L), state.CovBlock(MSCEqFStateElementName::L));
+      MSCEqFStateEquality(state, state_copy_2);
     }
   }
 }

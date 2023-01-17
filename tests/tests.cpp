@@ -16,9 +16,9 @@
 #include <ctime>
 
 #include "test_common.hpp"
-#include "test_groups.hpp"
-// #include "test_state.hpp"
-// #include "test_symmetry.hpp"
+// #include "test_groups.hpp"
+#include "test_state.hpp"
+#include "test_symmetry.hpp"
 
 int main(int argc, char **argv)
 {
