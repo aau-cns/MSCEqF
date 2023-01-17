@@ -11,24 +11,14 @@
 
 #include "msceqf/state/state.hpp"
 
+#include "utils/tools.hpp"
+
 namespace msceqf
 {
 MSCEqFState::MSCEqFState(const StateOptions& opts) : cov_(), state_(), clones_(), opts_(opts)
 {
   // Preallocate state memory based on given options
-  size_t num_elements = 1 + opts.num_persistent_features_;
-  if (opts_.enable_camera_extrinsic_calibration_)
-  {
-    ++num_elements;
-  }
-  if (opts_.enable_camera_intrinsic_calibration_)
-  {
-    ++num_elements;
-  }
-  state_.reserve(num_elements);
-
-  // Preallocate clones memory based on given options
-  clones_.reserve(opts_.num_clones_);
+  preallocate();
 
   // Define Semi Direct Bias initial covariance
   Matrix15 Dd_cov = Matrix15::Zero();
@@ -113,6 +103,24 @@ MSCEqFState ::~MSCEqFState()
   cov_.resize(0, 0);
 }
 
+void MSCEqFState::preallocate()
+{
+  // Preallocate space on state map
+  size_t num_elements = 1 + opts_.num_persistent_features_;
+  if (opts_.enable_camera_extrinsic_calibration_)
+  {
+    ++num_elements;
+  }
+  if (opts_.enable_camera_intrinsic_calibration_)
+  {
+    ++num_elements;
+  }
+  state_.reserve(num_elements);
+
+  // Preallocate space on clones map
+  clones_.reserve(opts_.num_clones_);
+}
+
 void MSCEqFState::initializeStateElement(const MSCEqFStateKey& key, const MatrixX& cov_block)
 {
   assert(key.valueless_by_exception() == false);
@@ -173,37 +181,37 @@ const MSCEqFStateElementSharedPtr& MSCEqFState::getPtr(const MSCEqFStateKey& key
 
 const SE23& MSCEqFState::D() const
 {
-  return std::static_pointer_cast<MSCEqFSDBState>(state_.at(MSCEqFStateElementName::Dd))->getDd().D();
+  return std::static_pointer_cast<MSCEqFSDBState>(state_.at(MSCEqFStateElementName::Dd))->Dd_.D();
 }
 
 const SE3 MSCEqFState::B() const
 {
-  return std::static_pointer_cast<MSCEqFSDBState>(state_.at(MSCEqFStateElementName::Dd))->getDd().B();
+  return std::static_pointer_cast<MSCEqFSDBState>(state_.at(MSCEqFStateElementName::Dd))->Dd_.B();
 }
 
 const SE3 MSCEqFState::C() const
 {
-  return std::static_pointer_cast<MSCEqFSDBState>(state_.at(MSCEqFStateElementName::Dd))->getDd().C();
+  return std::static_pointer_cast<MSCEqFSDBState>(state_.at(MSCEqFStateElementName::Dd))->Dd_.C();
 }
 
 const Vector6& MSCEqFState::delta() const
 {
-  return std::static_pointer_cast<MSCEqFSDBState>(state_.at(MSCEqFStateElementName::Dd))->getDd().delta();
+  return std::static_pointer_cast<MSCEqFSDBState>(state_.at(MSCEqFStateElementName::Dd))->Dd_.delta();
 }
 
 const SE3& MSCEqFState::E() const
 {
-  return std::static_pointer_cast<MSCEqFSE3State>(state_.at(MSCEqFStateElementName::E))->getE();
+  return std::static_pointer_cast<MSCEqFSE3State>(state_.at(MSCEqFStateElementName::E))->E_;
 }
 
 const In& MSCEqFState::L() const
 {
-  return std::static_pointer_cast<MSCEqFInState>(state_.at(MSCEqFStateElementName::L))->getL();
+  return std::static_pointer_cast<MSCEqFInState>(state_.at(MSCEqFStateElementName::L))->L_;
 }
 
 const SOT3& MSCEqFState::Q(const uint& feat_id) const
 {
-  return std::static_pointer_cast<MSCEqFSOT3State>(state_.at(feat_id))->getQ();
+  return std::static_pointer_cast<MSCEqFSOT3State>(state_.at(feat_id))->Q_;
 }
 
 const MatrixX& MSCEqFState::Cov() const { return cov_; }
@@ -211,6 +219,78 @@ const MatrixX& MSCEqFState::Cov() const { return cov_; }
 const MatrixX MSCEqFState::CovBlock(const MSCEqFStateKey& key) const
 {
   return cov_.block(getPtr(key)->getIndex(), getPtr(key)->getIndex(), getPtr(key)->getDof(), getPtr(key)->getDof());
+}
+
+const MSCEqFState MSCEqFState::Random() const
+{
+  // Copy this
+  MSCEqFState result(*this);
+
+  // Assign random values to state map
+  for (auto& [key, ptr] : result.state_)
+  {
+    assert(key.valueless_by_exception() == false);
+
+    if (std::holds_alternative<MSCEqFStateElementName>(key))
+    {
+      switch (std::get<MSCEqFStateElementName>(key))
+      {
+        case MSCEqFStateElementName::Dd:
+          std::static_pointer_cast<MSCEqFSDBState>(ptr)->Dd_ =
+              SDB(SE23(Quaternion::UnitRandom(), {Vector3::Random(), Vector3::Random()}), Vector6::Random());
+          break;
+        case MSCEqFStateElementName::E:
+          std::static_pointer_cast<MSCEqFSE3State>(ptr)->E_ = SE3(Quaternion::UnitRandom(), {Vector3::Random()});
+          break;
+        case MSCEqFStateElementName::L:
+          Vector4 intr = 100 * Vector4::Random().cwiseAbs();
+          std::static_pointer_cast<MSCEqFInState>(ptr)->L_ = In(intr.x(), intr.y(), intr.z(), intr.w());
+          break;
+      }
+    }
+    else
+    {
+      std::static_pointer_cast<MSCEqFSOT3State>(ptr)->Q_ = SOT3(Quaternion::UnitRandom(), utils::random<fp>(0, 10));
+    }
+  }
+  return result;
+}
+
+const MSCEqFState MSCEqFState::operator*(const MSCEqFState& other) const
+{
+  // Copy this
+  MSCEqFState result(*this);
+
+  // Assign composed (multiplied) values to state map
+  for (auto& [key, ptr] : other.state_)
+  {
+    assert(key.valueless_by_exception() == false);
+
+    if (std::holds_alternative<MSCEqFStateElementName>(key))
+    {
+      switch (std::get<MSCEqFStateElementName>(key))
+      {
+        case MSCEqFStateElementName::Dd:
+          std::static_pointer_cast<MSCEqFSDBState>(result.state_.at(key))
+              ->Dd_.multiplyRight(std::static_pointer_cast<MSCEqFSDBState>(ptr)->Dd_);
+          break;
+        case MSCEqFStateElementName::E:
+          std::static_pointer_cast<MSCEqFSE3State>(result.state_.at(key))
+              ->E_.multiplyRight(std::static_pointer_cast<MSCEqFSE3State>(ptr)->E_);
+          break;
+        case MSCEqFStateElementName::L:
+          std::static_pointer_cast<MSCEqFInState>(result.state_.at(key))
+              ->L_.multiplyRight(std::static_pointer_cast<MSCEqFInState>(ptr)->L_);
+          break;
+      }
+    }
+    else
+    {
+      std::static_pointer_cast<MSCEqFSOT3State>(result.state_.at(key))
+          ->Q_.multiplyRight(std::static_pointer_cast<MSCEqFSOT3State>(ptr)->Q_);
+    }
+  }
+  return result;
 }
 
 }  // namespace msceqf

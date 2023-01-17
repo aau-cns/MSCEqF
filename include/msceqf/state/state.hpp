@@ -146,7 +146,37 @@ class MSCEqFState
    */
   void initializeStateElement(const MSCEqFStateKey& key, const MatrixX& cov_block);
 
+  /**
+   * @brief Get a random MSCEqF state
+   * This method *WILL NOT* change the actual values of the state.
+   * This method *WILL NOT* initialize the covariance or the clones map.
+   * This method will only initialize the state map with random values.
+   *
+   * *THIS IS MEANT TO BE AN HELPER FUNCTION FOR DEBUG/TESTING*
+   *
+   * @return const MSCEqFState&
+   */
+  [[nodiscard]] const MSCEqFState Random() const;
+
+  /**
+   * @brief operator* overloading for MSCEqFState.
+   * This function will perform the composition this * other for each element of the state map.
+   * This method will *NOT* perform any composition for the covariance matrix, and for the clones map.
+   *
+   * *THIS IS MEANT TO BE AN HELPER FUNCTION FOR DEBUG/TESTING*
+   *
+   * @param other MSCEqFState
+   * @return const MSCEqFState
+   */
+  [[nodiscard]] const MSCEqFState operator*(const MSCEqFState& other) const;
+
  private:
+  /**
+   * @brief Preallocate space on the MSCEqF state map and clones_map based on given options
+   *
+   */
+  void preallocate();
+
   /**
    * @brief Insert given pointer into the MSCEqF state map and check that the pointer is not null.
    *
@@ -163,26 +193,24 @@ class MSCEqFState
    */
   [[nodiscard]] const MSCEqFStateElementSharedPtr& getPtr(const MSCEqFStateKey& key) const;
 
+  friend class Symmetry;  //!< Symmetry can access private members of MSCEqFState
+
   MatrixX cov_;             //!< MSCEqF State covariance (Sigma matrix)
   MSCEqFStateMap state_;    //!< MSCEqF State elements mapped by their names
   MSCEqFClonesMap clones_;  //!< MSCEqF Stochastic clones mapped by their timestamps
 
  public:
-  StateOptions opts_;  //!< MSCEqF Options
+  StateOptions opts_;  //!< State Options
 };
 
 // [TODO] Insert clone method
-
-// [TODO] Method to get covariance for a subset of variables. --> Do i need this? is it necessary to update as OV does?
 
 // [TODO] Marginalize method
 
 // [TODO] Delayed feature init
 
-// [COMMENT] The choice of the unorderd map is due to fast retreiving of elements (hash table)
-
-// [COMMENT] When should I initialize xi0? probably toghether with the state but from the MSCEqF manager... I probably
-// should not mix it in
+// [TODO] Update method, is it needed? I guess so to update... Can i have a single method to modify the values of the
+// state that i can use in both propoagationa and update?
 
 }  // namespace msceqf
 
