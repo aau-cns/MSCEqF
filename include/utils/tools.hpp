@@ -14,38 +14,11 @@
 
 #include <array>
 #include <iterator>
+#include <random>
 #include <vector>
 
 namespace utils
 {
-/**
- * @brief Helper function to unpack a vector into function arguments and call the given function.
- * unpackCaller<N> u; u(f, v, pre_args, post_args); calls f(pre_args..., v[0], v[1], ..., v[N], post_args...)
- *
- * @tparam N
- *
- * @note Modified from:
- * https://stackoverflow.com/questions/11044504/any-solution-to-unpack-a-vector-to-function-arguments-in-c/11044592#11044592
- */
-template <size_t N>
-class unpackCaller
-{
- public:
-  template <typename F, typename T, typename... PreArgs, typename... PostArgs>
-  auto operator()(F& f, std::vector<T>& other_args, PreArgs&&... pre_args, PostArgs&&... post_args)
-  {
-    assert(other_args.size() == N);
-    return call(f, other_args, std::make_index_sequence<N>{}, pre_args..., post_args...);
-  }
-
- private:
-  template <typename F, typename T, size_t... I, typename... PreArgs, typename... PostArgs>
-  auto call(F& f, std::vector<T>& other_args, std::index_sequence<I...>, PreArgs&&... pre_args, PostArgs&&... post_args)
-  {
-    return f(pre_args..., other_args[I]..., post_args...);
-  }
-};
-
 /**
  * @brief Stream a std::vector
  *
@@ -94,6 +67,55 @@ std::ostream& operator<<(std::ostream& stream, const std::array<T, N>& v)
     stream << v.back() << "]";
   }
   return stream;
+}
+
+/**
+ * @brief Very simple Eigen compatible central difference numerical differentiation function.
+ *
+ * @tparam FPType floating point type
+ * @param x linearization point
+ * @param f function
+ * @param h delta
+ * @return Eigen::Matrix<FPType, Eigen::Dynamic, 1>
+ */
+template <typename FPType>
+Eigen::Matrix<FPType, Eigen::Dynamic, 1> diff(
+    const Eigen::Matrix<FPType, Eigen::Dynamic, 1>& x,
+    const std::function<double(const Eigen::Matrix<FPType, Eigen::Dynamic, 1>&)>& f,
+    double h = 1e-6)
+{
+  int n = x.size();
+  Eigen::Matrix<FPType, Eigen::Dynamic, 1> grad(n);
+  for (int i = 0; i < n; i++)
+  {
+    Eigen::Matrix<FPType, Eigen::Dynamic, 1> x_plus = x, x_minus = x;
+    x_plus(i) += h;
+    x_minus(i) -= h;
+    grad(i) = (f(x_plus) - f(x_minus)) / (2 * h);
+  }
+  return grad;
+}
+
+/**
+ * @brief Generate random numbers
+ *
+ * @tparam Numeric type of random number generated
+ * @tparam Generator random number generator
+ * @param from lower bound
+ * @param to upper bound
+ * @return Numeric
+ *
+ * @note Modified from:
+ * https://stackoverflow.com/questions/2704521/generate-random-double-numbers-in-c
+ */
+template <typename Numeric, typename Generator = std::mt19937>
+Numeric random(Numeric from, Numeric to)
+{
+  thread_local static Generator gen(std::random_device{}());
+  using dist_type = typename std::conditional<std::is_integral<Numeric>::value, std::uniform_int_distribution<Numeric>,
+                                              std::uniform_real_distribution<Numeric> >::type;
+  thread_local static dist_type dist;
+  return dist(gen, typename dist_type::param_type{from, to});
 }
 
 }  // namespace utils
