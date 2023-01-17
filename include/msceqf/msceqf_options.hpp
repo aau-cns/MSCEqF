@@ -1,4 +1,4 @@
-// Copyright (C) 2023 Alessandro Fornasier, Pieter van Goor.
+// Copyright (C) 2023 Alessandro Fornasier.
 // Control of Networked Systems, University of Klagenfurt, Austria.
 //
 // All rights reserved.
@@ -26,18 +26,28 @@ enum class FeatureRepresentation
 
 struct StateOptions
 {
-  bool enable_camera_extrinsic_calibration_ = false;  //!< Boolean to enable estrinsic camera calibration
-  bool enable_camera_intrinsic_calibration_ = false;  //!< Boolean to enable intinsic camera calibration
+  // [TODO] Theese needs to be forced initialized
 
-  uint num_clones_ = 10;               //!< the maximum number of stochastic clones
-  uint num_persistent_features_ = 50;  //!< the maximum number of persistent (SLAM) features
-
+  /// initial covariance values
   Matrix9 D_init_cov_ = Matrix9::Identity();             //!< Initial covariance of the D element of the state
   Matrix6 delta_init_cov_ = 1e-6 * Matrix6::Identity();  //!< Initial covariance of the delta element of the state
   Matrix6 E_init_cov_ = Matrix6::Identity();             //!< Initial covariance of the E element of the state
   Matrix4 L_init_cov_ = Matrix4::Identity();             //!< Initial covariance of the L element of the state
-
   // [TODO] Need to initialize these in a meaningful way
+
+  /// Initial calibration values (or calibration values to be used if no online calibration is activated)
+  SE3 initial_camera_extrinsic_;
+  In initial_camera_intrinsic_;
+
+  /// Filter flags
+  bool enable_camera_extrinsic_calibration_ = false;  //!< Boolean to enable estrinsic camera calibration
+  bool enable_camera_intrinsic_calibration_ = false;  //!< Boolean to enable intinsic camera calibration
+
+  /// State and filter options
+  fp gravity_ = 9.81;                       //!< The magnitude of the gravity vector in m/s^2
+  uint num_clones_ = 10;                    //!< the maximum number of stochastic clones
+  uint num_persistent_features_ = 50;       //!< the maximum number of persistent (SLAM) features
+  fp persistent_feature_init_delay_ = 1.0;  //!< the delay in s before initializing persistent features
 };
 
 struct MSCEqFOptions
@@ -47,9 +57,6 @@ struct MSCEqFOptions
    *
    */
   MSCEqFOptions() : state_options_(){};
-
-  fp gravity_ = 9.81;                       //!< The magnitude of the gravity vector in m/s^2
-  fp persistent_feature_init_delay_ = 1.0;  //!< the delay in s before initializing persistent features
 
   FeatureRepresentation msc_features_representation_ =
       FeatureRepresentation::ANCHORED_INVERSE_DEPTH;  //!< Multi State Constraint features representation
