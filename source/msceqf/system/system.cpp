@@ -14,7 +14,7 @@
 namespace msceqf
 {
 
-SystemState::SystemState(const SystemState& other) : state_()
+SystemState::SystemState(const SystemState& other) : state_(), g_(other.g_), opts_(other.opts_)
 {
   // Copy state_
   for (const auto& [key, element] : other.state_)
@@ -23,7 +23,10 @@ SystemState::SystemState(const SystemState& other) : state_()
   }
 }
 
-SystemState::SystemState(SystemState&& other) noexcept : state_(std::move(other.state_)) {}
+SystemState::SystemState(SystemState&& other) noexcept
+    : state_(std::move(other.state_)), g_(std::move(other.g_)), opts_(std::move(other.opts_))
+{
+}
 
 SystemState& SystemState::operator=(const SystemState& other)
 {
@@ -34,16 +37,34 @@ SystemState& SystemState::operator=(const SystemState& other)
     state_[key] = element->clone();
   }
 
+  // Copy gravity
+  g_ = other.g_;
+
   return *this;
 }
 
 SystemState& SystemState::operator=(SystemState&& other) noexcept
 {
   state_ = std::move(other.state_);
+  g_ = std::move(other.g_);
   return *this;
 }
 
 SystemState ::~SystemState() { state_.clear(); }
+
+void SystemState::preallocate()
+{
+  size_t num_elements = 1 + opts_.num_persistent_features_;
+  if (opts_.enable_camera_extrinsic_calibration_)
+  {
+    ++num_elements;
+  }
+  if (opts_.enable_camera_intrinsic_calibration_)
+  {
+    ++num_elements;
+  }
+  state_.reserve(num_elements);
+}
 
 void SystemState::insertSystemStateElement(std::pair<SystemStateKey, SystemStateElementUniquePtr>&& key_ptr)
 {
@@ -51,7 +72,7 @@ void SystemState::insertSystemStateElement(std::pair<SystemStateKey, SystemState
   assert(key_ptr.second != nullptr);
 
   // Insertion
-  state_.try_emplace(key_ptr.first, std::move(key_ptr.second));
+  state_.insert_or_assign(key_ptr.first, std::move(key_ptr.second));
 }
 
 void SystemState::insertSystemStateElement(
@@ -68,6 +89,10 @@ const SE23& SystemState::T() const
   return std::static_pointer_cast<ExtendedPoseState>(state_.at(SystemStateElementName::T))->T_;
 }
 
+const SE3 SystemState::P() const { return SE3(T().q(), {T().p()}); }
+
+const SE3 SystemState::V() const { return SE3(T().q(), {T().v()}); }
+
 const Vector6& SystemState::b() const
 {
   return std::static_pointer_cast<BiasState>(state_.at(SystemStateElementName::b))->b_;
@@ -75,17 +100,33 @@ const Vector6& SystemState::b() const
 
 const SE3& SystemState::S() const
 {
-  return std::static_pointer_cast<CameraExtrinsicState>(state_.at(SystemStateElementName::S))->S_;
+  if (opts_.enable_camera_extrinsic_calibration_)
+  {
+    return std::static_pointer_cast<CameraExtrinsicState>(state_.at(SystemStateElementName::S))->S_;
+  }
+  else
+  {
+    return opts_.initial_camera_extrinsic_;
+  }
 }
 
 const In& SystemState::K() const
 {
-  return std::static_pointer_cast<CameraIntrinsicState>(state_.at(SystemStateElementName::K))->K_;
+  if (opts_.enable_camera_intrinsic_calibration_)
+  {
+    return std::static_pointer_cast<CameraIntrinsicState>(state_.at(SystemStateElementName::K))->K_;
+  }
+  else
+  {
+    return opts_.initial_camera_intrinsic_;
+  }
 }
 
 const Vector3& SystemState::f(const uint& feat_id) const
 {
   return std::static_pointer_cast<FeatureState>(state_.at(feat_id))->f_;
 }
+
+const Vector3 SystemState::ge3() const { return g_ * (Vector3() << 0, 0, 1).finished(); }
 
 }  // namespace msceqf

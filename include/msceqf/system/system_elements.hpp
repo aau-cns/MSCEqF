@@ -107,6 +107,7 @@ struct CameraExtrinsicState final : public SystemStateElement
   CameraExtrinsicState(const Quaternion& q, const Vector3& t) : S_(q, {t}){};
   CameraExtrinsicState(const Matrix3& R, const Vector3& t) : S_(R, {t}){};
   CameraExtrinsicState(const Matrix4& S) : S_(S){};
+  CameraExtrinsicState(const SE3& S) : S_(S){};
 
   /**
    * @brief Clone the camera extrinsic state element of the system
@@ -128,6 +129,7 @@ struct CameraIntrinsicState final : public SystemStateElement
   CameraIntrinsicState(const fp& fx, const fp& fy, const fp& cx, const fp& cy) : K_(fx, fy, cx, cy){};
   CameraIntrinsicState(const Vector4& intr) : K_(intr){};
   CameraIntrinsicState(const Matrix3& K) : K_(K){};
+  CameraIntrinsicState(const In& K) : K_(K){};
 
   /**
    * @brief Clone the camera instirnsic state element of the system

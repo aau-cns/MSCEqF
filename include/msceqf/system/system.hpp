@@ -40,6 +40,8 @@ class SystemState
   /**
    * @brief Construct system state given a multiple pairs of key-pointer of states element. This methods preallocate
    * memory for the state_ map and insert the given pointers.
+   * Camera intrinsic and extrinsic are initialized from the given values in the options, passing pairs of key-pointer
+   * of camera intrinsic and extrinsic will overwrite the intrinsic and extrinsic initialized form the given options.
    *
    * @tparam Args
    * @param opts State options
@@ -48,21 +50,28 @@ class SystemState
    * @note Examples of call:
    * @note 1) SystemState(opts, pair(key1, ptr1), pair(key2, ptr2), pair(key3, ptr3))
    * @note 2) SystemState(opts, pair(key1, ptr1), vector(pair(key2, ptr2), ..., pair(key10, ptr10)))
+   * @note When the function is called with a vector of pairs, the vector of pairs is moved therefore after the call it
+   * contains only unusable pointers (nullptr).
    */
   template <typename... Args>
-  SystemState(const StateOptions& opts, Args&&... pairs_of_key_ptr) : state_()
+  SystemState(const StateOptions& opts, Args&&... pairs_of_key_ptr) : state_(), g_(opts.gravity_), opts_(opts)
   {
     // Preallocate state memory based on given options
-    size_t num_elements = 1 + opts.num_persistent_features_;
+    preallocate();
+
+    // Initialize camera extrinsic and intrinsic;
     if (opts.enable_camera_extrinsic_calibration_)
     {
-      ++num_elements;
+      insertSystemStateElement(std::make_pair(
+          SystemStateElementName::S,
+          createSystemStateElement<CameraExtrinsicState>(std::make_tuple(opts.initial_camera_extrinsic_))));
     }
     if (opts.enable_camera_intrinsic_calibration_)
     {
-      ++num_elements;
+      insertSystemStateElement(std::make_pair(
+          SystemStateElementName::K,
+          createSystemStateElement<CameraIntrinsicState>(std::make_tuple(opts.initial_camera_intrinsic_))));
     }
-    state_.reserve(num_elements);
 
     // Insert system state element into state_ map
     (insertSystemStateElement(std::forward<decltype(pairs_of_key_ptr)>(pairs_of_key_ptr)), ...);
@@ -76,11 +85,25 @@ class SystemState
   ~SystemState();
 
   /**
-   * @brief return a constant reference to the extended pose element of the system state as a SE23-torsor
+   * @brief return a constant reference to the extended pose element (R,v,p) of the system state as a SE23-torsor
    *
    * @return const SE23&
    */
   [[nodiscard]] const SE23& T() const;
+
+  /**
+   * @brief return a copy of the pose element (R,p) of the system state as a SE3-torsor
+   *
+   * @return const SE3&
+   */
+  [[nodiscard]] const SE3 P() const;
+
+  /**
+   * @brief return a copy of the pose element (R,v) of the system state as a SE3-torsor
+   *
+   * @return const SE3&
+   */
+  [[nodiscard]] const SE3 V() const;
 
   /**
    * @brief return a constant reference to the bias element of the system state as a vector
@@ -90,7 +113,9 @@ class SystemState
   [[nodiscard]] const Vector6& b() const;
 
   /**
-   * @brief return a constant reference to the camera extrinsic element of the system state as a SE3-torsor
+   * @brief return a constant reference to the camera extrinsic element of the system state as a SE3-torsor.
+   * If the camera extrinsic are not estimated online then the fixed calibration value provided in the options is
+   * returned
    *
    * @return const SE3&
    */
@@ -98,6 +123,8 @@ class SystemState
 
   /**
    * @brief return a constant reference to the camera intrinsic element of the system state as a In-torsor
+   * If the camera intrinsic are not are not estimated online then the fixed calibration value provided in the options
+   * is returned
    *
    * @return const In&
    */
@@ -112,7 +139,20 @@ class SystemState
    */
   [[nodiscard]] const Vector3& f(const uint& feat_id) const;
 
+  /**
+   * @brief return a copy of g*e3 as a vector
+   *
+   * @return const Vector3
+   */
+  [[nodiscard]] const Vector3 ge3() const;
+
  private:
+  /**
+   * @brief Preallocate space on the system state map based on given options
+   *
+   */
+  void preallocate();
+
   /**
    * @brief Insert a single element into the state map given a pair of key-ptr. Each pointer points to a state
    * element ot be inserted into the state_ map
@@ -129,7 +169,13 @@ class SystemState
    */
   void insertSystemStateElement(std::vector<std::pair<SystemStateKey, SystemStateElementUniquePtr>>& keys_ptrs);
 
+  friend class Symmetry;  //!< Symmetry can access private members of SystemState
+
   SystemStateMap state_;  //!< MSCEqF State elements mapped by their names
+  fp g_;                  //!< The magnitude of the gravity vector. in m/s^2 (The direction is e3 by default)
+
+ public:
+  StateOptions opts_;  //!< State Options
 };
 
 }  // namespace msceqf
