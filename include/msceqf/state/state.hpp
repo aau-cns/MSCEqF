@@ -170,6 +170,14 @@ class MSCEqFState
    */
   [[nodiscard]] const MSCEqFState operator*(const MSCEqFState& other) const;
 
+  /**
+   * @brief Get a string describing the given MSCEqFStateKey
+   *
+   * @param key
+   * @return std::string
+   */
+  static std::string toString(const MSCEqFStateKey& key);
+
  private:
   /**
    * @brief Preallocate space on the MSCEqF state map and clones_map based on given options

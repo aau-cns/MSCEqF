@@ -85,6 +85,7 @@ list(
     source/msceqf/state/state.cpp
     source/msceqf/system/system.cpp
     source/msceqf/symmetry/symmetry.cpp
+    source/utils/logger.cpp
 )
 
 ## Declare a C++ library

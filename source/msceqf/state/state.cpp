@@ -11,10 +11,12 @@
 
 #include "msceqf/state/state.hpp"
 
+#include "utils/logger.hpp"
 #include "utils/tools.hpp"
 
 namespace msceqf
 {
+
 MSCEqFState::MSCEqFState(const StateOptions& opts) : cov_(), state_(), clones_(), opts_(opts)
 {
   // Preallocate state memory based on given options
@@ -158,12 +160,21 @@ void MSCEqFState::initializeStateElement(const MSCEqFStateKey& key, const Matrix
 
   // Assign new covariance block
   cov_.block(idx, idx, size_increment, size_increment) = cov_block;
+
+  // Log
+  utils::Logger::debug("Assigned covariance block from (" + std::to_string(idx) + "," + std::to_string(idx) +
+                       "), to (" + std::to_string(idx + size_increment) + "," + std::to_string(idx + size_increment) +
+                       ")");
+  utils::Logger::debug(cov_block);
 }
 
 void MSCEqFState::insertStateElement(const MSCEqFStateKey& key, MSCEqFStateElementUniquePtr ptr)
 {
   assert(ptr != nullptr);
   state_.try_emplace(key, std::move(ptr));
+
+  // Log
+  utils::Logger::info("Created MSCEqF State element [" + toString(key) + "]");
 }
 
 const MSCEqFStateElementSharedPtr& MSCEqFState::getPtr(const MSCEqFStateKey& key) const
@@ -291,6 +302,31 @@ const MSCEqFState MSCEqFState::operator*(const MSCEqFState& other) const
     }
   }
   return result;
+}
+
+std::string MSCEqFState::toString(const MSCEqFStateKey& key)
+{
+  std::string name;
+  if (std::holds_alternative<MSCEqFStateElementName>(key))
+  {
+    switch (std::get<MSCEqFStateElementName>(key))
+    {
+      case MSCEqFStateElementName::Dd:
+        name = "Semi Direct Bias (D, delta)";
+        break;
+      case MSCEqFStateElementName::E:
+        name = "Special Euclidean (E)";
+        break;
+      case MSCEqFStateElementName::L:
+        name = "Intrinsic (L)";
+        break;
+    }
+  }
+  else
+  {
+    name = "Scaled Orthogonal Transforms (SOT3) associated with feature id: " + std::to_string(std::get<uint>(key));
+  }
+  return name;
 }
 
 }  // namespace msceqf

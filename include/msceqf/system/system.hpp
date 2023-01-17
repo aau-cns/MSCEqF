@@ -50,8 +50,8 @@ class SystemState
    * @note Examples of call:
    * @note 1) SystemState(opts, pair(key1, ptr1), pair(key2, ptr2), pair(key3, ptr3))
    * @note 2) SystemState(opts, pair(key1, ptr1), vector(pair(key2, ptr2), ..., pair(key10, ptr10)))
-   * @note When the function is called with a vector of pairs, the vector of pairs is moved therefore after the call it
-   * contains only unusable pointers (nullptr).
+   * @note When the function is called with a vector of pairs, the vector of pairs is moved therefore after the call
+   * it contains only unusable pointers (nullptr).
    */
   template <typename... Args>
   SystemState(const StateOptions& opts, Args&&... pairs_of_key_ptr) : state_(), g_(opts.gravity_), opts_(opts)
@@ -145,6 +145,14 @@ class SystemState
    * @return const Vector3
    */
   [[nodiscard]] const Vector3 ge3() const;
+
+  /**
+   * @brief Get a string describing the given SystemStateKey
+   *
+   * @param key
+   * @return std::string
+   */
+  static std::string toString(const SystemStateKey& key);
 
  private:
   /**

@@ -11,6 +11,8 @@
 
 #include "msceqf/system/system.hpp"
 
+#include "utils/logger.hpp"
+
 namespace msceqf
 {
 
@@ -73,6 +75,9 @@ void SystemState::insertSystemStateElement(std::pair<SystemStateKey, SystemState
 
   // Insertion
   state_.insert_or_assign(key_ptr.first, std::move(key_ptr.second));
+
+  // Log
+  utils::Logger::info("Created System State element [" + toString(key_ptr.first) + "]");
 }
 
 void SystemState::insertSystemStateElement(
@@ -128,5 +133,33 @@ const Vector3& SystemState::f(const uint& feat_id) const
 }
 
 const Vector3 SystemState::ge3() const { return g_ * (Vector3() << 0, 0, 1).finished(); }
+
+std::string SystemState::toString(const SystemStateKey& key)
+{
+  std::string name;
+  if (std::holds_alternative<SystemStateElementName>(key))
+  {
+    switch (std::get<SystemStateElementName>(key))
+    {
+      case SystemStateElementName::T:
+        name = "Extended Pose (T)";
+        break;
+      case SystemStateElementName::b:
+        name = "Bias (b)";
+        break;
+      case SystemStateElementName::S:
+        name = "Extrinsic Camera Calibration (S)";
+        break;
+      case SystemStateElementName::K:
+        name = "Intrinsic camera Calibration (K)";
+        break;
+    }
+  }
+  else
+  {
+    name = "Persistent feature (f) with id: " + std::to_string(std::get<uint>(key));
+  }
+  return name;
+}
 
 }  // namespace msceqf
