@@ -18,7 +18,7 @@
 namespace group
 {
 /**
- * @brief The Intrinsic Group. This represent the group describing camera intrinsic transformation.
+ * @brief The Intrinsic Group. This represent the group describing camera intrinsics transformation.
  *
  * @tparam FPType. Floating point type (float, double, long double)
  */

@@ -18,7 +18,6 @@ namespace msceqf
 
 SystemState::SystemState(const SystemState& other) : state_(), g_(other.g_), opts_(other.opts_)
 {
-  // Copy state_
   for (const auto& [key, element] : other.state_)
   {
     state_[key] = element->clone();
@@ -32,16 +31,13 @@ SystemState::SystemState(SystemState&& other) noexcept
 
 SystemState& SystemState::operator=(const SystemState& other)
 {
-  // Copy state_
   state_.clear();
   for (const auto& [key, element] : other.state_)
   {
     state_[key] = element->clone();
   }
-
-  // Copy gravity
   g_ = other.g_;
-
+  opts_ = other.opts_;
   return *this;
 }
 
@@ -49,6 +45,7 @@ SystemState& SystemState::operator=(SystemState&& other) noexcept
 {
   state_ = std::move(other.state_);
   g_ = std::move(other.g_);
+  opts_ = std::move(other.opts_);
   return *this;
 }
 
@@ -57,11 +54,11 @@ SystemState ::~SystemState() { state_.clear(); }
 void SystemState::preallocate()
 {
   size_t num_elements = 1 + opts_.num_persistent_features_;
-  if (opts_.enable_camera_extrinsic_calibration_)
+  if (opts_.enable_camera_extrinsics_calibration_)
   {
     ++num_elements;
   }
-  if (opts_.enable_camera_intrinsic_calibration_)
+  if (opts_.enable_camera_intrinsics_calibration_)
   {
     ++num_elements;
   }
@@ -73,10 +70,8 @@ void SystemState::insertSystemStateElement(std::pair<SystemStateKey, SystemState
   assert(key_ptr.first.valueless_by_exception() == false);
   assert(key_ptr.second != nullptr);
 
-  // Insertion
   state_.insert_or_assign(key_ptr.first, std::move(key_ptr.second));
 
-  // Log
   utils::Logger::info("Created System State element [" + toString(key_ptr.first) + "]");
 }
 
@@ -105,25 +100,25 @@ const Vector6& SystemState::b() const
 
 const SE3& SystemState::S() const
 {
-  if (opts_.enable_camera_extrinsic_calibration_)
+  if (opts_.enable_camera_extrinsics_calibration_)
   {
     return std::static_pointer_cast<CameraExtrinsicState>(state_.at(SystemStateElementName::S))->S_;
   }
   else
   {
-    return opts_.initial_camera_extrinsic_;
+    return opts_.initial_camera_extrinsics_;
   }
 }
 
 const In& SystemState::K() const
 {
-  if (opts_.enable_camera_intrinsic_calibration_)
+  if (opts_.enable_camera_intrinsics_calibration_)
   {
     return std::static_pointer_cast<CameraIntrinsicState>(state_.at(SystemStateElementName::K))->K_;
   }
   else
   {
-    return opts_.initial_camera_intrinsic_;
+    return opts_.initial_camera_intrinsics_;
   }
 }
 

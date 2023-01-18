@@ -30,8 +30,8 @@ enum class SystemStateElementName
 {
   T,  //!< Name of the extended pose (R, v, p) element of the system state
   b,  //!< Name of the IMU bias (bw, ba) element of the system state
-  S,  //!< Name of the camera extrinsic (SR, St) element of the system state
-  K,  //!< Name of the camera intrinsic (K) element of the system state
+  S,  //!< Name of the camera extrinsics (SR, St) element of the system state
+  K,  //!< Name of the camera intrinsics (K) element of the system state
 };
 
 /**
@@ -98,7 +98,7 @@ struct BiasState final : public SystemStateElement
 };
 
 /**
- * @brief This struct represent the camera extrinsic state of the system
+ * @brief This struct represent the camera extrinsics state of the system
  *
  */
 struct CameraExtrinsicState final : public SystemStateElement
@@ -110,17 +110,17 @@ struct CameraExtrinsicState final : public SystemStateElement
   CameraExtrinsicState(const SE3& S) : S_(S){};
 
   /**
-   * @brief Clone the camera extrinsic state element of the system
+   * @brief Clone the camera extrinsics state element of the system
    *
    * @return std::unique_ptr<SystemStateElement>
    */
   std::unique_ptr<SystemStateElement> clone() const override { return std::make_unique<CameraExtrinsicState>(*this); }
 
-  SE3 S_;  //!< The camera extrinsic calibration (SR, St)
+  SE3 S_;  //!< The camera extrinsics calibration (SR, St)
 };
 
 /**
- * @brief This struct represent the camera intrinsic state of the system
+ * @brief This struct represent the camera intrinsics state of the system
  *
  */
 struct CameraIntrinsicState final : public SystemStateElement
@@ -138,7 +138,7 @@ struct CameraIntrinsicState final : public SystemStateElement
    */
   std::unique_ptr<SystemStateElement> clone() const override { return std::make_unique<CameraIntrinsicState>(*this); }
 
-  In K_;  //!< The camera intrinsic calibration (K)
+  In K_;  //!< The camera intrinsics calibration (K)
 };
 
 /**

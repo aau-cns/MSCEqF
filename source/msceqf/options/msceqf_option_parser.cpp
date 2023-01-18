@@ -27,9 +27,10 @@ MSCEqFOptions OptionParser::parseOptions()
                          opts.state_options_.E_init_cov_, opts.state_options_.L_init_cov_);
 
   // Parse camera intrinsics and extrinsics
-  parseCameraCalibration(opts.state_options_.initial_camera_extrinsic_, opts.state_options_.initial_camera_intrinsic_);
-  readDefault(opts.state_options_.enable_camera_extrinsic_calibration_, true, "enable_camera_extrinsic_calibration");
-  readDefault(opts.state_options_.enable_camera_intrinsic_calibration_, false, "enable_camera_intrinsic_calibration");
+  parseCameraCalibration(opts.state_options_.initial_camera_extrinsics_,
+                         opts.state_options_.initial_camera_intrinsics_);
+  readDefault(opts.state_options_.enable_camera_extrinsics_calibration_, true, "enable_camera_extrinsic_calibration");
+  readDefault(opts.state_options_.enable_camera_intrinsics_calibration_, false, "enable_camera_intrinsic_calibration");
 
   // parse other state options
   readDefault(opts.state_options_.gravity_, fp(9.81), "gravity");
@@ -46,7 +47,7 @@ void OptionParser::parseCameraCalibration(SE3& extrinsics, In& intrinsics)
   if (!read(extrinsics_mat, "T_cam_imu"))
   {
     throw std::runtime_error(
-        "Wrong camera extrinsic provided, please provide extriniscs (T_cam_imu) in the configuration file following "
+        "Wrong camera extrinsics provided, please provide extriniscs (T_cam_imu) in the configuration file following "
         "Kalibr convention.");
   }
   else
@@ -75,7 +76,7 @@ void OptionParser::parseInitialCovariance(Matrix9& D_cov, Matrix6& delta_cov, Ma
   if (!read(pitch_roll_std, "pitch_roll_std"))
   {
     throw std::runtime_error(
-        "Wrong camera extrinsic provided, please provide extriniscs (T_cam_imu) in the configuration file following "
+        "Wrong camera extrinsics provided, please provide extriniscs (T_cam_imu) in the configuration file following "
         "Kalibr convention.");
   }
   else

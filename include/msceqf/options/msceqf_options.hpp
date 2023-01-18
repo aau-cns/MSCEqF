@@ -33,12 +33,12 @@ struct StateOptions
   Matrix4 L_init_cov_;      //!< Initial covariance of the L element of the state
 
   /// Initial calibration values (or calibration values to be used if no online calibration is activated)
-  SE3 initial_camera_extrinsic_;
-  In initial_camera_intrinsic_;
+  SE3 initial_camera_extrinsics_;
+  In initial_camera_intrinsics_;
 
   /// Filter flags
-  bool enable_camera_extrinsic_calibration_ = false;  //!< Boolean to enable estrinsic camera calibration
-  bool enable_camera_intrinsic_calibration_ = false;  //!< Boolean to enable intinsic camera calibration
+  bool enable_camera_extrinsics_calibration_ = false;  //!< Boolean to enable estrinsic camera calibration
+  bool enable_camera_intrinsics_calibration_ = false;  //!< Boolean to enable intinsic camera calibration
 
   /// State and filter options
   fp gravity_ = 9.81;                       //!< The magnitude of the gravity vector in m/s^2

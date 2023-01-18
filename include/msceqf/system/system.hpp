@@ -40,8 +40,8 @@ class SystemState
   /**
    * @brief Construct system state given a multiple pairs of key-pointer of states element. This methods preallocate
    * memory for the state_ map and insert the given pointers.
-   * Camera intrinsic and extrinsic are initialized from the given values in the options, passing pairs of key-pointer
-   * of camera intrinsic and extrinsic will overwrite the intrinsic and extrinsic initialized form the given options.
+   * Camera intrinsics and extrinsics are initialized from the given values in the options, passing pairs of key-pointer
+   * of camera intrinsics and extrinsics will overwrite the intrinsics and extrinsics initialized form the given options.
    *
    * @tparam Args
    * @param opts State options
@@ -59,18 +59,18 @@ class SystemState
     // Preallocate state memory based on given options
     preallocate();
 
-    // Initialize camera extrinsic and intrinsic;
-    if (opts.enable_camera_extrinsic_calibration_)
+    // Initialize camera extrinsics and intrinsics;
+    if (opts.enable_camera_extrinsics_calibration_)
     {
       insertSystemStateElement(std::make_pair(
           SystemStateElementName::S,
-          createSystemStateElement<CameraExtrinsicState>(std::make_tuple(opts.initial_camera_extrinsic_))));
+          createSystemStateElement<CameraExtrinsicState>(std::make_tuple(opts.initial_camera_extrinsics_))));
     }
-    if (opts.enable_camera_intrinsic_calibration_)
+    if (opts.enable_camera_intrinsics_calibration_)
     {
       insertSystemStateElement(std::make_pair(
           SystemStateElementName::K,
-          createSystemStateElement<CameraIntrinsicState>(std::make_tuple(opts.initial_camera_intrinsic_))));
+          createSystemStateElement<CameraIntrinsicState>(std::make_tuple(opts.initial_camera_intrinsics_))));
     }
 
     // Insert system state element into state_ map
@@ -113,8 +113,8 @@ class SystemState
   [[nodiscard]] const Vector6& b() const;
 
   /**
-   * @brief return a constant reference to the camera extrinsic element of the system state as a SE3-torsor.
-   * If the camera extrinsic are not estimated online then the fixed calibration value provided in the options is
+   * @brief return a constant reference to the camera extrinsics element of the system state as a SE3-torsor.
+   * If the camera extrinsics are not estimated online then the fixed calibration value provided in the options is
    * returned
    *
    * @return const SE3&
@@ -122,8 +122,8 @@ class SystemState
   [[nodiscard]] const SE3& S() const;
 
   /**
-   * @brief return a constant reference to the camera intrinsic element of the system state as a In-torsor
-   * If the camera intrinsic are not are not estimated online then the fixed calibration value provided in the options
+   * @brief return a constant reference to the camera intrinsics element of the system state as a In-torsor
+   * If the camera intrinsics are not are not estimated online then the fixed calibration value provided in the options
    * is returned
    *
    * @return const In&

@@ -23,19 +23,15 @@ const Matrix5 Symmetry::D = []()
 
 const SystemState Symmetry::phi(const MSCEqFState& X, const SystemState& xi)
 {
-  // Preallocate PS
   SE3 PS;
 
-  // Compute PS if we have persistent feature
   if (X.opts_.num_persistent_features_ > 0)
   {
     PS = xi.P() * xi.S();
   }
 
-  // Copy system state
   SystemState result(xi);
 
-  // Assign new values to system state map
   for (auto& [key, ptr] : result.state_)
   {
     assert(key.valueless_by_exception() == false);
@@ -70,35 +66,29 @@ const SystemState Symmetry::phi(const MSCEqFState& X, const SystemState& xi)
 
 const Symmetry::SystemStateAlgebraMap Symmetry::lift(const SystemState& xi, const Imu& u)
 {
-  // Create system state algebra map preallocating memory
   SystemStateAlgebraMap lambda(xi.state_.size());
 
-  // Preallocate lambdas
   Vector9 lambda_T = Vector9::Zero();
   Vector6 lambda_S = Vector6::Zero();
 
-  // Precompute Lambda_T
   lambda_T.block<3, 1>(0, 0) = u.w_ - xi.b().block<3, 1>(0, 0);
   lambda_T.block<3, 1>(3, 0) = u.a_ - xi.b().block<3, 1>(3, 0) + xi.T().R().transpose() * xi.ge3();
   lambda_T.block<3, 1>(6, 0) = xi.T().R().transpose() * xi.T().v();
 
-  // Precompute Lambda_S if we are estimating camera extrinsic or if we have persistent features
-  // Note that the S() method provide either the initial value or the actual estimate
-  if (xi.opts_.enable_camera_extrinsic_calibration_ || xi.opts_.num_persistent_features_ > 0)
+  // Precompute Lambda_S if we are estimating camera extrinsics or if we have persistent features
+  // Note that the S() method provide either the initial value or the actual estimate of the extrinsics
+  if (xi.opts_.enable_camera_extrinsics_calibration_ || xi.opts_.num_persistent_features_ > 0)
   {
     lambda_S = xi.S().invAdjoint() * (Vector6() << lambda_T.block<3, 1>(0, 0), lambda_T.block<3, 1>(6, 0)).finished();
   }
 
-  // Preallocate PS inverse
   SE3 PS_inv;
 
-  // Precompute PS inverse if we have persistent features
   if (xi.opts_.num_persistent_features_ > 0)
   {
     PS_inv = (xi.P() * xi.S()).inv();
   }
 
-  // For each element of the system state, create an algebra element (the corresponding lift element)
   for (auto& [key, ptr] : xi.state_)
   {
     assert(key.valueless_by_exception() == false);

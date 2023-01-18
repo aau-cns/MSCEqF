@@ -27,8 +27,8 @@ TEST(SystemStateTest, SystemStateConstructionTest)
   MSCEqFOptions opts;
 
   // Enable online calibration
-  opts.state_options_.enable_camera_extrinsic_calibration_ = true;
-  opts.state_options_.enable_camera_intrinsic_calibration_ = true;
+  opts.state_options_.enable_camera_extrinsics_calibration_ = true;
+  opts.state_options_.enable_camera_intrinsics_calibration_ = true;
 
   for (int i = 0; i < N_TESTS; ++i)
   {
@@ -36,14 +36,14 @@ TEST(SystemStateTest, SystemStateConstructionTest)
     Quaternion Sq = Quaternion::UnitRandom();
     Vector3 St = Vector3::Random();
 
-    opts.state_options_.initial_camera_extrinsic_ = SE3(Sq, {St});
-    Matrix4 S = opts.state_options_.initial_camera_extrinsic_.asMatrix();
+    opts.state_options_.initial_camera_extrinsics_ = SE3(Sq, {St});
+    Matrix4 S = opts.state_options_.initial_camera_extrinsics_.asMatrix();
 
     // Camera Intrinsic
-    Vector4 intrinsic = Vector4::Random().cwiseAbs();
+    Vector4 intrinsics = Vector4::Random().cwiseAbs();
 
-    opts.state_options_.initial_camera_intrinsic_ = In(intrinsic);
-    Matrix3 K = opts.state_options_.initial_camera_intrinsic_.asMatrix();
+    opts.state_options_.initial_camera_intrinsics_ = In(intrinsics);
+    Matrix3 K = opts.state_options_.initial_camera_intrinsics_.asMatrix();
 
     // Feature
     Vector3 feat = Vector3::Random();
@@ -92,7 +92,7 @@ TEST(SystemStateTest, SystemStateConstructionTest)
       MatrixEquality(state.K().asMatrix(), Matrix3::Identity());
     }
 
-    // Default construction without camera intrinsic, extrinsic, and persistent features
+    // Default construction without camera intrinsics, extrinsics, and persistent features
     {
       SystemState state(
           opts.state_options_,
@@ -105,7 +105,7 @@ TEST(SystemStateTest, SystemStateConstructionTest)
       MatrixEquality(state.f(feat_id), Vector3::Zero());
     }
 
-    // Default construction without camera intrinsic, extrinsic, but with persistent features
+    // Default construction without camera intrinsics, extrinsics, but with persistent features
     {
       SystemState state(
           opts.state_options_,
@@ -116,7 +116,7 @@ TEST(SystemStateTest, SystemStateConstructionTest)
       MatrixEquality(state.b(), Vector6::Zero());
     }
 
-    // Implicit extrinsic and intrinsic construction
+    // Implicit extrinsics and intrinsics construction
     {
       SystemState state(opts.state_options_,
                         std::make_pair(SystemStateElementName::T,
@@ -144,7 +144,7 @@ TEST(SystemStateTest, SystemStateConstructionTest)
           std::make_pair(SystemStateElementName::S,
                          createSystemStateElement<CameraExtrinsicState>(std::make_tuple(Sq, St))),
           std::make_pair(SystemStateElementName::K, createSystemStateElement<CameraIntrinsicState>(std::make_tuple(
-                                                        intrinsic.x(), intrinsic.y(), intrinsic.z(), intrinsic.w()))),
+                                                        intrinsics.x(), intrinsics.y(), intrinsics.z(), intrinsics.w()))),
           std::make_pair(feat_id,
                          createSystemStateElement<FeatureState>(std::make_tuple(feat.x(), feat.y(), feat.z()))));
 
@@ -164,7 +164,7 @@ TEST(SystemStateTest, SystemStateConstructionTest)
           std::make_pair(SystemStateElementName::S,
                          createSystemStateElement<CameraExtrinsicState>(std::make_tuple(Sq.toRotationMatrix(), St))),
           std::make_pair(SystemStateElementName::K,
-                         createSystemStateElement<CameraIntrinsicState>(std::make_tuple(intrinsic))),
+                         createSystemStateElement<CameraIntrinsicState>(std::make_tuple(intrinsics))),
           std::make_pair(feat_id, createSystemStateElement<FeatureState>(std::make_tuple(feat))));
 
       MatrixEquality(state.T().asMatrix(), Matrix5::Identity());
@@ -207,7 +207,7 @@ TEST(SystemStateTest, SystemStateConstructionTest)
           std::make_pair(SystemStateElementName::S,
                          createSystemStateElement<CameraExtrinsicState>(std::make_tuple(Sq, St))),
           std::make_pair(SystemStateElementName::K,
-                         createSystemStateElement<CameraIntrinsicState>(std::make_tuple(intrinsic))),
+                         createSystemStateElement<CameraIntrinsicState>(std::make_tuple(intrinsics))),
           feat_initializer_vector);
 
       MatrixEquality(state.T().asMatrix(), Matrix5::Identity());
@@ -236,7 +236,7 @@ TEST(SystemStateTest, SystemStateConstructionTest)
           std::make_pair(SystemStateElementName::S,
                          createSystemStateElement<CameraExtrinsicState>(std::make_tuple(Sq, St))),
           std::make_pair(SystemStateElementName::K,
-                         createSystemStateElement<CameraIntrinsicState>(std::make_tuple(intrinsic))),
+                         createSystemStateElement<CameraIntrinsicState>(std::make_tuple(intrinsics))),
           feat_initializer_vector);
 
       SystemState state_copy(state);
@@ -265,8 +265,8 @@ TEST(MSCEqFStateTest, MSCEqFStateConstructionTest)
   MSCEqFOptions opts;
 
   // Enable online calibration
-  opts.state_options_.enable_camera_extrinsic_calibration_ = true;
-  opts.state_options_.enable_camera_intrinsic_calibration_ = true;
+  opts.state_options_.enable_camera_extrinsics_calibration_ = true;
+  opts.state_options_.enable_camera_intrinsics_calibration_ = true;
 
   for (int i = 0; i < N_TESTS; ++i)
   {

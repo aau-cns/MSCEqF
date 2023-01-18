@@ -26,18 +26,18 @@ namespace msceqf
 
 //   for (int i = 0; i < N_TESTS; ++i)
 //   {
-//     opts.state_options_.enable_camera_extrinsic_calibration_ = static_cast<bool>(utils::random<int>(0, 1));
-//     opts.state_options_.enable_camera_intrinsic_calibration_ = static_cast<bool>(utils::random<int>(0, 1));
+//     opts.state_options_.enable_camera_extrinsics_calibration_ = static_cast<bool>(utils::random<int>(0, 1));
+//     opts.state_options_.enable_camera_intrinsics_calibration_ = static_cast<bool>(utils::random<int>(0, 1));
 //     opts.state_options_.num_persistent_features_ = i == 0 ? 0 : utils::random<int>(0, 100);
 
 //     // Camera Extrinsic
 //     Quaternion Sq = Quaternion::UnitRandom();
 //     Vector3 St = Vector3::Random();
-//     opts.state_options_.initial_camera_extrinsic_ = SE3(Sq, {St});
+//     opts.state_options_.initial_camera_extrinsics_ = SE3(Sq, {St});
 
 //     // Camera Intrinsic
-//     Vector4 intrinsic = Vector4::Random().cwiseAbs();
-//     opts.state_options_.initial_camera_intrinsic_ = In(intrinsic);
+//     Vector4 intrinsics = Vector4::Random().cwiseAbs();
+//     opts.state_options_.initial_camera_intrinsics_ = In(intrinsics);
 
 //     // Feature
 //     Vector3 feat = Vector3::Random();
@@ -56,7 +56,7 @@ namespace msceqf
 //       }
 //     }
 
-//     // xi0 (implicit extrinsic and intrinsic in construction)
+//     // xi0 (implicit extrinsics and intrinsics in construction)
 //     SystemState xi0(
 //         opts.state_options_,
 //         std::make_pair(SystemStateElementName::T, createSystemStateElement<ExtendedPoseState>(std::make_tuple())),
@@ -85,20 +85,20 @@ TEST(SymmetryTest, phi_without_persistent_features)
 
   for (int i = 0; i < N_TESTS; ++i)
   {
-    opts.state_options_.enable_camera_extrinsic_calibration_ = static_cast<bool>(utils::random<int>(0, 1));
-    opts.state_options_.enable_camera_intrinsic_calibration_ = static_cast<bool>(utils::random<int>(0, 1));
+    opts.state_options_.enable_camera_extrinsics_calibration_ = static_cast<bool>(utils::random<int>(0, 1));
+    opts.state_options_.enable_camera_intrinsics_calibration_ = static_cast<bool>(utils::random<int>(0, 1));
     opts.state_options_.num_persistent_features_ = 0;
 
     // Camera Extrinsic
     Quaternion Sq = Quaternion::UnitRandom();
     Vector3 St = Vector3::Random();
-    opts.state_options_.initial_camera_extrinsic_ = SE3(Sq, {St});
+    opts.state_options_.initial_camera_extrinsics_ = SE3(Sq, {St});
 
     // Camera Intrinsic
-    Vector4 intrinsic = Vector4::Random().cwiseAbs();
-    opts.state_options_.initial_camera_intrinsic_ = In(intrinsic);
+    Vector4 intrinsics = Vector4::Random().cwiseAbs();
+    opts.state_options_.initial_camera_intrinsics_ = In(intrinsics);
 
-    // xi0 (implicit extrinsic and intrinsic in construction)
+    // xi0 (implicit extrinsics and intrinsics in construction)
     SystemState xi0(
         opts.state_options_,
         std::make_pair(SystemStateElementName::T, createSystemStateElement<ExtendedPoseState>(std::make_tuple())),
@@ -125,18 +125,18 @@ TEST(SymmetryTest, lift)
 
   for (int i = 0; i < N_TESTS; ++i)
   {
-    opts.state_options_.enable_camera_extrinsic_calibration_ = static_cast<bool>(utils::random<int>(0, 1));
-    opts.state_options_.enable_camera_intrinsic_calibration_ = static_cast<bool>(utils::random<int>(0, 1));
+    opts.state_options_.enable_camera_extrinsics_calibration_ = static_cast<bool>(utils::random<int>(0, 1));
+    opts.state_options_.enable_camera_intrinsics_calibration_ = static_cast<bool>(utils::random<int>(0, 1));
     opts.state_options_.num_persistent_features_ = i == 0 ? 0 : utils::random<int>(0, 100);
 
     // Camera Extrinsic
     Quaternion Sq = Quaternion::UnitRandom();
     Vector3 St = Vector3::Random();
-    opts.state_options_.initial_camera_extrinsic_ = SE3(Sq, {St});
+    opts.state_options_.initial_camera_extrinsics_ = SE3(Sq, {St});
 
     // Camera Intrinsic
-    Vector4 intrinsic = Vector4::Random().cwiseAbs();
-    opts.state_options_.initial_camera_intrinsic_ = In(intrinsic);
+    Vector4 intrinsics = Vector4::Random().cwiseAbs();
+    opts.state_options_.initial_camera_intrinsics_ = In(intrinsics);
 
     // Feature
     Vector3 feat = Vector3::Random();
@@ -189,7 +189,7 @@ TEST(SymmetryTest, lift)
                    b_dot);
 
     // dphi* Lambda = xi_dot (S)
-    if (opts.state_options_.enable_camera_extrinsic_calibration_)
+    if (opts.state_options_.enable_camera_extrinsics_calibration_)
     {
       Vector6 lambda_P;
       lambda_P.block<3, 1>(0, 0) = lambda.at(SystemStateElementName::T).block<3, 1>(0, 0);
@@ -200,14 +200,14 @@ TEST(SymmetryTest, lift)
     }
 
     // dphi* Lambda = xi_dot (K)
-    if (opts.state_options_.enable_camera_intrinsic_calibration_)
+    if (opts.state_options_.enable_camera_intrinsics_calibration_)
     {
       MatrixEquality(In::vee(xi.K() * In::wedge(lambda.at(SystemStateElementName::K))), K_dot);
     }
 
-    // Precompute lambda_S for the case of no extrinsic calibration
+    // Precompute lambda_S for the case of no extrinsics calibration
     Vector6 lambda_S;
-    if (opts.state_options_.enable_camera_extrinsic_calibration_)
+    if (opts.state_options_.enable_camera_extrinsics_calibration_)
     {
       lambda_S = lambda.at(SystemStateElementName::S);
     }
