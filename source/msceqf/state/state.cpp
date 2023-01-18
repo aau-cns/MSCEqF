@@ -164,8 +164,7 @@ void MSCEqFState::initializeStateElement(const MSCEqFStateKey& key, const Matrix
   // Log
   utils::Logger::debug("Assigned covariance block from (" + std::to_string(idx) + "," + std::to_string(idx) +
                        "), to (" + std::to_string(idx + size_increment) + "," + std::to_string(idx + size_increment) +
-                       ")");
-  utils::Logger::debug(cov_block);
+                       ")\n" + static_cast<std::ostringstream&>(std::ostringstream() << cov_block).str());
 }
 
 void MSCEqFState::insertStateElement(const MSCEqFStateKey& key, MSCEqFStateElementUniquePtr ptr)

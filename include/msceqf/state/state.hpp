@@ -14,7 +14,7 @@
 
 #include <variant>
 
-#include "msceqf/msceqf_options.hpp"
+#include "msceqf/options/msceqf_options.hpp"
 #include "msceqf/state/state_elements.hpp"
 
 namespace msceqf
