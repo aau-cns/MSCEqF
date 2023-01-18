@@ -13,12 +13,11 @@ message(STATUS "BUILD TESTS = ${BUILD_TESTS}")
 
 ## Include libraries
 include(CMakeFindDependencyMacro)
-find_package(Eigen3 3.4 REQUIRED)
 find_dependency(Eigen3 3.4)
-message(STATUS "EIGEN VERSION: " ${Eigen3_VERSION})
 
 ## Include and set up external libraries
 include(FetchContent)
+include(ExternalProject)
 
 # Googletest
 if(${BUILD_TESTS})
@@ -43,12 +42,26 @@ FetchContent_Declare(
     GIT_SHALLOW     TRUE
     GIT_PROGRESS    TRUE
 )
+# FetchContent_GetProperties(Eigen)
 set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 set(EIGEN_BUILD_DOC OFF)
 set(EIGEN_BUILD_PKGCONFIG OFF)
 list(APPEND external Eigen)
 list(APPEND include_dirs ${EIGEN3_INCLUDE_DIR})
 list(APPEND libs ${EIGEN3_LIBRARIES})
+
+# YamlCPP
+FetchContent_Declare(
+    yaml-cpp
+    GIT_REPOSITORY  https://github.com/jbeder/yaml-cpp.git
+    GIT_TAG         master
+    GIT_SHALLOW     TRUE
+    GIT_PROGRESS    TRUE
+)
+# FetchContent_GetProperties(yaml-cpp)
+list(APPEND external yaml-cpp)
+list(APPEND include_dirs ${YAML_CPP_INCLUDE_DIR})
+list(APPEND libs yaml-cpp::yaml-cpp ${YAML_CPP_LIBRARIES})
 
 FetchContent_MakeAvailable(${external})
 
@@ -86,6 +99,7 @@ list(
     source/msceqf/system/system.cpp
     source/msceqf/symmetry/symmetry.cpp
     source/utils/logger.cpp
+    source/msceqf/options/msceqf_option_parser.cpp
 )
 
 ## Declare a C++ library

@@ -26,14 +26,11 @@ enum class FeatureRepresentation
 
 struct StateOptions
 {
-  // [TODO] Theese needs to be forced initialized
-
   /// initial covariance values
-  Matrix9 D_init_cov_ = Matrix9::Identity();             //!< Initial covariance of the D element of the state
-  Matrix6 delta_init_cov_ = 1e-6 * Matrix6::Identity();  //!< Initial covariance of the delta element of the state
-  Matrix6 E_init_cov_ = Matrix6::Identity();             //!< Initial covariance of the E element of the state
-  Matrix4 L_init_cov_ = Matrix4::Identity();             //!< Initial covariance of the L element of the state
-  // [TODO] Need to initialize these in a meaningful way
+  Matrix9 D_init_cov_;      //!< Initial covariance of the D element of the state
+  Matrix6 delta_init_cov_;  //!< Initial covariance of the delta element of the state
+  Matrix6 E_init_cov_;      //!< Initial covariance of the E element of the state
+  Matrix4 L_init_cov_;      //!< Initial covariance of the L element of the state
 
   /// Initial calibration values (or calibration values to be used if no online calibration is activated)
   SE3 initial_camera_extrinsic_;
@@ -52,27 +49,15 @@ struct StateOptions
 
 struct MSCEqFOptions
 {
-  /**
-   * @brief MSCEqFOptions constructor
-   *
-   */
-  MSCEqFOptions() : state_options_(){};
+  MSCEqFOptions() = default;
 
-  FeatureRepresentation msc_features_representation_ =
-      FeatureRepresentation::ANCHORED_INVERSE_DEPTH;  //!< Multi State Constraint features representation
-  FeatureRepresentation persistent_features_representation_ =
-      FeatureRepresentation::ANCHORED_INVERSE_DEPTH;  //!< persistent features representation
+  StateOptions state_options_;  //!< The state options
 
-  StateOptions state_options_;
-
-  // [TODO] Need to think the best position for these ...
-  // [TODO] noise statistics
-  // [TODO] calibrations
-
-  // [TODO] Helper functions to print etc...
+  // FeatureRepresentation msc_features_representation_ =
+  //     FeatureRepresentation::ANCHORED_INVERSE_DEPTH;  //!< Multi State Constraint features representation
+  // FeatureRepresentation persistent_features_representation_ =
+  //     FeatureRepresentation::ANCHORED_INVERSE_DEPTH;  //!< persistent features representation
 };
-
-// [COMMENT] I need to fill options parsing a yaml file (yaml-cpp?)
 
 }  // namespace msceqf
 
