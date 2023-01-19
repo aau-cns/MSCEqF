@@ -1,5 +1,7 @@
 // Copyright (C) 2023 Alessandro Fornasier, Pieter van Goor.
 // Control of Networked Systems, University of Klagenfurt, Austria.
+// System Theory and Robotics Lab, Australian Centre for Robotic
+// Vision, Australian National University.
 //
 // All rights reserved.
 //
