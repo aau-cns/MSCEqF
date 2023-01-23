@@ -23,12 +23,17 @@ namespace msceqf
 
 TEST(SystemStateTest, SystemStateConstructionTest)
 {
-  // Options
-  MSCEqFOptions opts;
+  // Param arser
+  std::string filepath_base = "/home/alfornasier/PhD/MSCEqF_dev/MSCEqF/config/";
+  OptionParser parser(filepath_base + "parameters.yaml");
 
-  // Enable online calibration
+  // Options
+  MSCEqFOptions opts = parser.parseOptions();
+
+  // Set specific options for this test independently by given parameters
   opts.state_options_.enable_camera_extrinsics_calibration_ = true;
   opts.state_options_.enable_camera_intrinsics_calibration_ = true;
+  opts.state_options_.num_persistent_features_ = 100;
 
   for (int i = 0; i < N_TESTS; ++i)
   {
@@ -60,7 +65,17 @@ TEST(SystemStateTest, SystemStateConstructionTest)
       }
     }
 
-    // Default construction
+    // Default
+    {
+      SystemState state(opts.state_options_);
+
+      MatrixEquality(state.T().asMatrix(), Matrix5::Identity());
+      MatrixEquality(state.b(), Vector6::Zero());
+      MatrixEquality(state.S().asMatrix(), S);
+      MatrixEquality(state.K().asMatrix(), K);
+    }
+
+    // Identity construction
     {
       SystemState state(
           opts.state_options_,
@@ -77,7 +92,7 @@ TEST(SystemStateTest, SystemStateConstructionTest)
       MatrixEquality(state.f(feat_id), Vector3::Zero());
     }
 
-    // Default construction without persistent features
+    // Identity construction without persistent features
     {
       SystemState state(
           opts.state_options_,
@@ -92,7 +107,7 @@ TEST(SystemStateTest, SystemStateConstructionTest)
       MatrixEquality(state.K().asMatrix(), Matrix3::Identity());
     }
 
-    // Default construction without camera intrinsics, extrinsics, and persistent features
+    // Identity construction with camera intrinsics and extrinsics as from parameters, and a single persistent feature
     {
       SystemState state(
           opts.state_options_,
@@ -102,10 +117,12 @@ TEST(SystemStateTest, SystemStateConstructionTest)
 
       MatrixEquality(state.T().asMatrix(), Matrix5::Identity());
       MatrixEquality(state.b(), Vector6::Zero());
+      MatrixEquality(state.S().asMatrix(), S);
+      MatrixEquality(state.K().asMatrix(), K);
       MatrixEquality(state.f(feat_id), Vector3::Zero());
     }
 
-    // Default construction without camera intrinsics, extrinsics, but with persistent features
+    // Identity construction with camera intrinsics and extrinsics as from parameters
     {
       SystemState state(
           opts.state_options_,
@@ -114,6 +131,8 @@ TEST(SystemStateTest, SystemStateConstructionTest)
 
       MatrixEquality(state.T().asMatrix(), Matrix5::Identity());
       MatrixEquality(state.b(), Vector6::Zero());
+      MatrixEquality(state.S().asMatrix(), S);
+      MatrixEquality(state.K().asMatrix(), K);
     }
 
     // Implicit extrinsics and intrinsics construction
@@ -135,18 +154,18 @@ TEST(SystemStateTest, SystemStateConstructionTest)
 
     // Parametric construction (1)
     {
-      SystemState state(
-          opts.state_options_,
-          std::make_pair(SystemStateElementName::T,
-                         createSystemStateElement<ExtendedPoseState>(std::make_tuple(SE23()))),
-          std::make_pair(SystemStateElementName::b,
-                         createSystemStateElement<BiasState>(std::make_tuple(Vector6::Zero()))),
-          std::make_pair(SystemStateElementName::S,
-                         createSystemStateElement<CameraExtrinsicState>(std::make_tuple(Sq, St))),
-          std::make_pair(SystemStateElementName::K, createSystemStateElement<CameraIntrinsicState>(std::make_tuple(
-                                                        intrinsics.x(), intrinsics.y(), intrinsics.z(), intrinsics.w()))),
-          std::make_pair(feat_id,
-                         createSystemStateElement<FeatureState>(std::make_tuple(feat.x(), feat.y(), feat.z()))));
+      SystemState state(opts.state_options_,
+                        std::make_pair(SystemStateElementName::T,
+                                       createSystemStateElement<ExtendedPoseState>(std::make_tuple(SE23()))),
+                        std::make_pair(SystemStateElementName::b,
+                                       createSystemStateElement<BiasState>(std::make_tuple(Vector6::Zero()))),
+                        std::make_pair(SystemStateElementName::S,
+                                       createSystemStateElement<CameraExtrinsicState>(std::make_tuple(Sq, St))),
+                        std::make_pair(SystemStateElementName::K,
+                                       createSystemStateElement<CameraIntrinsicState>(std::make_tuple(
+                                           intrinsics.x(), intrinsics.y(), intrinsics.z(), intrinsics.w()))),
+                        std::make_pair(feat_id, createSystemStateElement<FeatureState>(
+                                                    std::make_tuple(feat.x(), feat.y(), feat.z()))));
 
       MatrixEquality(state.T().asMatrix(), Matrix5::Identity());
       MatrixEquality(state.b(), Vector6::Zero());
@@ -261,12 +280,12 @@ TEST(SystemStateTest, SystemStateConstructionTest)
 
 TEST(MSCEqFStateTest, MSCEqFStateConstructionTest)
 {
-  // Options
-  MSCEqFOptions opts;
+  // Param arser
+  std::string filepath_base = "/home/alfornasier/PhD/MSCEqF_dev/MSCEqF/config/";
+  OptionParser parser(filepath_base + "parameters.yaml");
 
-  // Enable online calibration
-  opts.state_options_.enable_camera_extrinsics_calibration_ = true;
-  opts.state_options_.enable_camera_intrinsics_calibration_ = true;
+  // Options
+  MSCEqFOptions opts = parser.parseOptions();
 
   for (int i = 0; i < N_TESTS; ++i)
   {
