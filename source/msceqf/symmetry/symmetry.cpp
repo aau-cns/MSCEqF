@@ -64,15 +64,15 @@ const SystemState Symmetry::phi(const MSCEqFState& X, const SystemState& xi)
   return result;
 }
 
-const Symmetry::SystemStateAlgebraMap Symmetry::lift(const SystemState& xi, const Imu& u)
+const SystemState::SystemStateAlgebraMap Symmetry::lift(const SystemState& xi, const Imu& u)
 {
-  SystemStateAlgebraMap lambda(xi.state_.size());
+  SystemState::SystemStateAlgebraMap lambda(xi.state_.size());
 
   Vector9 lambda_T = Vector9::Zero();
   Vector6 lambda_S = Vector6::Zero();
 
-  lambda_T.block<3, 1>(0, 0) = u.w_ - xi.b().block<3, 1>(0, 0);
-  lambda_T.block<3, 1>(3, 0) = u.a_ - xi.b().block<3, 1>(3, 0) + xi.T().R().transpose() * xi.ge3();
+  lambda_T.block<3, 1>(0, 0) = u.ang_ - xi.b().block<3, 1>(0, 0);
+  lambda_T.block<3, 1>(3, 0) = u.acc_ - xi.b().block<3, 1>(3, 0) + xi.T().R().transpose() * xi.ge3();
   lambda_T.block<3, 1>(6, 0) = xi.T().R().transpose() * xi.T().v();
 
   // Precompute Lambda_S if we are estimating camera extrinsics or if we have persistent features

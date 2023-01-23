@@ -17,7 +17,7 @@
 namespace msceqf
 {
 
-MSCEqFState::MSCEqFState(const StateOptions& opts) : cov_(), state_(), clones_(), opts_(opts)
+MSCEqFState::MSCEqFState(const StateOptions& opts) : opts_(opts), cov_(), state_(), clones_()
 {
   preallocate();
 
@@ -38,7 +38,7 @@ MSCEqFState::MSCEqFState(const StateOptions& opts) : cov_(), state_(), clones_()
   }
 }
 
-MSCEqFState::MSCEqFState(const MSCEqFState& other) : cov_(), state_(), clones_(), opts_(other.opts_)
+MSCEqFState::MSCEqFState(const MSCEqFState& other) : opts_(other.opts_), cov_(), state_(), clones_()
 {
   for (const auto& [key, element] : other.state_)
   {
@@ -52,10 +52,10 @@ MSCEqFState::MSCEqFState(const MSCEqFState& other) : cov_(), state_(), clones_()
 }
 
 MSCEqFState::MSCEqFState(MSCEqFState&& other) noexcept
-    : cov_(std::move(other.cov_))
+    : opts_(std::move(other.opts_))
+    , cov_(std::move(other.cov_))
     , state_(std::move(other.state_))
     , clones_(std::move(other.clones_))
-    , opts_(std::move(other.opts_))
 {
 }
 
@@ -92,6 +92,48 @@ MSCEqFState ::~MSCEqFState()
   state_.clear();
   clones_.clear();
   cov_.resize(0, 0);
+}
+
+const SE23& MSCEqFState::D() const
+{
+  return std::static_pointer_cast<MSCEqFSDBState>(state_.at(MSCEqFStateElementName::Dd))->Dd_.D();
+}
+
+const SE3 MSCEqFState::B() const
+{
+  return std::static_pointer_cast<MSCEqFSDBState>(state_.at(MSCEqFStateElementName::Dd))->Dd_.B();
+}
+
+const SE3 MSCEqFState::C() const
+{
+  return std::static_pointer_cast<MSCEqFSDBState>(state_.at(MSCEqFStateElementName::Dd))->Dd_.C();
+}
+
+const Vector6& MSCEqFState::delta() const
+{
+  return std::static_pointer_cast<MSCEqFSDBState>(state_.at(MSCEqFStateElementName::Dd))->Dd_.delta();
+}
+
+const SE3& MSCEqFState::E() const
+{
+  return std::static_pointer_cast<MSCEqFSE3State>(state_.at(MSCEqFStateElementName::E))->E_;
+}
+
+const In& MSCEqFState::L() const
+{
+  return std::static_pointer_cast<MSCEqFInState>(state_.at(MSCEqFStateElementName::L))->L_;
+}
+
+const SOT3& MSCEqFState::Q(const uint& feat_id) const
+{
+  return std::static_pointer_cast<MSCEqFSOT3State>(state_.at(feat_id))->Q_;
+}
+
+const MatrixX& MSCEqFState::Cov() const { return cov_; }
+
+const MatrixX MSCEqFState::CovBlock(const MSCEqFStateKey& key) const
+{
+  return cov_.block(getPtr(key)->getIndex(), getPtr(key)->getIndex(), getPtr(key)->getDof(), getPtr(key)->getDof());
 }
 
 void MSCEqFState::preallocate()
@@ -137,16 +179,18 @@ void MSCEqFState::initializeStateElement(const MSCEqFStateKey& key, const Matrix
   }
 
   uint size_increment = state_[key]->getDof();
-  cov_.conservativeResize(idx + size_increment, idx + size_increment);
+  cov_.conservativeResizeLike(MatrixX::Zero(idx + size_increment, idx + size_increment));
 
   assert(cov_block.rows() == cov_block.cols());
   assert(cov_block.rows() == size_increment);
 
   cov_.block(idx, idx, size_increment, size_increment) = cov_block;
 
-  utils::Logger::debug("Assigned covariance block from (" + std::to_string(idx) + "," + std::to_string(idx) +
-                       "), to (" + std::to_string(idx + size_increment) + "," + std::to_string(idx + size_increment) +
-                       ")\n" + static_cast<std::ostringstream&>(std::ostringstream() << cov_block).str());
+  // utils::Logger::debug("Assigned covariance block from (" + std::to_string(idx) + "," + std::to_string(idx) +
+  //                      "), to (" + std::to_string(idx + size_increment) + "," + std::to_string(idx + size_increment)
+  //                      +
+  //                      "). Full covariance is now: \n" +
+  //                      static_cast<std::ostringstream&>(std::ostringstream() << cov_).str());
 }
 
 void MSCEqFState::insertStateElement(const MSCEqFStateKey& key, MSCEqFStateElementUniquePtr ptr)
@@ -168,48 +212,6 @@ const MSCEqFStateElementSharedPtr& MSCEqFState::getPtr(const MSCEqFStateKey& key
   {
     return state_.at(std::get<uint>(key));
   }
-}
-
-const SE23& MSCEqFState::D() const
-{
-  return std::static_pointer_cast<MSCEqFSDBState>(state_.at(MSCEqFStateElementName::Dd))->Dd_.D();
-}
-
-const SE3 MSCEqFState::B() const
-{
-  return std::static_pointer_cast<MSCEqFSDBState>(state_.at(MSCEqFStateElementName::Dd))->Dd_.B();
-}
-
-const SE3 MSCEqFState::C() const
-{
-  return std::static_pointer_cast<MSCEqFSDBState>(state_.at(MSCEqFStateElementName::Dd))->Dd_.C();
-}
-
-const Vector6& MSCEqFState::delta() const
-{
-  return std::static_pointer_cast<MSCEqFSDBState>(state_.at(MSCEqFStateElementName::Dd))->Dd_.delta();
-}
-
-const SE3& MSCEqFState::E() const
-{
-  return std::static_pointer_cast<MSCEqFSE3State>(state_.at(MSCEqFStateElementName::E))->E_;
-}
-
-const In& MSCEqFState::L() const
-{
-  return std::static_pointer_cast<MSCEqFInState>(state_.at(MSCEqFStateElementName::L))->L_;
-}
-
-const SOT3& MSCEqFState::Q(const uint& feat_id) const
-{
-  return std::static_pointer_cast<MSCEqFSOT3State>(state_.at(feat_id))->Q_;
-}
-
-const MatrixX& MSCEqFState::Cov() const { return cov_; }
-
-const MatrixX MSCEqFState::CovBlock(const MSCEqFStateKey& key) const
-{
-  return cov_.block(getPtr(key)->getIndex(), getPtr(key)->getIndex(), getPtr(key)->getDof(), getPtr(key)->getDof());
 }
 
 const MSCEqFState MSCEqFState::Random() const

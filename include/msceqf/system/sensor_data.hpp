@@ -18,28 +18,75 @@ namespace msceqf
 {
 /**
  * @brief Struct for one IMU reading.
- * It includes timestamp, angular velocity and linear acceleration
+ * It includes timestamp, angular velocity and linear acceleration.
+ * -1 indicates an invalid timestamp.
  *
  */
 struct Imu
 {
-  fp timestamp_ = 0;             //!< Timestamp of the IMU reading
-  Vector3 w_ = Vector3::Zero();  //!< Angular velocity vector
-  Vector3 a_ = Vector3::Zero();  //!< Acceleration vector
+  fp timestamp_ = -1;              //!< Timestamp of the IMU reading
+  Vector3 ang_ = Vector3::Zero();  //!< Angular velocity vector
+  Vector3 acc_ = Vector3::Zero();  //!< Acceleration vector
 
+  /**
+   * @brief Get the IMU measurement as a 6 vector (ang, acc)
+   *
+   * @return const Vector6
+   */
+  const Vector6 w() const { return (Vector6() << ang_, acc_).finished(); }
+
+  /**
+   * @brief get the IMU measurement as an extended matrix (ang, acc, 0)^ (SE23 lie algebra element)
+   *
+   * @return const Matrix5
+   */
   const Matrix5 W() const
   {
     Matrix5 W = Matrix5::Zero();
-    W.block<3, 3>(0, 0) = SO3::wedge(w_);
-    W.block<3, 1>(0, 3) = a_;
+    W.block<3, 3>(0, 0) = SO3::wedge(ang_);
+    W.block<3, 1>(0, 3) = acc_;
     return W;
   }
 
   /**
-   * @brief Comparison operator
+   * @brief Comparison operator with other imu
    *
    */
-  bool operator<(const Imu& other) const { return timestamp_ < other.timestamp_; }
+  friend bool operator<(const Imu& lhs, const Imu& rhs) { return lhs.timestamp_ < rhs.timestamp_; }
+
+  /**
+   * @brief Comparison operator with timestamp
+   *
+   */
+  friend bool operator<(const Imu& lhs, const fp& timestamp) { return lhs.timestamp_ < timestamp; }
+  friend bool operator<(const fp& timestamp, const Imu& rhs) { return timestamp < rhs.timestamp_; }
+
+  /**
+   * @brief Stream an Imu
+   *
+   */
+  friend std::ostream& operator<<(std::ostream& stream, Imu const& imu)
+  {
+    return stream << "(" << imu.timestamp_ << ", " << imu.ang_.transpose() << ", " << imu.acc_.transpose() << ")";
+  }
+};
+
+struct Camera
+{
+  fp timestamp_ = -1;  //!< Timestamp of the Camera reading
+
+  /**
+   * @brief Comparison operator with other imu
+   *
+   */
+  friend bool operator<(const Camera& lhs, const Camera& rhs) { return lhs.timestamp_ < rhs.timestamp_; }
+
+  /**
+   * @brief Comparison operator with timestamp
+   *
+   */
+  friend bool operator<(const Camera& lhs, const fp& timestamp) { return lhs.timestamp_ < timestamp; }
+  friend bool operator<(const fp& timestamp, const Camera& rhs) { return timestamp < rhs.timestamp_; }
 };
 
 }  // namespace msceqf

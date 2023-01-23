@@ -37,21 +37,28 @@ struct StateOptions
   In initial_camera_intrinsics_;
 
   /// Filter flags
-  bool enable_camera_extrinsics_calibration_ = false;  //!< Boolean to enable estrinsic camera calibration
-  bool enable_camera_intrinsics_calibration_ = false;  //!< Boolean to enable intinsic camera calibration
+  bool enable_camera_extrinsics_calibration_;  //!< Boolean to enable estrinsic camera calibration
+  bool enable_camera_intrinsics_calibration_;  //!< Boolean to enable intinsic camera calibration
 
   /// State and filter options
-  fp gravity_ = 9.81;                       //!< The magnitude of the gravity vector in m/s^2
-  uint num_clones_ = 10;                    //!< the maximum number of stochastic clones
-  uint num_persistent_features_ = 50;       //!< the maximum number of persistent (SLAM) features
-  fp persistent_feature_init_delay_ = 1.0;  //!< the delay in s before initializing persistent features
+  fp gravity_;                    //!< The magnitude of the gravity vector in m/s^2
+  uint num_clones_;               //!< The maximum number of stochastic clones
+  uint num_persistent_features_;  //!< The maximum number of persistent (SLAM) features
 };
 
 struct MSCEqFOptions
 {
-  MSCEqFOptions() = default;
-
   StateOptions state_options_;  //!< The state options
+
+  fp persistent_feature_init_delay_;  //!< The delay in s before initializing persistent features
+  int state_transition_order_;        //!< The order for the computation of the state transition matrix
+
+  fp angular_velocity_std_;       //!< Continuous time angular velocity standard deviation
+  fp acceleration_std_;           //!< Continuous time acceleration standard deviation
+  fp angular_velocity_bias_std_;  //!< Continuous time angular velocity bias (random walk) standard deviation
+  fp acceleration_bias_std_;      //!< Continuous time acceleration bias (random walk) standard deviation
+
+  uint imu_buffer_max_size_;  //!< The maximum size of the propagator's imu buffer
 
   // FeatureRepresentation msc_features_representation_ =
   //     FeatureRepresentation::ANCHORED_INVERSE_DEPTH;  //!< Multi State Constraint features representation

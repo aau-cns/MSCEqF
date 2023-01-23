@@ -1,4 +1,4 @@
-// Copyright (C) 2023 Alessandro Fornasier, Pieter van Goor.
+// Copyright (C) 2023 Alessandro Fornasier.
 // Control of Networked Systems, University of Klagenfurt, Austria.
 //
 // All rights reserved.
@@ -12,10 +12,92 @@
 #ifndef MSCEQF_HPP
 #define MSCEQF_HPP
 
-#include "state/state.hpp"
+#include "msceqf/filter/propagator.hpp"
+#include "msceqf/options/msceqf_option_parser.hpp"
+#include "msceqf/state/state.hpp"
+#include "msceqf/system/system.hpp"
 
 namespace msceqf
 {
+
+class MSCEqF
+{
+ public:
+  /**
+   * @brief MSCEqF Constructor
+   *
+   * @param params_filepath filepath of the parameter file to be parsed
+   */
+  MSCEqF(const std::string& params_filepath);
+
+  /**
+   * @brief This function provide a simple interface for processing measurements of different kind.
+   *
+   * @tparam T Type of the measurement
+   * @param meas measurement
+   */
+  template <typename T>
+  void processMeasurement(const T& meas)
+  {
+    if constexpr (std::is_same_v<T, Imu>)
+    {
+      processImuMeasurement(meas);
+    }
+    else
+    {
+      processCameraMeasurement(meas);
+    }
+  }
+
+  /**
+   * @brief Get a constant reference to the covariance matrix of the MSCEqF state
+   *
+   * @return const MatrixX&
+   */
+  const MatrixX& Covariance() const { return X_.Cov(); }
+
+  /**
+   * @brief Get a constant reference to the MSCEqF options
+   *
+   * @return const MSCEqFOptions&
+   */
+  const MSCEqFOptions& options() const { return opts_; }
+
+  /**
+   * @brief Get a constant reference to the MSCEqF state options
+   *
+   * @return const StateOptions&
+   */
+  const StateOptions& stateOptions() const { return opts_.state_options_; }
+
+ private:
+  /**
+   * @brief Process a single IMU measurement. This method will fill the internal IMU measurement buffer, that will
+   * be used for propagation upon receiveing a camera measurement.
+   *
+   * @param imu
+   */
+  void processImuMeasurement(const Imu& imu);
+
+  /**
+   * @brief Process a single Camera measurement.
+   *
+   * @param cam
+   */
+  void processCameraMeasurement(const Camera& cam);
+
+  OptionParser parser_;  //!< The parser to parse all the configuration from a yaml file
+  MSCEqFOptions opts_;   //!< All the MSCEqF options
+
+  MSCEqFState X_;    //!< The state of the MSCEqF
+  SystemState xi0_;  //!< The origin state of the System
+
+  Propagator propagator_;  //!< The MSCEqF propagator
+
+  fp timestamp_ = -1;  //!< The timestamp of the actual estimate
+
+  bool is_filter_initialized_ = false;  //!< Flag that indicates that the filter is initialized
+};
 
 }  // namespace msceqf
 

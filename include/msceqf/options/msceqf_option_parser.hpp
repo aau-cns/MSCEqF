@@ -20,6 +20,7 @@
 #include "msceqf/options/msceqf_options.hpp"
 #include "types/fptypes.hpp"
 #include "utils/logger.hpp"
+#include "utils/tools.hpp"
 
 namespace msceqf
 {
@@ -77,8 +78,22 @@ class OptionParser
         }
         x = Eigen::Map<Eigen::Matrix<Scalar, Rows, Cols, Eigen::RowMajor>>(vec.data(), Rows, Cols);
       }
-      utils::Logger::info("Parameter: [" + param + "] found. Option set to: \n" +
-                          static_cast<std::ostringstream&>(std::ostringstream() << x).str());
+      if constexpr (Rows == 1)
+      {
+        utils::Logger::info("Parameter: [" + param + "] found. Option set to:" +
+                            static_cast<std::ostringstream&>(std::ostringstream() << x).str());
+      }
+      else if (Cols == 1)
+      {
+        utils::Logger::info("Parameter: [" + param + "] found. Option set to: " +
+                            static_cast<std::ostringstream&>(std::ostringstream() << x.transpose()).str());
+      }
+      else
+      {
+        utils::Logger::info("Parameter: [" + param + "] found. Option set to: \n" +
+                            static_cast<std::ostringstream&>(std::ostringstream() << x).str());
+      }
+
       return true;
     }
     utils::Logger::warn("Parameter: [" + param + "] not found");
@@ -140,7 +155,8 @@ class OptionParser
     if (!read(p, param))
     {
       p = def;
-      utils::Logger::warn("Parameter: [" + param + "] set to default value");
+      utils::Logger::warn("Parameter: [" + param + "] set to default value: " +
+                          static_cast<std::ostringstream&>(std::ostringstream() << p).str());
     }
   }
 
@@ -167,6 +183,8 @@ class OptionParser
    * @todo Include transformation based on actual xi0 value
    */
   void parseInitialCovariance(Matrix9& D_cov, Matrix6& delta_cov, Matrix6& E_cov, Matrix4& L_cov);
+
+  void parseProcessNoise(fp& w_std, fp& a_std, fp& bw_std, fp& ba_std);
 
   YAML::Node node_;       //!< YAML node
   std::string filepath_;  //!< filepath

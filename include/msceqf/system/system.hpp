@@ -31,6 +31,7 @@ class SystemState
  public:
   using SystemStateKey = std::variant<SystemStateElementName, uint>;  //!< Key to access the system state map
   using SystemStateMap = std::unordered_map<SystemStateKey, SystemStateElementSharedPtr>;  //!< System state map
+  using SystemStateAlgebraMap = std::unordered_map<SystemStateKey, VectorX>;               //!< System state algebra map
 
   /**
    * @brief Deleted default constructor
@@ -38,10 +39,19 @@ class SystemState
   SystemState() = delete;
 
   /**
+   * @brief Initialize a system state with identity extended pose and zero bias.
+   * Camera intrinsics and extrinsics are initialized from the given values in the options.
+   *
+   * @param opts State options
+   */
+  SystemState(const StateOptions& opts);
+
+  /**
    * @brief Construct system state given a multiple pairs of key-pointer of states element. This methods preallocate
    * memory for the state_ map and insert the given pointers.
    * Camera intrinsics and extrinsics are initialized from the given values in the options, passing pairs of key-pointer
-   * of camera intrinsics and extrinsics will overwrite the intrinsics and extrinsics initialized form the given options.
+   * of camera intrinsics and extrinsics will overwrite the intrinsics and extrinsics initialized form the given
+   * options.
    *
    * @tparam Args
    * @param opts State options
@@ -54,12 +64,10 @@ class SystemState
    * it contains only unusable pointers (nullptr).
    */
   template <typename... Args>
-  SystemState(const StateOptions& opts, Args&&... pairs_of_key_ptr) : state_(), g_(opts.gravity_), opts_(opts)
+  SystemState(const StateOptions& opts, Args&&... pairs_of_key_ptr) : opts_(opts), state_()
   {
-    // Preallocate state memory based on given options
     preallocate();
 
-    // Initialize camera extrinsics and intrinsics;
     if (opts.enable_camera_extrinsics_calibration_)
     {
       insertSystemStateElement(std::make_pair(
@@ -73,7 +81,6 @@ class SystemState
           createSystemStateElement<CameraIntrinsicState>(std::make_tuple(opts.initial_camera_intrinsics_))));
     }
 
-    // Insert system state element into state_ map
     (insertSystemStateElement(std::forward<decltype(pairs_of_key_ptr)>(pairs_of_key_ptr)), ...);
   }
 
@@ -154,6 +161,8 @@ class SystemState
    */
   static std::string toString(const SystemStateKey& key);
 
+  StateOptions opts_;  //!< State Options
+
  private:
   /**
    * @brief Preallocate space on the system state map based on given options
@@ -180,10 +189,6 @@ class SystemState
   friend class Symmetry;  //!< Symmetry can access private members of SystemState
 
   SystemStateMap state_;  //!< MSCEqF State elements mapped by their names
-  fp g_;                  //!< The magnitude of the gravity vector. in m/s^2 (The direction is e3 by default)
-
- public:
-  StateOptions opts_;  //!< State Options
 };
 
 }  // namespace msceqf

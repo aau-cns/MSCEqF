@@ -14,11 +14,64 @@
 
 #include <array>
 #include <iterator>
+#include <queue>
 #include <random>
+#include <type_traits>
 #include <vector>
 
 namespace utils
 {
+/**
+ * @brief Very simple Eigen compatible central difference numerical differentiation function.
+ *
+ * @tparam FPType floating point type
+ * @param x linearization point
+ * @param f function
+ * @param h delta
+ * @return Eigen::Matrix<FPType, Eigen::Dynamic, 1>
+ */
+template <typename FPType>
+Eigen::Matrix<FPType, Eigen::Dynamic, 1> diff(
+    const Eigen::Matrix<FPType, Eigen::Dynamic, 1>& x,
+    const std::function<double(const Eigen::Matrix<FPType, Eigen::Dynamic, 1>&)>& f,
+    double h = 1e-6)
+{
+  int n = x.size();
+  Eigen::Matrix<FPType, Eigen::Dynamic, 1> grad(n);
+  for (int i = 0; i < n; i++)
+  {
+    Eigen::Matrix<FPType, Eigen::Dynamic, 1> x_plus = x, x_minus = x;
+    x_plus(i) += h;
+    x_minus(i) -= h;
+    grad(i) = (f(x_plus) - f(x_minus)) / (2 * h);
+  }
+  return grad;
+}
+
+/**
+ * @brief Generate random numbers
+ *
+ * @tparam Numeric type of random number generated
+ * @tparam Generator random number generator
+ * @param from lower bound
+ * @param to upper bound
+ * @return Numeric
+ *
+ * @note Modified from:
+ * https://stackoverflow.com/questions/2704521/generate-random-double-numbers-in-c
+ */
+template <typename Numeric, typename Generator = std::mt19937>
+Numeric random(Numeric from, Numeric to)
+{
+  thread_local static Generator gen(std::random_device{}());
+  using dist_type = typename std::conditional<std::is_integral<Numeric>::value, std::uniform_int_distribution<Numeric>,
+                                              std::uniform_real_distribution<Numeric>>::type;
+  thread_local static dist_type dist;
+  return dist(gen, typename dist_type::param_type{from, to});
+}
+
+}  // namespace utils
+
 /**
  * @brief Stream a std::vector
  *
@@ -70,54 +123,41 @@ std::ostream& operator<<(std::ostream& stream, const std::array<T, N>& v)
 }
 
 /**
- * @brief Very simple Eigen compatible central difference numerical differentiation function.
+ * @brief Stream a std::deque
  *
- * @tparam FPType floating point type
- * @param x linearization point
- * @param f function
- * @param h delta
- * @return Eigen::Matrix<FPType, Eigen::Dynamic, 1>
+ * @tparam T type of data to be streamed
+ * @param stream (reference to std::ostream)
+ * @param x data to be streamed (const reference to T)
  */
-template <typename FPType>
-Eigen::Matrix<FPType, Eigen::Dynamic, 1> diff(
-    const Eigen::Matrix<FPType, Eigen::Dynamic, 1>& x,
-    const std::function<double(const Eigen::Matrix<FPType, Eigen::Dynamic, 1>&)>& f,
-    double h = 1e-6)
+template <typename T>
+std::ostream& operator<<(std::ostream& stream, const std::deque<T>& v)
 {
-  int n = x.size();
-  Eigen::Matrix<FPType, Eigen::Dynamic, 1> grad(n);
-  for (int i = 0; i < n; i++)
+  // Check container is not empty
+  if (!v.empty())
   {
-    Eigen::Matrix<FPType, Eigen::Dynamic, 1> x_plus = x, x_minus = x;
-    x_plus(i) += h;
-    x_minus(i) -= h;
-    grad(i) = (f(x_plus) - f(x_minus)) / (2 * h);
+    // Beginning bracket
+    stream << "[";
+
+    // Copy element of container into output stream
+    std::copy(v.begin(), v.end() - 1, std::ostream_iterator<T>(stream, ", "));
+
+    // Last element and end bracket
+    stream << v.back() << "]";
   }
-  return grad;
+  return stream;
 }
 
 /**
- * @brief Generate random numbers
+ * @brief Stream an enum
  *
- * @tparam Numeric type of random number generated
- * @tparam Generator random number generator
- * @param from lower bound
- * @param to upper bound
- * @return Numeric
- *
- * @note Modified from:
- * https://stackoverflow.com/questions/2704521/generate-random-double-numbers-in-c
+ * @tparam T type of data to be streamed (enum)
+ * @param stream (reference to std::ostream)
+ * @param x data to be streamed (const reference to T)
  */
-template <typename Numeric, typename Generator = std::mt19937>
-Numeric random(Numeric from, Numeric to)
+template <typename T, typename std::enable_if<std::is_enum<T>::value, T>::type* = nullptr>
+std::ostream& operator<<(std::ostream& stream, const T& e)
 {
-  thread_local static Generator gen(std::random_device{}());
-  using dist_type = typename std::conditional<std::is_integral<Numeric>::value, std::uniform_int_distribution<Numeric>,
-                                              std::uniform_real_distribution<Numeric> >::type;
-  thread_local static dist_type dist;
-  return dist(gen, typename dist_type::param_type{from, to});
+  return stream << static_cast<typename std::underlying_type<T>::type>(e);
 }
-
-}  // namespace utils
 
 #endif  // UTILS_HPP
