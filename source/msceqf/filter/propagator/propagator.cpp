@@ -9,7 +9,7 @@
 //
 // You can contact the authors at <alessandro.fornasier@ieee.org>
 
-#include "msceqf/filter/propagator.hpp"
+#include "msceqf/filter/propagator/propagator.hpp"
 
 #include <unsupported/Eigen/MatrixFunctions>
 #include <utility>
