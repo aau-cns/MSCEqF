@@ -50,25 +50,32 @@ class MSCEqF
   }
 
   /**
-   * @brief Get a constant reference to the covariance matrix of the MSCEqF state
-   *
-   * @return const MatrixX&
-   */
-  const MatrixX& Covariance() const { return X_.Cov(); }
-
-  /**
    * @brief Get a constant reference to the MSCEqF options
    *
    * @return const MSCEqFOptions&
    */
-  const MSCEqFOptions& options() const { return opts_; }
+  const MSCEqFOptions& options() const;
 
   /**
    * @brief Get a constant reference to the MSCEqF state options
    *
    * @return const StateOptions&
    */
-  const StateOptions& stateOptions() const { return opts_.state_options_; }
+  const StateOptions& stateOptions() const;
+
+  /**
+   * @brief Get a constant reference to the covariance matrix of the MSCEqF state
+   *
+   * @return const MatrixX&
+   */
+  const MatrixX& Covariance() const;
+
+  /**
+   * @brief Get a constant copy of the estimated state
+   *
+   * @return const SystemState
+   */
+  const SystemState stateEstimate() const;
 
  private:
   /**

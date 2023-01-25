@@ -28,10 +28,11 @@ void MSCEqF::processImuMeasurement(const Imu& imu)
   // [COMMENT] for the very moment (for the sake of testing) we assume the state is inizialized...
   if (!is_filter_initialized_)
   {
-    // [TODO] Remove. Just for testing
+    // [TODO] Remove. Just for testing initialize system at first imu
     timestamp_ = imu.timestamp_;
     is_filter_initialized_ = true;
-    propagator_.insertImu(X_, xi0_, imu);
+
+    propagator_.insertImu(X_, xi0_, imu, timestamp_);
 
     // utils::Logger::info("Collecting IMU measurements for static initialization.");
     // [TODO] Static initialization
@@ -45,7 +46,7 @@ void MSCEqF::processImuMeasurement(const Imu& imu)
   }
   else
   {
-    propagator_.insertImu(X_, xi0_, imu);
+    propagator_.insertImu(X_, xi0_, imu, timestamp_);
   }
 }
 
@@ -63,5 +64,13 @@ void MSCEqF::processCameraMeasurement(const Camera& cam)
     utils::Logger::err("Propagation failure.");
   }
 }
+
+const MSCEqFOptions& MSCEqF::options() const { return opts_; }
+
+const StateOptions& MSCEqF::stateOptions() const { return opts_.state_options_; }
+
+const MatrixX& MSCEqF::Covariance() const { return X_.Cov(); }
+
+const SystemState MSCEqF::stateEstimate() const { return Symmetry::phi(X_, xi0_); }
 
 }  // namespace msceqf
