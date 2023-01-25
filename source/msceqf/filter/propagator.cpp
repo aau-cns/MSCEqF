@@ -12,6 +12,7 @@
 #include "msceqf/filter/propagator.hpp"
 
 #include <unsupported/Eigen/MatrixFunctions>
+#include <utility>
 
 #include "msceqf/symmetry/symmetry.hpp"
 #include "utils/logger.hpp"
@@ -31,7 +32,7 @@ Propagator::Propagator(const MSCEqFOptions& opts)
   Q_.block<3, 3>(9, 9) = std::pow(opts.acceleration_bias_std_, 2) * Matrix3::Identity();
 }
 
-void Propagator::insertImu(MSCEqFState& X, const SystemState& xi0, const Imu& imu)
+void Propagator::insertImu(MSCEqFState& X, const SystemState& xi0, const Imu& imu, fp& timestamp)
 {
   if (imu_buffer_.empty() || imu.timestamp_ > imu_buffer_.back().timestamp_)
   {
@@ -45,7 +46,7 @@ void Propagator::insertImu(MSCEqFState& X, const SystemState& xi0, const Imu& im
   if (imu_buffer_.size() == imu_buffer_max_size_)
   {
     utils::Logger::warn("Maximum imu buffer size reached. Propagating...");
-    propagate(X, xi0, imu_buffer_.front().timestamp_, imu_buffer_.back().timestamp_);
+    propagate(X, xi0, timestamp, imu_buffer_.back().timestamp_);
   }
 }
 
@@ -68,7 +69,8 @@ Propagator::ImuBuffer Propagator::getImuReadings(const fp& t0, const fp& t1)
   {
     fp alpha = (t0 - first->timestamp_) / ((first - 1)->timestamp_ - first->timestamp_);
 
-    // utils::Logger::debug("First IMU reading interpolation between (" + std::to_string((first - 1)->timestamp_) + ", "
+    // utils::Logger::debug("First IMU reading interpolation between (" + std::to_string((first - 1)->timestamp_) + ",
+    // "
     // +
     //                      std::to_string(first->timestamp_) + "), at (" + std::to_string(t0) +
     //                      "), with alpha = " + std::to_string(alpha));
@@ -79,8 +81,8 @@ Propagator::ImuBuffer Propagator::getImuReadings(const fp& t0, const fp& t1)
   // Last IMU reading for integration checks
   // If the timestamp mathces t1 than take all the previous readings for integration
   // if the timestamp does not match t1 and there are measurements past t1, then perform linear interpolation
-  // If the timestamp does not match t1 and there are no measurements past t1, then take all the measurement preserving
-  // the last in the buffer (for future interpolation)
+  // If the timestamp does not match t1 and there are no measurements past t1, then take all the measurement
+  // preserving the last in the buffer (for future interpolation)
   if (std::abs((last - 1)->timestamp_ - t1) < eps_)
   {
     readings.insert(readings.end(), first, last - 1);
@@ -93,7 +95,8 @@ Propagator::ImuBuffer Propagator::getImuReadings(const fp& t0, const fp& t1)
     {
       fp alpha = (t1 - (last - 1)->timestamp_) / (last->timestamp_ - (last - 1)->timestamp_);
 
-      // utils::Logger::debug("Last IMU reading interpolation between (" + std::to_string((last - 1)->timestamp_) + ", "
+      // utils::Logger::debug("Last IMU reading interpolation between (" + std::to_string((last - 1)->timestamp_) + ",
+      // "
       // +
       //                      std::to_string(last->timestamp_) + "), at (" + std::to_string(t1) +
       //                      "), with alpha = " + std::to_string(alpha));
@@ -135,7 +138,7 @@ Imu Propagator::lerp(const Imu& pre, const Imu& post, const fp& alpha)
   return interp;
 }
 
-bool Propagator::propagate(MSCEqFState& X, const SystemState& xi0, const fp& t0, const fp& t1)
+bool Propagator::propagate(MSCEqFState& X, const SystemState& xi0, fp& timestamp, const fp& new_timestamp)
 {
   if (imu_buffer_.size() < 1)
   {
@@ -143,7 +146,7 @@ bool Propagator::propagate(MSCEqFState& X, const SystemState& xi0, const fp& t0,
     return false;
   }
 
-  Propagator::ImuBuffer propagation_buffer = getImuReadings(t0, t1);
+  Propagator::ImuBuffer propagation_buffer = getImuReadings(std::as_const(timestamp), new_timestamp);
 
   if (propagation_buffer.empty())
   {
@@ -155,12 +158,12 @@ bool Propagator::propagate(MSCEqFState& X, const SystemState& xi0, const fp& t0,
   {
     bool is_last = it == (propagation_buffer.end() - 1);
 
-    fp dt = is_last ? t1 - it->timestamp_ : (it + 1)->timestamp_ - it->timestamp_;
+    fp dt = is_last ? new_timestamp - it->timestamp_ : (it + 1)->timestamp_ - it->timestamp_;
 
     if (dt < eps_)
     {
-      utils::Logger::err("Unable to propagate. ZERO dt");
-      return false;
+      utils::Logger::err("ZERO dt in propagation, skip propagation step");
+      continue;
     }
 
     // Propagate covariance
@@ -169,6 +172,9 @@ bool Propagator::propagate(MSCEqFState& X, const SystemState& xi0, const fp& t0,
     // Propagate mean
     propagateMean(X, xi0, *it, dt);
   }
+
+  // Update timestamp
+  timestamp = new_timestamp;
 
   return true;
 }

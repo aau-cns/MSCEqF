@@ -41,26 +41,29 @@ class Propagator
    * @param X Actual state estimate
    * @param xi0 origin
    * @param imu
+   * @param timestamp the actual timestamp. If a propagation is triggered than the timestamp is updated
    *
    * @note This function triggers a propagation if the imu buffer reaches its max size.
    * In such case all the entries of the imu buffer except the last one are deleted to avoid unbounded memory growth.
    */
-  void insertImu(MSCEqFState& X, const SystemState& xi0, const Imu& imu);
+  void insertImu(MSCEqFState& X, const SystemState& xi0, const Imu& imu, fp& timestamp);
 
   /**
-   * @brief This function implements the mean and covariance propagation from t0 to t1 for the MSCEqF.
+   * @brief This function implements the mean and covariance propagation from timestamp to new_timestamp for the MSCEqF.
    *
    * @param X Actual state estimate
    * @param xi0 origin
-   * @param t0 integration period start time (actual state timestamp)
-   * @param t1 integration period end time (new state timestamp)
+   * @param timestamp integration period start time (actual state timestamp). *This will be modified by the propagation*
+   * @param new_timestamp integration period end time (new state timestamp)
    * @return true if propagation succeeded, false otherwise
    */
-  bool propagate(MSCEqFState& X, const SystemState& xi0, const fp& t0, const fp& t1);
+  bool propagate(MSCEqFState& X, const SystemState& xi0, fp& timestamp, const fp& new_timestamp);
 
  private:
   /**
    * @brief Get IMU readings between t0 and t1 to propagate with, and remove such readings from the IMU buffer.
+   * This method will also perform linear interpolation at t0 time if no IMU readings exist with timestamp equal t0 and
+   * at least one IMU reading exist with timestamp smaller than t0.
    * This method will also perform linear interpolation at t1 time if no IMU readings exist with timestamp equal t1 and
    * at least one IMU reading exist with timestamp grater than t1.
    *
@@ -68,7 +71,8 @@ class Propagator
    * @param t1 end time
    * @return ImuBuffer
    *
-   * @note This function reqires that the IMU biffer is sorted. This should be enforced by the checks in insertion.
+   * @note This method reqires that the IMU buffer is sorted. This should be enforced by the checks in insertion.
+   * @note This method has been written with specific care to avoid iterator invalidation.
    */
   ImuBuffer getImuReadings(const fp& t0, const fp& t1);
 
