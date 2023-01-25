@@ -95,11 +95,10 @@ message(STATUS "CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS}.")
 list(
     APPEND lib_sources
     source/msceqf/msceqf.cpp
+    source/msceqf/options/msceqf_option_parser.cpp
     source/msceqf/state/state.cpp
     source/msceqf/system/system.cpp
     source/msceqf/symmetry/symmetry.cpp
-    source/utils/logger.cpp
-    source/msceqf/options/msceqf_option_parser.cpp
     source/msceqf/filter/propagator.cpp
 )
 
