@@ -1,4 +1,4 @@
-// Copyright (C) 2023 Alessandro Fornasier, Pieter van Goor.
+// Copyright (C) 2023 Alessandro Fornasier.
 // Control of Networked Systems, University of Klagenfurt, Austria.
 //
 // All rights reserved.
@@ -18,6 +18,7 @@
 
 namespace msceqf
 {
+
 #ifdef SINGLE_PRECISION
 using SO3 = group::SO3f;
 using SE3 = group::SE3f;
@@ -38,6 +39,7 @@ using Matrix4 = Eigen::Matrix4d;
 using Matrix5 = Eigen::Matrix<float, 5, 5>;
 using Matrix6 = Eigen::Matrix<float, 6, 6>;
 using Matrix9 = Eigen::Matrix<float, 9, 9>;
+using Matrix12 = Eigen::Matrix<float, 12, 12>;
 using Matrix15 = Eigen::Matrix<float, 15, 15>;
 using Matrix21 = Eigen::Matrix<float, 21, 21>;
 using Matrix25 = Eigen::Matrix<float, 25, 25>;
@@ -64,6 +66,7 @@ using Matrix4 = Eigen::Matrix4d;
 using Matrix5 = Eigen::Matrix<double, 5, 5>;
 using Matrix6 = Eigen::Matrix<double, 6, 6>;
 using Matrix9 = Eigen::Matrix<double, 9, 9>;
+using Matrix12 = Eigen::Matrix<double, 12, 12>;
 using Matrix15 = Eigen::Matrix<double, 15, 15>;
 using Matrix21 = Eigen::Matrix<double, 21, 21>;
 using Matrix25 = Eigen::Matrix<double, 25, 25>;
@@ -71,6 +74,7 @@ using MatrixX = Eigen::MatrixXd;
 using Quaternion = Eigen::Quaterniond;
 using fp = double;
 #endif
+
 }  // namespace msceqf
 
 #endif  // FPTYPES_HPP
