@@ -12,7 +12,8 @@
 #ifndef MSCEQF_HPP
 #define MSCEQF_HPP
 
-#include "msceqf/filter/propagator.hpp"
+#include "msceqf/filter/initializer/static_initializer.hpp"
+#include "msceqf/filter/propagator/propagator.hpp"
 #include "msceqf/options/msceqf_option_parser.hpp"
 #include "msceqf/state/state.hpp"
 #include "msceqf/system/system.hpp"
@@ -99,7 +100,8 @@ class MSCEqF
   MSCEqFState X_;    //!< The state of the MSCEqF
   SystemState xi0_;  //!< The origin state of the System
 
-  Propagator propagator_;  //!< The MSCEqF propagator
+  StaticInitializer initializer_;  //!< The MSCEqF static initializer
+  Propagator propagator_;          //!< The MSCEqF propagator
 
   fp timestamp_ = -1;  //!< The timestamp of the actual estimate
 

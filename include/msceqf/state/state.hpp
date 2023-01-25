@@ -218,9 +218,6 @@ class MSCEqFState
 
 // [TODO] Delayed feature init
 
-// [TODO] Update method, is it needed? I guess so to update... Can i have a single method to modify the values of the
-// state that i can use in both propoagationa and update?
-
 }  // namespace msceqf
 
 #endif  // STATE_HPP

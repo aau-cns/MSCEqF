@@ -43,7 +43,12 @@ MSCEqFOptions OptionParser::parseOptions()
   readDefault(opts.state_transition_order_, 1, "state_transition_order");
   readDefault(opts.imu_buffer_max_size_, 1000, "imu_buffer_max_size");
 
-  // Parse
+  // Initializer options
+  readDefault(opts.init_options_.imu_init_window_, 0.5, "static_initializer_imu_window");
+  readDefault(opts.init_options_.disparity_threshold_, 1.0, "static_initializer_disparity_threshold");
+  readDefault(opts.init_options_.acc_threshold_, 0.0, "static_initializer_acc_threshold");
+
+  // Parse process noise covariance
   parseProcessNoise(opts.angular_velocity_std_, opts.acceleration_std_, opts.angular_velocity_bias_std_,
                     opts.acceleration_bias_std_);
 

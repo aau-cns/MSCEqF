@@ -46,12 +46,21 @@ struct StateOptions
   uint num_persistent_features_;  //!< The maximum number of persistent (SLAM) features
 };
 
+struct InitializerOptions
+{
+  fp disparity_threshold_;  //!< the disparity threshold for the static initializer
+  fp acc_threshold_;        //!< The acceleration threshold for the static initializer
+  uint imu_init_window_;    //!< The window in seconds used to check for acceleration spikes
+};
+
 struct MSCEqFOptions
 {
-  StateOptions state_options_;  //!< The state options
+  StateOptions state_options_;       //!< The state options
+  InitializerOptions init_options_;  //!< The initializer options
 
   fp persistent_feature_init_delay_;  //!< The delay in s before initializing persistent features
-  int state_transition_order_;        //!< The order for the computation of the state transition matrix
+
+  int state_transition_order_;  //!< The order for the computation of the state transition matrix
 
   fp angular_velocity_std_;       //!< Continuous time angular velocity standard deviation
   fp acceleration_std_;           //!< Continuous time acceleration standard deviation

@@ -99,7 +99,8 @@ list(
     source/msceqf/state/state.cpp
     source/msceqf/system/system.cpp
     source/msceqf/symmetry/symmetry.cpp
-    source/msceqf/filter/propagator.cpp
+    source/msceqf/filter/propagator/propagator.cpp
+    source/msceqf/filter/initializer/static_initializer.cpp
 )
 
 ## Declare a C++ library

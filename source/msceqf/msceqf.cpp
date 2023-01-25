@@ -19,24 +19,17 @@ MSCEqF::MSCEqF(const std::string& params_filepath)
     , opts_(parser_.parseOptions())
     , X_(opts_.state_options_)
     , xi0_(opts_.state_options_)
+    , initializer_(opts_.init_options_)
     , propagator_(opts_)
 {
 }
 
 void MSCEqF::processImuMeasurement(const Imu& imu)
 {
-  // [COMMENT] for the very moment (for the sake of testing) we assume the state is inizialized...
   if (!is_filter_initialized_)
   {
-    // [TODO] Remove. Just for testing initialize system at first imu
-    timestamp_ = imu.timestamp_;
-    is_filter_initialized_ = true;
-
-    propagator_.insertImu(X_, xi0_, imu, timestamp_);
-
-    // utils::Logger::info("Collecting IMU measurements for static initialization.");
-    // [TODO] Static initialization
-
+    utils::Logger::info("Collecting IMU measurements for static initialization.");
+    initializer_.insertImu(imu);
     return;
   }
 
@@ -52,6 +45,11 @@ void MSCEqF::processImuMeasurement(const Imu& imu)
 
 void MSCEqF::processCameraMeasurement(const Camera& cam)
 {
+  if (!is_filter_initialized_)
+  {
+    initializer_.detectMotion(/* camera meas */);
+  }
+
   if (cam.timestamp_ < timestamp_)
   {
     utils::Logger::warn("Received Camera measurement older than actual state estimate. Discarding measurement.");
