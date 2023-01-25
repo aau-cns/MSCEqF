@@ -88,18 +88,18 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -O3 -fsee -fomit-frame-pointer -
 # set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g3 -Wall -Wextra -Werror -Wuninitialized -Wmaybe-uninitialized -pedantic -fno-omit-frame-pointer -fsanitize=thread")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -O0 -g3 -Wall -Wextra -Werror -Wuninitialized -Wmaybe-uninitialized -pedantic -fno-omit-frame-pointer -fsanitize=address -fsanitize-recover=address")
 # set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g3 -Wall -Wextra -Werror -Wuninitialized -Wmaybe-uninitialized -pedantic -fno-omit-frame-pointer -fsanitize=undefined")
-# set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -O0 -g3 -Wall -Wextra -Werror -Wuninitialized -Wmaybe-uninitialized -pedantic -fno-omit-frame-pointer -Weffc++")
+# set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -O0 -g3 -Wall -Wextra -Werror -Wuninitialized -Wmaybe-uninitialized -pedantic -fno-omit-frame-pointer -Wpadded")
 message(STATUS "CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS}.")
 
 ## List source files
 list(
     APPEND lib_sources
     source/msceqf/msceqf.cpp
+    source/msceqf/options/msceqf_option_parser.cpp
     source/msceqf/state/state.cpp
     source/msceqf/system/system.cpp
     source/msceqf/symmetry/symmetry.cpp
-    source/utils/logger.cpp
-    source/msceqf/options/msceqf_option_parser.cpp
+    source/msceqf/filter/propagator.cpp
 )
 
 ## Declare a C++ library

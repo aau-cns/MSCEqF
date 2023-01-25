@@ -178,6 +178,8 @@ class MSCEqFState
    */
   static std::string toString(const MSCEqFStateKey& key);
 
+  StateOptions opts_;  //!< State Options
+
  private:
   /**
    * @brief Preallocate space on the MSCEqF state map and clones_map based on given options
@@ -201,14 +203,13 @@ class MSCEqFState
    */
   [[nodiscard]] const MSCEqFStateElementSharedPtr& getPtr(const MSCEqFStateKey& key) const;
 
-  friend class Symmetry;  //!< Symmetry can access private members of MSCEqFState
+  friend class Symmetry;    //!< Symmetry can access private members of MSCEqFState
+  friend class Propagator;  //!< Propagator can access private members of MSCEqFState
+  // friend class Updater;     //!< Updater can access private members of MSCEqFState
 
   MatrixX cov_;             //!< MSCEqF State covariance (Sigma matrix)
   MSCEqFStateMap state_;    //!< MSCEqF State elements mapped by their names
   MSCEqFClonesMap clones_;  //!< MSCEqF Stochastic clones mapped by their timestamps
-
- public:
-  StateOptions opts_;  //!< State Options
 };
 
 // [TODO] Insert clone method

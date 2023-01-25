@@ -18,6 +18,7 @@
 #include "test_common.hpp"
 #include "utils/logger.hpp"
 // #include "test_groups.hpp"
+#include "test_msceqf.hpp"
 #include "test_params.hpp"
 #include "test_state.hpp"
 #include "test_symmetry.hpp"
@@ -26,6 +27,6 @@ int main(int argc, char **argv)
 {
   srand(static_cast<unsigned>(time(0)));
   testing::InitGoogleTest(&argc, argv);
-  utils::Logger::setLevel(utils::LoggerLevel::FULL);
+  utils::Logger::setLevel(utils::LoggerLevel::INACTIVE);
   return RUN_ALL_TESTS();
 }

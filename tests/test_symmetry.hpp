@@ -19,72 +19,18 @@
 namespace msceqf
 {
 
-// TEST(SymmetryTest, phi)
-// {
-//   // Options
-//   MSCEqFOptions opts;
-
-//   for (int i = 0; i < N_TESTS; ++i)
-//   {
-//     opts.state_options_.enable_camera_extrinsics_calibration_ = static_cast<bool>(utils::random<int>(0, 1));
-//     opts.state_options_.enable_camera_intrinsics_calibration_ = static_cast<bool>(utils::random<int>(0, 1));
-//     opts.state_options_.num_persistent_features_ = i == 0 ? 0 : utils::random<int>(0, 100);
-
-//     // Camera Extrinsic
-//     Quaternion Sq = Quaternion::UnitRandom();
-//     Vector3 St = Vector3::Random();
-//     opts.state_options_.initial_camera_extrinsics_ = SE3(Sq, {St});
-
-//     // Camera Intrinsic
-//     Vector4 intrinsics = Vector4::Random().cwiseAbs();
-//     opts.state_options_.initial_camera_intrinsics_ = In(intrinsics);
-
-//     // Feature
-//     Vector3 feat = Vector3::Random();
-
-//     // Features
-//     std::vector<uint> feat_ids;
-//     std::vector<std::pair<SystemState::SystemStateKey, SystemStateElementUniquePtr>> feat_initializer_vector;
-//     while (feat_ids.size() != opts.state_options_.num_persistent_features_)
-//     {
-//       uint id = utils::random<int>(0, 1000);
-//       if (std::find(feat_ids.begin(), feat_ids.end(), id) == feat_ids.end())
-//       {
-//         feat_ids.emplace_back(id);
-//         feat_initializer_vector.emplace_back(
-//             std::make_pair(id, createSystemStateElement<FeatureState>(std::make_tuple(feat))));
-//       }
-//     }
-
-//     // xi0 (implicit extrinsics and intrinsics in construction)
-//     SystemState xi0(
-//         opts.state_options_,
-//         std::make_pair(SystemStateElementName::T, createSystemStateElement<ExtendedPoseState>(std::make_tuple())),
-//         std::make_pair(SystemStateElementName::b, createSystemStateElement<BiasState>(std::make_tuple())),
-//         feat_initializer_vector);
-
-//     // [TODO] I need a way to initialize persistent features into X
-//     // xi = xi0 = phi(I, xi0)
-//     MSCEqFState X(opts.state_options_);
-//     SystemState xi = Symmetry::phi(X, xi0);
-//     SystemStateEquality(xi, xi0, feat_ids);
-
-//     // phi(X2, phi(X1, xi)) = phi(X1*X2, xi)
-//     MSCEqFState X1(X.Random());
-//     MSCEqFState X2(X.Random());
-//     SystemState xi1 = Symmetry::phi(X2, Symmetry::phi(X1, xi));
-//     SystemState xi2 = Symmetry::phi(X1 * X2, xi);
-//     SystemStateEquality(xi1, xi2, feat_ids);
-//   }
-// }
-
 TEST(SymmetryTest, phi_without_persistent_features)
 {
+  // Param arser
+  std::string filepath_base = "/home/alfornasier/PhD/MSCEqF_dev/MSCEqF/config/";
+  OptionParser parser(filepath_base + "parameters.yaml");
+
   // Options
-  MSCEqFOptions opts;
+  MSCEqFOptions opts = parser.parseOptions();
 
   for (int i = 0; i < N_TESTS; ++i)
   {
+    // Set specific options for this test independently by given parameters
     opts.state_options_.enable_camera_extrinsics_calibration_ = static_cast<bool>(utils::random<int>(0, 1));
     opts.state_options_.enable_camera_intrinsics_calibration_ = static_cast<bool>(utils::random<int>(0, 1));
     opts.state_options_.num_persistent_features_ = 0;
@@ -120,11 +66,16 @@ TEST(SymmetryTest, phi_without_persistent_features)
 
 TEST(SymmetryTest, lift)
 {
+  // Param arser
+  std::string filepath_base = "/home/alfornasier/PhD/MSCEqF_dev/MSCEqF/config/";
+  OptionParser parser(filepath_base + "parameters.yaml");
+
   // Options
-  MSCEqFOptions opts;
+  MSCEqFOptions opts = parser.parseOptions();
 
   for (int i = 0; i < N_TESTS; ++i)
   {
+    // Set specific options for this test independently by given parameters
     opts.state_options_.enable_camera_extrinsics_calibration_ = static_cast<bool>(utils::random<int>(0, 1));
     opts.state_options_.enable_camera_intrinsics_calibration_ = static_cast<bool>(utils::random<int>(0, 1));
     opts.state_options_.num_persistent_features_ = i == 0 ? 0 : utils::random<int>(0, 100);
@@ -164,13 +115,13 @@ TEST(SymmetryTest, lift)
 
     // u
     Imu u;
-    u.w_ = Vector3::Random();
-    u.a_ = Vector3::Random();
+    u.ang_ = Vector3::Random();
+    u.acc_ = Vector3::Random();
 
     // Continuous time dynamics
     Vector9 T_dot;
-    T_dot.block<3, 1>(0, 0) = SO3::vee(xi.T().R() * SO3::wedge(u.w_ - xi.b().block<3, 1>(0, 0)));
-    T_dot.block<3, 1>(3, 0) = xi.T().R() * (u.a_ - xi.b().block<3, 1>(3, 0)) + xi.ge3();
+    T_dot.block<3, 1>(0, 0) = SO3::vee(xi.T().R() * SO3::wedge(u.ang_ - xi.b().block<3, 1>(0, 0)));
+    T_dot.block<3, 1>(3, 0) = xi.T().R() * (u.acc_ - xi.b().block<3, 1>(3, 0)) + xi.ge3();
     T_dot.block<3, 1>(6, 0) = xi.T().v();
     Vector6 b_dot = Vector6::Zero();
     Vector6 S_dot = Vector6::Zero();
@@ -178,7 +129,7 @@ TEST(SymmetryTest, lift)
     Vector3 f_dot = Vector3::Zero();
 
     // Lambda
-    Symmetry::SystemStateAlgebraMap lambda = Symmetry::lift(xi, u);
+    SystemState::SystemStateAlgebraMap lambda = Symmetry::lift(xi, u);
 
     // dphi* Lambda = xi_dot (T)
     MatrixEquality(SE23::vee(xi.T() * SE23::wedge(lambda.at(SystemStateElementName::T))), T_dot);

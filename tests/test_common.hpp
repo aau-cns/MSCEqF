@@ -21,79 +21,80 @@
 
 #include "msceqf/state/state.hpp"
 #include "msceqf/system/system.hpp"
-#include "utils/tools.hpp"
 
 namespace msceqf
 {
 
-constexpr double EPS = 1e-6;
+constexpr fp EPS = 1e-6;
 constexpr int N_TESTS = 100;
 
 template <typename Derived, typename OtherDerived>
-void MatrixEquality(const Eigen::MatrixBase<Derived>& A, const Eigen::MatrixBase<OtherDerived>& B)
+void MatrixEquality(const Eigen::MatrixBase<Derived>& A, const Eigen::MatrixBase<OtherDerived>& B, fp tol = EPS)
 {
   // The check on the norm is to cover the cases in which both A, and B are close to zero
-  EXPECT_TRUE(A.isApprox(B, EPS) || (A - B).norm() < EPS);
+  EXPECT_TRUE(A.isApprox(B, tol) || (A - B).norm() < tol);
 }
 
 template <typename FPType>
-void QuaternionEquality(const Eigen::Quaternion<FPType>& a, const Eigen::Quaternion<FPType>& b)
+void QuaternionEquality(const Eigen::Quaternion<FPType>& a, const Eigen::Quaternion<FPType>& b, fp tol = EPS)
 {
-  EXPECT_TRUE(a.coeffs().isApprox(b.coeffs(), EPS) || a.coeffs().isApprox(-b.coeffs(), EPS));
+  EXPECT_TRUE(a.coeffs().isApprox(b.coeffs(), tol) || a.coeffs().isApprox(-b.coeffs(), tol));
 }
 
-void ScalarEquality(const fp& a, const fp& b) { EXPECT_TRUE(std::norm(a - b) < EPS); }
+void ScalarEquality(const fp& a, const fp& b, fp tol = EPS) { EXPECT_TRUE(std::norm(a - b) < tol); }
 
 void SystemStateEquality(const msceqf::SystemState& xi1,
                          const msceqf::SystemState& xi2,
-                         const std::vector<uint>& feat_ids = std::vector<uint>())
+                         const std::vector<uint>& feat_ids = std::vector<uint>(),
+                         fp tol = EPS)
 {
-  MatrixEquality(xi1.T().asMatrix(), xi2.T().asMatrix());
-  MatrixEquality(xi1.b(), xi2.b());
+  MatrixEquality(xi1.T().asMatrix(), xi2.T().asMatrix(), tol);
+  MatrixEquality(xi1.b(), xi2.b(), tol);
 
   assert(xi1.opts_.enable_camera_extrinsics_calibration_ == xi2.opts_.enable_camera_extrinsics_calibration_);
   if (xi1.opts_.enable_camera_extrinsics_calibration_)
   {
-    MatrixEquality(xi1.S().asMatrix(), xi2.S().asMatrix());
+    MatrixEquality(xi1.S().asMatrix(), xi2.S().asMatrix(), tol);
   }
 
   assert(xi1.opts_.enable_camera_intrinsics_calibration_ == xi2.opts_.enable_camera_intrinsics_calibration_);
   if (xi1.opts_.enable_camera_intrinsics_calibration_)
   {
-    MatrixEquality(xi1.K().asMatrix(), xi2.K().asMatrix());
+    MatrixEquality(xi1.K().asMatrix(), xi2.K().asMatrix(), tol);
   }
 
   for (const auto& id : feat_ids)
   {
-    MatrixEquality(xi1.f(id), xi2.f(id));
+    MatrixEquality(xi1.f(id), xi2.f(id), tol);
   }
 }
 
 void MSCEqFStateEquality(const msceqf::MSCEqFState& X1,
                          const msceqf::MSCEqFState& X2,
-                         const std::vector<uint>& feat_ids = std::vector<uint>())
+                         const std::vector<uint>& feat_ids = std::vector<uint>(),
+                         fp tol = EPS)
 {
-  MatrixEquality(X1.D().asMatrix(), X2.D().asMatrix());
-  MatrixEquality(X1.delta(), X2.delta());
-  MatrixEquality(X1.CovBlock(msceqf::MSCEqFStateElementName::Dd), X2.CovBlock(msceqf::MSCEqFStateElementName::Dd));
+  MatrixEquality(X1.D().asMatrix(), X2.D().asMatrix(), tol);
+  MatrixEquality(X1.delta(), X2.delta(), tol);
+  MatrixEquality(X1.CovBlock(msceqf::MSCEqFStateElementName::Dd), X2.CovBlock(msceqf::MSCEqFStateElementName::Dd), tol);
 
   assert(X1.opts_.enable_camera_extrinsics_calibration_ == X2.opts_.enable_camera_extrinsics_calibration_);
   if (X1.opts_.enable_camera_extrinsics_calibration_)
   {
-    MatrixEquality(X1.E().asMatrix(), X2.E().asMatrix());
-    MatrixEquality(X1.CovBlock(msceqf::MSCEqFStateElementName::E), X2.CovBlock(msceqf::MSCEqFStateElementName::E));
+    MatrixEquality(X1.E().asMatrix(), X2.E().asMatrix(), tol);
+    MatrixEquality(X1.CovBlock(msceqf::MSCEqFStateElementName::E), X2.CovBlock(msceqf::MSCEqFStateElementName::E), tol);
   }
   assert(X1.opts_.enable_camera_intrinsics_calibration_ == X2.opts_.enable_camera_intrinsics_calibration_);
   if (X1.opts_.enable_camera_intrinsics_calibration_)
   {
-    MatrixEquality(X1.L().asMatrix(), X2.L().asMatrix());
-    MatrixEquality(X1.CovBlock(msceqf::MSCEqFStateElementName::L), X2.CovBlock(msceqf::MSCEqFStateElementName::L));
+    MatrixEquality(X1.L().asMatrix(), X2.L().asMatrix(), tol);
+    MatrixEquality(X1.CovBlock(msceqf::MSCEqFStateElementName::L), X2.CovBlock(msceqf::MSCEqFStateElementName::L), tol);
   }
 
   for (const auto& id : feat_ids)
   {
-    MatrixEquality(X1.Q(id).asMatrix(), X2.Q(id).asMatrix());
-    MatrixEquality(X1.CovBlock(id), X2.CovBlock(id));
+    MatrixEquality(X1.Q(id).asMatrix(), X2.Q(id).asMatrix(), tol);
+    MatrixEquality(X1.CovBlock(id), X2.CovBlock(id), tol);
   }
 }
 

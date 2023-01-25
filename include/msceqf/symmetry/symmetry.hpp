@@ -23,8 +23,6 @@ namespace msceqf
 class Symmetry
 {
  public:
-  using SystemStateAlgebraMap = std::unordered_map<SystemState::SystemStateKey, VectorX>;  //!< System state algebra map
-
   /**
    * @brief Implement the right group action phi of the symmetry group, acting on the homogenous space (phi(X, xi))
    *
@@ -39,9 +37,9 @@ class Symmetry
    *
    * @param xi a SystemState object
    * @param u a Input (Imu) object
-   * @return const SystemStateAlgebraMap
+   * @return const SystemState::SystemStateAlgebraMap
    */
-  [[nodiscard]] static const SystemStateAlgebraMap lift(const SystemState& xi, const Imu& u);
+  [[nodiscard]] static const SystemState::SystemStateAlgebraMap lift(const SystemState& xi, const Imu& u);
 
   static const Matrix5 D;  //!< The D matrix
 

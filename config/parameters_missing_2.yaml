@@ -1,0 +1,15 @@
+# TEST FILE with missing parameters
+
+# Camera calibration
+intrinsics: [461.629, 460.152, 362.680, 246.049]
+T_cam_imu:
+ - [0.01779318, 0.99967549,-0.01822936, 0.07008565]
+ - [-0.9998017, 0.01795239, 0.00860714,-0.01771023]
+ - [0.00893160, 0.01807260, 0.99979678, 0.00399246]
+ - [0.0, 0.0, 0.0, 1.0]
+
+# IMU noise statistics
+accelerometer_noise_density: 0.01   
+accelerometer_random_walk:   0.001
+gyroscope_noise_density: 0.01
+gyroscope_random_walk:   0.001

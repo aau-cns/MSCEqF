@@ -19,10 +19,21 @@
 namespace msceqf
 {
 
-TEST(OptionParser, parse)
+TEST(OptionParserTest, parse)
 {
-  OptionParser parser("/home/alfornasier/PhD/MSCEqF_dev/MSCEqF/config/parameters.yaml");
-  [[maybe_unused]] MSCEqFOptions opts = parser.parseOptions();
+  std::string filepath_base = "/home/alfornasier/PhD/MSCEqF_dev/MSCEqF/config/";
+  int num_files_with_missing = 3;
+
+  {
+    OptionParser parser(filepath_base + "parameters.yaml");
+    [[maybe_unused]] MSCEqFOptions opts = parser.parseOptions();
+  }
+
+  for (int i = 1; i <= num_files_with_missing; ++i)
+  {
+    OptionParser parser(filepath_base + "parameters_missing_" + std::to_string(i) + ".yaml");
+    EXPECT_THROW({ [[maybe_unused]] MSCEqFOptions opts = parser.parseOptions(); }, std::runtime_error);
+  }
 }
 
 }  // namespace msceqf

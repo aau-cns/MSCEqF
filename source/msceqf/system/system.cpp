@@ -15,8 +15,30 @@
 
 namespace msceqf
 {
+SystemState::SystemState(const StateOptions& opts) : opts_(opts), state_()
+{
+  preallocate();
 
-SystemState::SystemState(const SystemState& other) : state_(), g_(other.g_), opts_(other.opts_)
+  insertSystemStateElement(
+      std::make_pair(SystemStateElementName::T, createSystemStateElement<ExtendedPoseState>(std::make_tuple())));
+  insertSystemStateElement(
+      std::make_pair(SystemStateElementName::b, createSystemStateElement<BiasState>(std::make_tuple())));
+
+  if (opts.enable_camera_extrinsics_calibration_)
+  {
+    insertSystemStateElement(std::make_pair(
+        SystemStateElementName::S,
+        createSystemStateElement<CameraExtrinsicState>(std::make_tuple(opts.initial_camera_extrinsics_))));
+  }
+  if (opts.enable_camera_intrinsics_calibration_)
+  {
+    insertSystemStateElement(std::make_pair(
+        SystemStateElementName::K,
+        createSystemStateElement<CameraIntrinsicState>(std::make_tuple(opts.initial_camera_intrinsics_))));
+  }
+}
+
+SystemState::SystemState(const SystemState& other) : opts_(other.opts_), state_()
 {
   for (const auto& [key, element] : other.state_)
   {
@@ -24,8 +46,7 @@ SystemState::SystemState(const SystemState& other) : state_(), g_(other.g_), opt
   }
 }
 
-SystemState::SystemState(SystemState&& other) noexcept
-    : state_(std::move(other.state_)), g_(std::move(other.g_)), opts_(std::move(other.opts_))
+SystemState::SystemState(SystemState&& other) noexcept : opts_(std::move(other.opts_)), state_(std::move(other.state_))
 {
 }
 
@@ -36,7 +57,6 @@ SystemState& SystemState::operator=(const SystemState& other)
   {
     state_[key] = element->clone();
   }
-  g_ = other.g_;
   opts_ = other.opts_;
   return *this;
 }
@@ -44,7 +64,6 @@ SystemState& SystemState::operator=(const SystemState& other)
 SystemState& SystemState::operator=(SystemState&& other) noexcept
 {
   state_ = std::move(other.state_);
-  g_ = std::move(other.g_);
   opts_ = std::move(other.opts_);
   return *this;
 }
@@ -127,7 +146,7 @@ const Vector3& SystemState::f(const uint& feat_id) const
   return std::static_pointer_cast<FeatureState>(state_.at(feat_id))->f_;
 }
 
-const Vector3 SystemState::ge3() const { return g_ * (Vector3() << 0, 0, 1).finished(); }
+const Vector3 SystemState::ge3() const { return opts_.gravity_ * (Vector3() << 0, 0, -1).finished(); }
 
 std::string SystemState::toString(const SystemStateKey& key)
 {

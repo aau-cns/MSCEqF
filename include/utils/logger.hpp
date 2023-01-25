@@ -45,14 +45,14 @@ class Logger
    *
    * @return const LoggerLevel&
    */
-  static const LoggerLevel& getlevel();
+  static const LoggerLevel& getlevel() { return level_; }
 
   /**
    * @brief Set the logger level (see LoggerLevel)
    *
    * @param level LoggerLevel
    */
-  static void setLevel(const LoggerLevel& level);
+  static void setLevel(const LoggerLevel& level) { level_ = level; }
 
   /**
    * @brief Format a info message and log it in white
@@ -120,7 +120,7 @@ class Logger
   }
 
  private:
-  static LoggerLevel level_;  //!< Logger level (FULL by default)
+  static inline LoggerLevel level_ = LoggerLevel::FULL;  //!< Logger level (FULL by default)
 };
 
 }  // namespace utils
