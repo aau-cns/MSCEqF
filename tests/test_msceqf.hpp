@@ -13,6 +13,7 @@
 #define TEST_MSCEQF_HPP
 
 #include "msceqf/msceqf.hpp"
+#include "utils/csv_parser.hpp"
 
 namespace msceqf
 {
@@ -52,11 +53,42 @@ TEST(MSCEqFTest, Construction)
   MSCEqF sys(filepath_base + "parameters.yaml");
 }
 
-// TEST(MSCEqFMeanPropagationTest, meanPropagation)
-// {
-//   std::string filepath_base = "/home/alfornasier/PhD/MSCEqF_dev/MSCEqF/config/";
-//   MSCEqF sys(filepath_base + "parameters.yaml");
-// }
+TEST(MSCEqFPropagationTest, meanPropagation)
+{
+  std::string data_filepath_base = "/home/alfornasier/PhD/MSCEqF_dev/MSCEqF/tests/data/";
+  utils::csvParser csv_parser(data_filepath_base + "noisefree_trajectory.csv",
+                              {"t", "w_x", "w_y", "w_z", "a_x", "a_y", "a_z"},
+                              {"t", "q_x", "q_y", "q_z", "q_w", "p_x", "p_y", "p_z", "v_x", "v_y", "v_z", "b_w_x",
+                               "b_w_y", "b_w_z", "b_a_x", "b_a_y", "b_a_z"});
+  csv_parser.parseAndCheck();
+
+  std::string config_filepath_base = "/home/alfornasier/PhD/MSCEqF_dev/MSCEqF/config/";
+  MSCEqF sys(config_filepath_base + "parameters.yaml");
+
+  Camera cam;
+  for (const auto& imu : csv_parser.getImuData())
+  {
+    sys.processMeasurement(imu);
+    cam.timestamp_ = imu.timestamp_;
+    sys.processMeasurement(cam);
+  }
+
+  SystemState estimate = sys.stateEstimate();
+
+  // This is what i should expect given the discretization error
+  Quaternion expected_q = Quaternion(0.161845275635318, -0.696627072887264, -0.697296803677398, -0.047895674714269);
+  Vector3 expected_v = Vector3(7.488274683912752, -13.888837803165810, -3.050947189706108);
+  Vector3 expected_p = Vector3(3.542582668696489e+02, -4.351835834935308e+02, 3.505436458315752e+02);
+  SE23 expected_T(expected_q, {expected_v, expected_p});
+
+  SystemState expected(
+      sys.stateOptions(),
+      std::make_pair(SystemStateElementName::T,
+                     createSystemStateElement<ExtendedPoseState>(std::make_tuple(expected_T))),
+      std::make_pair(SystemStateElementName::b, createSystemStateElement<BiasState>(std::make_tuple())));
+
+  SystemStateEquality(estimate, expected);
+}
 
 // Camera timestamp in between Imu timestamps
 // Camera timestamp equal to a Imu timestamp in the middle

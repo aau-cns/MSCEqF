@@ -21,7 +21,6 @@
 
 #include "msceqf/state/state.hpp"
 #include "msceqf/system/system.hpp"
-#include "utils/tools.hpp"
 
 namespace msceqf
 {
