@@ -9,9 +9,10 @@
 //
 // You can contact the authors at <alessandro.fornasier@ieee.org>
 
-#ifndef UTILS_HPP
-#define UTILS_HPP
+#ifndef TOOLS_HPP
+#define TOOLS_HPP
 
+#include <algorithm>
 #include <array>
 #include <iterator>
 #include <queue>
@@ -31,7 +32,7 @@ namespace utils
  * @return Eigen::Matrix<FPType, Eigen::Dynamic, 1>
  */
 template <typename FPType>
-Eigen::Matrix<FPType, Eigen::Dynamic, 1> diff(
+static Eigen::Matrix<FPType, Eigen::Dynamic, 1> diff(
     const Eigen::Matrix<FPType, Eigen::Dynamic, 1>& x,
     const std::function<double(const Eigen::Matrix<FPType, Eigen::Dynamic, 1>&)>& f,
     double h = 1e-6)
@@ -61,13 +62,23 @@ Eigen::Matrix<FPType, Eigen::Dynamic, 1> diff(
  * https://stackoverflow.com/questions/2704521/generate-random-double-numbers-in-c
  */
 template <typename Numeric, typename Generator = std::mt19937>
-Numeric random(Numeric from, Numeric to)
+static Numeric random(Numeric from, Numeric to)
 {
   thread_local static Generator gen(std::random_device{}());
   using dist_type = typename std::conditional<std::is_integral<Numeric>::value, std::uniform_int_distribution<Numeric>,
                                               std::uniform_real_distribution<Numeric>>::type;
   thread_local static dist_type dist;
   return dist(gen, typename dist_type::param_type{from, to});
+}
+
+/**
+ * @brief Trim a string, remove leading and trailing spaces
+ *
+ * @param s string to be trimmed
+ */
+static inline void trimString(std::string& s)
+{
+  s.erase(std::remove_if(s.begin(), s.end(), [](unsigned char ch) { return std::isspace(ch); }), s.end());
 }
 
 }  // namespace utils
@@ -160,4 +171,4 @@ std::ostream& operator<<(std::ostream& stream, const T& e)
   return stream << static_cast<typename std::underlying_type<T>::type>(e);
 }
 
-#endif  // UTILS_HPP
+#endif  // TOOLS_HPP
