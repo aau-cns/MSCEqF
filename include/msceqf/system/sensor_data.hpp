@@ -12,6 +12,8 @@
 #ifndef INPUT_HPP
 #define INPUT_HPP
 
+#include <opencv2/opencv.hpp>
+
 #include "types/fptypes.hpp"
 
 namespace msceqf
@@ -24,10 +26,6 @@ namespace msceqf
  */
 struct Imu
 {
-  fp timestamp_ = -1;              //!< Timestamp of the IMU reading
-  Vector3 ang_ = Vector3::Zero();  //!< Angular velocity vector
-  Vector3 acc_ = Vector3::Zero();  //!< Acceleration vector
-
   /**
    * @brief Get the IMU measurement as a 6 vector (ang, acc)
    *
@@ -69,12 +67,14 @@ struct Imu
   {
     return stream << "(" << imu.timestamp_ << ", " << imu.ang_.transpose() << ", " << imu.acc_.transpose() << ")";
   }
+
+  Vector3 ang_ = Vector3::Zero();  //!< Angular velocity vector
+  Vector3 acc_ = Vector3::Zero();  //!< Acceleration vector
+  fp timestamp_ = -1;              //!< Timestamp of the IMU reading
 };
 
 struct Camera
 {
-  fp timestamp_ = -1;  //!< Timestamp of the Camera reading
-
   /**
    * @brief Comparison operator with other imu
    *
@@ -87,6 +87,10 @@ struct Camera
    */
   friend bool operator<(const Camera& lhs, const fp& timestamp) { return lhs.timestamp_ < timestamp; }
   friend bool operator<(const fp& timestamp, const Camera& rhs) { return timestamp < rhs.timestamp_; }
+
+  cv::Mat image_;      //!< The image taken from the camera
+  cv::Mat mask_;       //!< The mask for the given image
+  fp timestamp_ = -1;  //!< Timestamp of the Camera reading
 };
 
 }  // namespace msceqf
