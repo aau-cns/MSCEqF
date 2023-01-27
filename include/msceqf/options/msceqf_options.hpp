@@ -24,6 +24,11 @@ enum class FeatureRepresentation
   ANCHORED_INVERSE_DEPTH
 };
 
+enum class DistortionModel
+{
+  RADTAN,
+};
+
 struct StateOptions
 {
   /// initial covariance values
@@ -46,22 +51,8 @@ struct StateOptions
   uint num_persistent_features_;  //!< The maximum number of persistent (SLAM) features
 };
 
-struct InitializerOptions
+struct PropagatorOptions
 {
-  fp disparity_threshold_;  //!< the disparity threshold for the static initializer
-  fp acc_threshold_;        //!< The acceleration threshold for the static initializer
-  uint imu_init_window_;    //!< The window in seconds used to check for acceleration spikes
-};
-
-struct MSCEqFOptions
-{
-  StateOptions state_options_;       //!< The state options
-  InitializerOptions init_options_;  //!< The initializer options
-
-  fp persistent_feature_init_delay_;  //!< The delay in s before initializing persistent features
-
-  int state_transition_order_;  //!< The order for the computation of the state transition matrix
-
   fp angular_velocity_std_;       //!< Continuous time angular velocity standard deviation
   fp acceleration_std_;           //!< Continuous time acceleration standard deviation
   fp angular_velocity_bias_std_;  //!< Continuous time angular velocity bias (random walk) standard deviation
@@ -69,6 +60,41 @@ struct MSCEqFOptions
 
   uint imu_buffer_max_size_;  //!< The maximum size of the propagator's imu buffer
 
+  int state_transition_order_;  //!< The order for the computation of the state transition matrix
+};
+
+// class UpdaterOptions
+// {
+
+// };
+
+struct InitializerOptions
+{
+  fp disparity_threshold_;  //!< the disparity threshold for the static initializer
+  fp acc_threshold_;        //!< The acceleration threshold for the static initializer
+  uint imu_init_window_;    //!< The window in seconds used to check for acceleration spikes
+};
+
+struct CameraOptions
+{
+  VectorX distortion_coefficients_;   //!< Distortion coefficients
+  Vector2 resolution_;                //!< Width, Height
+  DistortionModel distortion_model_;  //!< Distortion Model
+};
+
+// struct TrackerOptions
+// {
+
+// };
+
+struct MSCEqFOptions
+{
+  StateOptions state_options_;            //!< The state options
+  PropagatorOptions propagator_options_;  //!< The propagator options
+  InitializerOptions init_options_;       //!< The initializer options
+  CameraOptions cam_options_;             //!< The camera options
+
+  // fp persistent_feature_init_delay_;  //!< The delay in s before initializing persistent features
   // FeatureRepresentation msc_features_representation_ =
   //     FeatureRepresentation::ANCHORED_INVERSE_DEPTH;  //!< Multi State Constraint features representation
   // FeatureRepresentation persistent_features_representation_ =

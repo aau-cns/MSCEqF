@@ -166,8 +166,15 @@ class OptionParser
    *
    * @param extrinsics
    * @param intrinsics
+   * @param distortion_coefficients
+   * @param distortion_model
+   * @param resolution
    */
-  void parseCameraCalibration(SE3& extrinsics, In& intrinsics);
+  void parseCameraCalibration(SE3& extrinsics,
+                              In& intrinsics,
+                              VectorX& distortion_coefficients,
+                              DistortionModel& distortion_model,
+                              Vector2& resolution);
 
   /**
    * @brief Parse the initial covariance
