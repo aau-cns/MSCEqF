@@ -138,6 +138,15 @@ class SystemState
   [[nodiscard]] const In& K() const;
 
   /**
+   * @brief return a copy of the camera intrinsics element of the system state as a 4-vector
+   * If the camera intrinsics are not are not estimated online then the fixed calibration value provided in the options
+   * is returned
+   *
+   * @return const Vector4&
+   */
+  [[nodiscard]] const Vector4 k() const;
+
+  /**
    * @brief return a constant reference to a persistent feature element of the system state as a vector, given the
    * feature id
    *
