@@ -20,7 +20,7 @@ MSCEqF::MSCEqF(const std::string& params_filepath)
     , X_(opts_.state_options_)
     , xi0_(opts_.state_options_)
     , initializer_(opts_.init_options_)
-    , propagator_(opts_)
+    , propagator_(opts_.propagator_options_)
 {
 }
 

@@ -19,7 +19,7 @@
 
 namespace msceqf
 {
-Propagator::Propagator(const MSCEqFOptions& opts)
+Propagator::Propagator(const PropagatorOptions& opts)
     : imu_buffer_()
     , Q_(Matrix12::Zero())
     , state_transition_order_(opts.state_transition_order_)
