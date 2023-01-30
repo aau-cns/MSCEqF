@@ -62,21 +62,32 @@ class OptionParser
       using vector = std::vector<Scalar>;
       using vectorvector = std::vector<std::vector<Scalar>>;
 
+      int rows = Rows;
+      int cols = Cols;
+
       if constexpr (Rows == 1 || Cols == 1)
       {
         vector vec = node_[param].as<vector>();
-        x = Eigen::Map<Eigen::Matrix<Scalar, Rows, Cols>>(vec.data(), Rows, Cols);
+        if constexpr (Rows == -1)
+        {
+          rows = vec.size();
+        }
+        else if (Cols == -1)
+        {
+          cols = vec.size();
+        }
+        x = Eigen::Map<Eigen::Matrix<Scalar, Rows, Cols>>(vec.data(), rows, cols);
       }
       else
       {
         vectorvector mat = node_[param].as<vectorvector>();
-        vector vec;
-        for (auto const& v : mat)
+        vector vec = utils::flatten(mat);
+        if constexpr (Rows == 1 && Cols == 1)
         {
-          vec.reserve(vec.size() + v.size());
-          vec.insert(vec.end(), v.begin(), v.end());
+          rows = mat.size();
+          cols = vec.size() / mat.size();
         }
-        x = Eigen::Map<Eigen::Matrix<Scalar, Rows, Cols, Eigen::RowMajor>>(vec.data(), Rows, Cols);
+        x = Eigen::Map<Eigen::Matrix<Scalar, Rows, Cols, Eigen::RowMajor>>(vec.data(), rows, cols);
       }
       if constexpr (Rows == 1)
       {
@@ -161,20 +172,34 @@ class OptionParser
   }
 
   /**
-   * @brief Parse the camera extrinsics and intrinsics from the YAML file.
-   * The camera calibration parameters has to be defined following the Kalibr convention
+   * @brief Parse the camera parmaeters, including extrinsics and intrinsics from the YAML file.
+   * The camera parameters has to be defined according to Kalibr convention
    *
    * @param extrinsics
    * @param intrinsics
-   * @param distortion_coefficients
    * @param distortion_model
+   * @param distortion_coefficients
    * @param resolution
    */
-  void parseCameraCalibration(SE3& extrinsics,
-                              In& intrinsics,
-                              VectorX& distortion_coefficients,
-                              DistortionModel& distortion_model,
-                              Vector2& resolution);
+  void parseCameraParameters(SE3& extrinsics,
+                             In& intrinsics,
+                             DistortionModel& distortion_model,
+                             VectorX& distortion_coefficients,
+                             Vector2& resolution);
+
+  /**
+   * @brief Parse the image preprocessing equalization method
+   *
+   * @param eq
+   */
+  void parseEqualizationMethod(EqualizationMethod& eq);
+
+  /**
+   * @brief Parse the feature detector type
+   *
+   * @param detector
+   */
+  void parseDetectorType(FeatureDetector& detector);
 
   /**
    * @brief Parse the initial covariance

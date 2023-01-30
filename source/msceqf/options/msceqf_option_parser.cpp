@@ -31,11 +31,6 @@ MSCEqFOptions OptionParser::parseOptions()
   parseInitialCovariance(opts.state_options_.D_init_cov_, opts.state_options_.delta_init_cov_,
                          opts.state_options_.E_init_cov_, opts.state_options_.L_init_cov_);
 
-  // Parse camera intrinsics and extrinsics
-  parseCameraCalibration(opts.state_options_.initial_camera_extrinsics_, opts.state_options_.initial_camera_intrinsics_,
-                         opts.cam_options_.distortion_coefficients_, opts.cam_options_.distortion_model_,
-                         opts.cam_options_.resolution_);
-
   // Parse flags
   readDefault(opts.state_options_.enable_camera_extrinsics_calibration_, true, "enable_camera_extrinsic_calibration");
   readDefault(opts.state_options_.enable_camera_intrinsics_calibration_, false, "enable_camera_intrinsic_calibration");
@@ -44,6 +39,43 @@ MSCEqFOptions OptionParser::parseOptions()
   readDefault(opts.state_options_.gravity_, 9.81, "gravity");
   readDefault(opts.state_options_.num_clones_, 10, "num_clones");
   readDefault(opts.state_options_.num_persistent_features_, 50, "num_persistent_features");
+
+  ///
+  /// Parse tracker parameters
+  ///
+  readDefault(opts.tracker_options_.max_features_, 100, "max_features");
+  uint min_feats_default = std::min(static_cast<uint>(20), opts.tracker_options_.max_features_);
+  readDefault(opts.tracker_options_.min_features_, min_feats_default, "min_features");
+  readDefault(opts.tracker_options_.grid_x_size_, 8, "grid_x_size");
+  readDefault(opts.tracker_options_.grid_y_size_, 5, "grid_y_size");
+  readDefault(opts.tracker_options_.min_px_dist_, 5, "min_feature_pixel_distance");
+
+  readDefault(opts.tracker_options_.optical_flow_pyramid_levels_, 3, "optical_flow_pyramid_levels");
+  readDefault(opts.tracker_options_.optical_flow_win_size_, 21, "optical_flow_win_size");
+
+  // Parse camera parameters
+  parseCameraParameters(opts.state_options_.initial_camera_extrinsics_, opts.state_options_.initial_camera_intrinsics_,
+                        opts.tracker_options_.distortion_model_,
+                        opts.tracker_options_.cam_options_.distortion_coefficients_,
+                        opts.tracker_options_.cam_options_.resolution_);
+
+  // Parse equalization method
+  parseEqualizationMethod(opts.tracker_options_.equalizer_);
+
+  // Parse feature detector type
+  parseDetectorType(opts.tracker_options_.detector_);
+
+  // Parse feature detector params
+  switch (opts.tracker_options_.detector_)
+  {
+    case FeatureDetector::FAST:
+      readDefault(opts.tracker_options_.fast_opts_.fast_threshold_, 10, "fast_threshold");
+      break;
+    // case FeatureDetector::GFTT:
+    //   break;
+    default:
+      break;
+  }
 
   ///
   /// Parse propagator options
@@ -82,11 +114,11 @@ MSCEqFOptions OptionParser::parseOptions()
   return opts;
 }
 
-void OptionParser::parseCameraCalibration(SE3& extrinsics,
-                                          In& intrinsics,
-                                          VectorX& distortion_coefficients,
-                                          DistortionModel& distortion_model,
-                                          Vector2& resolution)
+void OptionParser::parseCameraParameters(SE3& extrinsics,
+                                         In& intrinsics,
+                                         DistortionModel& distortion_model,
+                                         VectorX& distortion_coefficients,
+                                         Vector2& resolution)
 {
   Matrix4 extrinsics_mat;
   if (!read(extrinsics_mat, "T_cam_imu"))
@@ -128,7 +160,7 @@ void OptionParser::parseCameraCalibration(SE3& extrinsics,
   }
   else
   {
-    if (model.compare("radtan"))
+    if (model.compare("radtan") == 0)
     {
       distortion_model = DistortionModel::RADTAN;
     }
@@ -143,6 +175,48 @@ void OptionParser::parseCameraCalibration(SE3& extrinsics,
     throw std::runtime_error(
         "Wrong or missing camera resolution. Please provide camera resolution (resolution) in the configuration "
         "file according to Kalibr convention.");
+  }
+}
+
+void OptionParser::parseEqualizationMethod(EqualizationMethod& eq)
+{
+  std::string method;
+  readDefault(method, "none", "equalization_method");
+
+  if (method.compare("none") == 0)
+  {
+    eq = EqualizationMethod::NONE;
+  }
+  else if (method.compare("histogram") == 0)
+  {
+    eq = EqualizationMethod::HISTOGRAM;
+  }
+  else if (method.compare("clahe") == 0)
+  {
+    eq = EqualizationMethod::CLAHE;
+  }
+  else
+  {
+    throw std::runtime_error("Wrong or unsupported equalization method. Please use histogram or clahe.");
+  }
+}
+
+void OptionParser::parseDetectorType(FeatureDetector& detector)
+{
+  std::string detectortype;
+  readDefault(detectortype, "fast", "feature_detector");
+
+  if (detectortype.compare("fast") == 0)
+  {
+    detector = FeatureDetector::FAST;
+  }
+  // else if (detectortype.compare("shi-tomasi") == 0)
+  // {
+  //   detector = EqualizationMethod::GFTT;
+  // }
+  else
+  {
+    throw std::runtime_error("Wrong or unsupported feature detector type. Please use fast or shi-tomasi.");
   }
 }
 

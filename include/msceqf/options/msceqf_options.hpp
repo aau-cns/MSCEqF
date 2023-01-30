@@ -29,6 +29,18 @@ enum class DistortionModel
   RADTAN,
 };
 
+enum class EqualizationMethod
+{
+  HISTOGRAM,
+  CLAHE,
+  NONE
+};
+
+enum class FeatureDetector
+{
+  FAST,
+};
+
 struct StateOptions
 {
   /// initial covariance values
@@ -77,22 +89,37 @@ struct InitializerOptions
 
 struct CameraOptions
 {
-  VectorX distortion_coefficients_;   //!< Distortion coefficients
-  Vector2 resolution_;                //!< Width, Height
-  DistortionModel distortion_model_;  //!< Distortion Model
+  VectorX distortion_coefficients_;  //!< Distortion coefficients
+  Vector2 resolution_;               //!< Width, Height
 };
 
-// struct TrackerOptions
-// {
+struct FastOptions
+{
+  int fast_threshold_;  //!< Fast detector threshold ()
+};
 
-// };
+struct TrackerOptions
+{
+  CameraOptions cam_options_;         //!< The camera options
+  DistortionModel distortion_model_;  //!< Distortion Model
+  EqualizationMethod equalizer_;      //!< The image equalization method
+  FeatureDetector detector_;          //!< The feature detector
+  uint max_features_;                 //!< maximum feature to track/detect
+  uint min_features_;                 //!< Minimum feature to track/detect
+  uint grid_x_size_;                  //!< x size of the grid
+  uint grid_y_size_;                  //!< y size of the grid
+  uint min_px_dist_;                  //!< minimum pixel distance between features
+  uint optical_flow_pyramid_levels_;  //!< pyramids levels for optical flow
+  uint optical_flow_win_size_;        //!< window size for optical flow
+  FastOptions fast_opts_;             //!< Fast feature detector options
+};
 
 struct MSCEqFOptions
 {
   StateOptions state_options_;            //!< The state options
   PropagatorOptions propagator_options_;  //!< The propagator options
   InitializerOptions init_options_;       //!< The initializer options
-  CameraOptions cam_options_;             //!< The camera options
+  TrackerOptions tracker_options_;        //!< The vision tracker options
 
   // fp persistent_feature_init_delay_;  //!< The delay in s before initializing persistent features
   // FeatureRepresentation msc_features_representation_ =
