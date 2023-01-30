@@ -4,6 +4,9 @@
 pitch_roll_std: [0.1, 0.1]
 
 # Camera calibration
+distortion_coeffs: [0.0, 0.0, 0.0, 0.0]
+distortion_model: radtan
+resolution: [640, 480]
 intrinsics: [640, 480, 320 , 240]
 T_cam_imu:
  - [0.41802349, -0.63293951,  0.6516471,  -0.056874]
@@ -28,6 +31,17 @@ num_persistent_features: 50
 persistent_feature_init_delay: 1.0
 state_transition_order: 1
 
+# Tracker
+equalization_method: histogram
+feature_detector: fast
+grid_x_size: 4
+grid_y_size: 3
+min_feature_pixel_distance: 5
+max_features: 150
+fast_threshold: 20
+shi_tomasi_quality_level: 0.01
+
+
 # Logger level [0: Full, 1: INFO, 2: WARN, 3: ERR, 4: INACTIVE]
-# logger_level: 0
-logger_level: 4
+logger_level: 0
+# logger_level: 4

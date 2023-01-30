@@ -44,7 +44,7 @@ class StaticInitializer
    *
    * @return true if motion is detected, flase otherwise
    */
-  [[nodiscard]] bool detectMotion(/* camera meas */);
+  [[nodiscard]] bool detectMotion();
 
  private:
   /**
@@ -55,7 +55,13 @@ class StaticInitializer
    */
   [[nodiscard]] bool accelerationCheck();
 
-  [[nodiscard]] bool disparityCheck(/* camera meas */);
+  /**
+   * @brief Perform disparity check
+   *
+   * @return true if disparity check succeed (diparity above threshold), false if no disparity is detected (disparity
+   * below threshold)
+   */
+  [[nodiscard]] bool disparityCheck();
 
   InitializerOptions opts_;  //!< The initializer options
 
