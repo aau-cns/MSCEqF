@@ -21,7 +21,7 @@ enum class FeatureRepresentation
 {
   EUCLIDEAN,
   ANCHORED_POLAR,
-  ANCHORED_INVERSE_DEPTH
+  ANCHORED_INVERSE_DEPTH,
 };
 
 enum class DistortionModel
@@ -33,12 +33,13 @@ enum class EqualizationMethod
 {
   HISTOGRAM,
   CLAHE,
-  NONE
+  NONE,
 };
 
 enum class FeatureDetector
 {
   FAST,
+  GFTT,
 };
 
 struct StateOptions
@@ -95,7 +96,12 @@ struct CameraOptions
 
 struct FastOptions
 {
-  int fast_threshold_;  //!< Fast detector threshold ()
+  int fast_threshold_;  //!< Fast detector threshold (The lower the more feature are detected/accepted)
+};
+
+struct GFTTOptions
+{
+  fp quality_level_;  //!< Shi-Tomasi detector quality level (The lower the more feature are detected/accepted)
 };
 
 struct TrackerOptions
@@ -112,6 +118,7 @@ struct TrackerOptions
   uint optical_flow_pyramid_levels_;  //!< pyramids levels for optical flow
   uint optical_flow_win_size_;        //!< window size for optical flow
   FastOptions fast_opts_;             //!< Fast feature detector options
+  GFTTOptions gftt_opts_;             //!< Shi-Tomasi feature detector options
 };
 
 struct MSCEqFOptions

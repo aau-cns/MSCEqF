@@ -71,8 +71,9 @@ MSCEqFOptions OptionParser::parseOptions()
     case FeatureDetector::FAST:
       readDefault(opts.tracker_options_.fast_opts_.fast_threshold_, 10, "fast_threshold");
       break;
-    // case FeatureDetector::GFTT:
-    //   break;
+    case FeatureDetector::GFTT:
+      readDefault(opts.tracker_options_.gftt_opts_.quality_level_, 0.05, "shi_tomasi_quality_level");
+      break;
     default:
       break;
   }
@@ -210,10 +211,10 @@ void OptionParser::parseDetectorType(FeatureDetector& detector)
   {
     detector = FeatureDetector::FAST;
   }
-  // else if (detectortype.compare("shi-tomasi") == 0)
-  // {
-  //   detector = EqualizationMethod::GFTT;
-  // }
+  else if (detectortype.compare("shi_tomasi") == 0)
+  {
+    detector = FeatureDetector::GFTT;
+  }
   else
   {
     throw std::runtime_error("Wrong or unsupported feature detector type. Please use fast or shi-tomasi.");

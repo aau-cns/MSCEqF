@@ -42,13 +42,13 @@ Tracker::Tracker(const TrackerOptions& opts, const Vector4& intrinsics)
   switch (opts_.detector_)
   {
     case FeatureDetector::FAST:
-      detector_ = cv::FastFeatureDetector::create();
+      detector_ = cv::FastFeatureDetector::create(opts_.fast_opts_.fast_threshold_);
       utils::Logger::info("Initialized KLT tracker FAST feature detector");
       break;
-    // case FeatureDetector::GFTT:
-    //   detector_ = cv::GFTTDetector::create();
-    //   utils::Logger::info("Initialized KLT tracker Shi-Tomasi feature detector");
-    //   break;
+    case FeatureDetector::GFTT:
+      detector_ = cv::GFTTDetector::create(opts_.max_features_, opts_.gftt_opts_.quality_level_, opts_.min_px_dist_);
+      utils::Logger::info("Initialized KLT tracker Shi-Tomasi feature detector");
+      break;
     default:
       break;
   }
@@ -158,7 +158,7 @@ void Tracker::detect(Camera& cam)
   new_kpts.reserve(detected.size());
   for (const auto& p : detected)
   {
-    new_kpts.emplace_back(p.x, p.y, 1.0f);
+    new_kpts.emplace_back(p.x, p.y, 2.0f);
   }
 
   // TEST
