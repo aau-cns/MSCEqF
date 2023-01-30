@@ -32,7 +32,7 @@ class Propagator
    *
    * @param opts
    */
-  Propagator(const MSCEqFOptions& opts);
+  Propagator(const PropagatorOptions& opts);
 
   /**
    * @brief insert a new IMU measurement into the imu buffer, if the given IMU measurement has a grater timestamp than

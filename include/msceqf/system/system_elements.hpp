@@ -193,7 +193,7 @@ template <typename T, typename... Args>
   return std::apply(
       [](const auto&... args)
       {
-        if constexpr (std::is_constructible_v<T, decltype(args)...>)
+        if constexpr (std::is_base_of_v<SystemStateElement, T> && std::is_constructible_v<T, decltype(args)...>)
         {
           return std::make_unique<T>(args...);
         }

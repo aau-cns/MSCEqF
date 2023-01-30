@@ -81,6 +81,26 @@ static inline void trimString(std::string& s)
   s.erase(std::remove_if(s.begin(), s.end(), [](unsigned char ch) { return std::isspace(ch); }), s.end());
 }
 
+/**
+ * @brief Flassten a vector of vectors
+ *
+ * @tparam T
+ * @param vector_of_vectors
+ * @return std::vector<T>
+ */
+template <typename T>
+static std::vector<T> flatten(const std::vector<std::vector<T>>& vector_of_vectors)
+{
+  std::vector<T> flat;
+  size_t total_size = std::accumulate(vector_of_vectors.begin(), vector_of_vectors.end(), 0,
+                                      [](size_t size, const std::vector<T>& vec) { return size + vec.size(); });
+  flat.reserve(total_size);
+  for (const auto& vec : vector_of_vectors)
+  {
+    flat.insert(flat.end(), vec.begin(), vec.end());
+  }
+  return flat;
+}
 }  // namespace utils
 
 /**

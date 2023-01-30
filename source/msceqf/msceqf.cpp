@@ -20,12 +20,14 @@ MSCEqF::MSCEqF(const std::string& params_filepath)
     , X_(opts_.state_options_)
     , xi0_(opts_.state_options_)
     , initializer_(opts_.init_options_)
-    , propagator_(opts_)
+    , propagator_(opts_.propagator_options_)
 {
 }
 
 void MSCEqF::processImuMeasurement(const Imu& imu)
 {
+  assert(imu.timestamp_ >= 0);
+
   if (!is_filter_initialized_)
   {
     utils::Logger::info("Collecting IMU measurements for static initialization.");
@@ -45,9 +47,12 @@ void MSCEqF::processImuMeasurement(const Imu& imu)
 
 void MSCEqF::processCameraMeasurement(const Camera& cam)
 {
+  assert(cam.timestamp_ >= 0);
+  assert(cam.image_.size() == cam.mask_.size());
+
   if (!is_filter_initialized_)
   {
-    initializer_.detectMotion(/* camera meas */);
+    is_filter_initialized_ = initializer_.detectMotion();
   }
 
   if (cam.timestamp_ < timestamp_)
