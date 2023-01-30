@@ -38,10 +38,7 @@ void StaticInitializer::insertImu(const Imu& imu)
   }
 }
 
-bool StaticInitializer::detectMotion(/* camera meas */)
-{
-  return accelerationCheck() && disparityCheck(/* camera meas */);
-}
+bool StaticInitializer::detectMotion() { return accelerationCheck() && disparityCheck(); }
 
 bool StaticInitializer::accelerationCheck()
 {
@@ -72,6 +69,6 @@ bool StaticInitializer::accelerationCheck()
   return true;
 }
 
-bool StaticInitializer::disparityCheck(/* camera meas */) { return true; }
+bool StaticInitializer::disparityCheck() { return true; }
 
 }  // namespace msceqf
