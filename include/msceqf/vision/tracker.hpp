@@ -59,6 +59,14 @@ class Tracker
 
  private:
   void track(Camera& cam);
+
+  /**
+   * @brief ...
+   * The number of feature per cell is "dynamic". It starts with the policy that the extraction should be uniform for
+   * each cell but the max number of features are "redistributed" if the detection froduces few features in some cells.
+   *
+   * @param cam
+   */
   void detect(Camera& cam);
 
   /**
@@ -89,7 +97,7 @@ class Tracker
 
   Matches matches_;  //!< The set of mathces between the previous and the actual image
 
-  uint max_kpts_per_cell_;  //!< Maximum number of keypoints for each cell of the grid
+  std::atomic<uint> max_kpts_per_cell_;  //!< Maximum number of keypoints for each cell of the grid
 
   std::vector<cv::Mat> pyramids_;  //!< Pyramids for Optical Flow
   cv::Size win_;                   //!< The Optical Flow window size

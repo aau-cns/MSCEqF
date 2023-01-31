@@ -110,7 +110,10 @@ void Tracker::detect(Camera& cam)
 
   maskPreviouskeypoints(cam.mask_);
 
-  // Parallel feature extraction for each cell of the grid
+  // Parallel feature extraction for each cell of the grid.
+  // Re-computation of max_kpts_per_cell_ based on how many feature have been extracted in previous cells.
+  std::atomic<size_t> num_detected(0);
+  std::atomic<int> cell_cnt(0);
   cv::parallel_for_(cv::Range(0, opts_.grid_x_size_ * opts_.grid_y_size_),
                     [&](const cv::Range& range)
                     {
@@ -120,6 +123,10 @@ void Tracker::detect(Camera& cam)
                         int x = cell_idx % opts_.grid_x_size_;
                         cv::Rect cell(x * cell_width, y * cell_height, cell_width, cell_height);
                         extractCellKeypoints(cam.image_(cell), cam.mask_(cell), cell_kpts[cell_idx]);
+                        num_detected += cell_kpts[cell_idx].size();
+                        max_kpts_per_cell_ = (opts_.max_features_ - num_detected.load()) /
+                                             ((opts_.grid_x_size_ * opts_.grid_y_size_) - cell_cnt.load());
+                        ++cell_cnt;
                         if (x > 0 || y > 0)
                         {
                           std::for_each(cell_kpts[cell_idx].begin(), cell_kpts[cell_idx].end(),
@@ -131,9 +138,6 @@ void Tracker::detect(Camera& cam)
                         }
                       }
                     });
-
-  // [NOTE] If half of the image is sky, should I take care of the fact that no features are extracted and then i can
-  // increase the number of feature per cell in the other cells!
 
   // Flatten cell keypoints (convert to FeatureCoordinates vector)
   size_t size = std::accumulate(cell_kpts.begin(), cell_kpts.end(), 0,
@@ -191,8 +195,8 @@ void Tracker::extractCellKeypoints(const cv::Mat& cell, const cv::Mat& mask, Key
             [](const cv::KeyPoint& pre, const cv::KeyPoint& post) { return pre.response > post.response; });
 
   // Cap keypoints to max_kpts_per_cell_, keeping the ones with the highest score
-  assert((max_kpts_per_cell_ - previous_kpts_.size()) > 0);
-  cell_kpts.resize(std::min(cell_kpts.size(), (max_kpts_per_cell_ - previous_kpts_.size())));
+  assert((max_kpts_per_cell_.load() - previous_kpts_.size()) > 0);
+  cell_kpts.resize(std::min(cell_kpts.size(), (max_kpts_per_cell_.load() - previous_kpts_.size())));
 }
 
 }  // namespace msceqf
