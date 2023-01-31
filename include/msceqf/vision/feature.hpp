@@ -27,7 +27,6 @@ namespace msceqf
  */
 struct Feature
 {
-  //   using FeatureCoordinates = std::array<float, 2>;  //!< The feature coordinates
   using FeatureCoordinates = cv::Point2f;  //!< The feature coordinates
 
   /**

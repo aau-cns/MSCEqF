@@ -24,9 +24,11 @@ Tracker::Tracker(const TrackerOptions& opts, const Vector4& intrinsics)
     , previous_kpts_()
     , matches_()
     , max_kpts_per_cell_(opts_.max_features_ / (opts_.grid_x_size_ * opts_.grid_y_size_))
-    , pyramids_(std::vector<cv::Mat>(opts_.optical_flow_pyramid_levels_))
+    , pyramids_()
     , win_(cv::Size(opts_.optical_flow_win_size_, opts_.optical_flow_win_size_))
 {
+  pyramids_.reserve(opts_.optical_flow_pyramid_levels_);
+
   switch (opts_.distortion_model_)
   {
     case DistortionModel::RADTAN:
@@ -94,14 +96,18 @@ void Tracker::track(Camera& cam)
 
   if (previous_kpts_.size() < opts_.min_features_)
   {
-    detect(cam);
+    detect(cam, current_kpts);
   }
+
+  cv::drawKeypoints(cam.image_, current_kpts, cam.image_, cv::Scalar(0, 0, 255));
+  cv::imshow("Image with Keypoints", cam.image_);
+  cv::waitKey();
 
   // Continue here...
   // When do i undistort?
 }
 
-void Tracker::detect(Camera& cam)
+void Tracker::detect(Camera& cam, Keypoints& current_kpts)
 {
   int cell_width = cam.image_.cols / opts_.grid_x_size_;
   int cell_height = cam.image_.rows / opts_.grid_y_size_;
@@ -142,7 +148,8 @@ void Tracker::detect(Camera& cam)
   // Flatten cell keypoints (convert to FeatureCoordinates vector)
   size_t size = std::accumulate(cell_kpts.begin(), cell_kpts.end(), 0,
                                 [](size_t size, const Keypoints& kpts) { return size + kpts.size(); });
-  std::vector<Feature::FeatureCoordinates> detected(size);
+  std::vector<Feature::FeatureCoordinates> detected;
+  detected.reserve(size);
   for (const auto& kpts : cell_kpts)
   {
     for (const auto& kpt : kpts)
@@ -151,24 +158,22 @@ void Tracker::detect(Camera& cam)
     }
   }
 
+  // Remove features below minimum distance
+  if (opts_.min_px_dist_ > 0)
+  {
+    removeCloseFeatures(detected);
+  }
+
   // Sub-pixel refinement for all the detected keypoints
   cv::TermCriteria criteria = cv::TermCriteria(cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 20, 0.001);
   cv::cornerSubPix(cam.image_, detected, cv::Size(5, 5), cv::Size(-1, -1), criteria);
 
-  // DO I NEED TO RE-CONVERT AND RETURN SOMETHING ?
-  // CAN I SIMPLY APPEND TO previous_kpts_ (do i need previous_kpts_ for matching) ?
-  // SHOULD I HAVE actual_kpts_ or leverage matches_ ?
-  Keypoints new_kpts;
-  new_kpts.reserve(detected.size());
+  // Assign
+  current_kpts.reserve(detected.size());
   for (const auto& p : detected)
   {
-    new_kpts.emplace_back(p.x, p.y, 2.0f);
+    current_kpts.emplace_back(p.x, p.y, 5.0f);
   }
-
-  // TEST
-  cv::drawKeypoints(cam.image_, new_kpts, cam.image_, cv::Scalar(0, 0, 255), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
-  cv::imshow("Image with points", cam.image_);
-  cv::waitKey();
 }
 
 void Tracker::maskPreviouskeypoints(cv::Mat& mask)
@@ -189,6 +194,12 @@ void Tracker::maskPreviouskeypoints(cv::Mat& mask)
 void Tracker::extractCellKeypoints(const cv::Mat& cell, const cv::Mat& mask, Keypoints& cell_kpts)
 {
   detector_->detect(cell, cell_kpts, mask);
+
+  // Remove features below minimum distance in this cell if we are using FAST
+  if (opts_.min_px_dist_ > 0 && opts_.detector_ == FeatureDetector::FAST)
+  {
+    removeCloseFeatures(cell_kpts);
+  }
 
   // Sort detected keypoints based on fast score
   std::sort(cell_kpts.begin(), cell_kpts.end(),

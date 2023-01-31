@@ -58,16 +58,24 @@ class Tracker
   void processCamera(Camera& cam);
 
  private:
-  void track(Camera& cam);
-
   /**
    * @brief ...
-   * The number of feature per cell is "dynamic". It starts with the policy that the extraction should be uniform for
-   * each cell but the max number of features are "redistributed" if the detection froduces few features in some cells.
    *
    * @param cam
    */
-  void detect(Camera& cam);
+  void track(Camera& cam);
+
+  /**
+   * @brief Detect features based on the selected feature detector.
+   * This method detects feature in a image splitting the image in a grid, and extracting features for each grid cell in
+   * parallel. The number of feature per cell is "dynamic". It starts with the policy that the extraction should be
+   * uniform for each cell but the max number of features are "redistributed" if the detection produces few features in
+   * some cells.
+   *
+   * @param cam
+   * @param current_kpts
+   */
+  void detect(Camera& cam, Keypoints& current_kpts);
 
   /**
    * @brief This method build a mask for keypoint extraction.
@@ -77,6 +85,58 @@ class Tracker
    * @param mask
    */
   void maskPreviouskeypoints(cv::Mat& mask);
+
+  /**
+   * @brief Remove keypoints which eulidean distance is smaller than min pixel distance using a two pointer approach
+   *
+   * @param feats Keypoints& or std::vector<cv::Pint2f>&
+   *
+   * @note This method *does not* ensure that two feature with distance smaller than threshold are removed
+   */
+  template <typename T>
+  void removeCloseFeatures(T& feats)
+  {
+    static_assert(std::is_same_v<T, Keypoints> || std::is_same_v<T, std::vector<cv::Point2f>>);
+    size_t i = 0, j = 0;
+    cv::Point2f ref(1, 1);
+    if constexpr (std::is_same_v<T, Keypoints>)
+    {
+      std::sort(feats.begin(), feats.end(),
+                [&ref](const cv::KeyPoint& pre, const cv::KeyPoint& post)
+                { return pre.pt.dot(ref) < post.pt.dot(ref); });
+    }
+    else
+    {
+      std::sort(feats.begin(), feats.end(),
+                [&ref](const cv::Point2f& pre, const cv::Point2f& post) { return pre.dot(ref) < post.dot(ref); });
+    }
+    while (j < feats.size())
+    {
+      cv::Point2f diff;
+      if constexpr (std::is_same_v<T, Keypoints>)
+      {
+        diff = feats[j].pt - feats[i].pt;
+      }
+      else
+      {
+        diff = feats[j] - feats[i];
+      }
+      if (std::sqrt(diff.dot(diff)) < opts_.min_px_dist_)
+      {
+        ++j;
+      }
+      else
+      {
+        if (i + 1 != j)
+        {
+          feats[i + 1] = feats[j];
+        }
+        ++i;
+        ++j;
+      }
+    }
+    feats.resize(i + 1);
+  }
 
   /**
    * @brief Extract keypoints for the given cell. Extracted keypoints are limited to a maximum number given by the
@@ -108,7 +168,3 @@ class Tracker
 #endif  // TRACKER_HPP
 
 // [TODO] Check constructor init list
-// [TODO] Add params to options
-// [TODO] Preallocation of vectors
-// [TODO] Add support for goodfeaturestotrack GFTT
-// [TODO] Subpixel refinement

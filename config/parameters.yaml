@@ -36,9 +36,9 @@ equalization_method: histogram
 feature_detector: fast
 grid_x_size: 4
 grid_y_size: 3
-min_feature_pixel_distance: 5
+min_feature_pixel_distance: 0
 max_features: 150
-fast_threshold: 20
+fast_threshold: 50
 shi_tomasi_quality_level: 0.01
 
 
