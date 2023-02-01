@@ -44,13 +44,13 @@ MSCEqFOptions OptionParser::parseOptions()
   /// Parse tracker parameters
   ///
   readDefault(opts.tracker_options_.max_features_, 100, "max_features");
-  uint min_feats_default = std::min(static_cast<uint>(20), opts.tracker_options_.max_features_);
+  uint min_feats_default = std::min(uint(20), opts.tracker_options_.max_features_);
   readDefault(opts.tracker_options_.min_features_, min_feats_default, "min_features");
   readDefault(opts.tracker_options_.grid_x_size_, 8, "grid_x_size");
   readDefault(opts.tracker_options_.grid_y_size_, 5, "grid_y_size");
   readDefault(opts.tracker_options_.min_px_dist_, 5, "min_feature_pixel_distance");
 
-  readDefault(opts.tracker_options_.optical_flow_pyramid_levels_, 3, "optical_flow_pyramid_levels");
+  readDefault(opts.tracker_options_.pyramid_levels_, 3, "optical_flow_pyramid_levels");
   readDefault(opts.tracker_options_.optical_flow_win_size_, 21, "optical_flow_win_size");
 
   // Parse camera parameters
@@ -211,7 +211,7 @@ void OptionParser::parseDetectorType(FeatureDetector& detector)
   {
     detector = FeatureDetector::FAST;
   }
-  else if (detectortype.compare("shi_tomasi") == 0)
+  else if (detectortype.compare("shi-tomasi") == 0)
   {
     detector = FeatureDetector::GFTT;
   }

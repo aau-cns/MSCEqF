@@ -115,7 +115,7 @@ struct TrackerOptions
   uint grid_x_size_;                  //!< x size of the grid
   uint grid_y_size_;                  //!< y size of the grid
   uint min_px_dist_;                  //!< minimum pixel distance between features
-  uint optical_flow_pyramid_levels_;  //!< pyramids levels for optical flow
+  uint pyramid_levels_;               //!< pyramids levels for optical flow and feature extraction (1-based)
   uint optical_flow_win_size_;        //!< window size for optical flow
   FastOptions fast_opts_;             //!< Fast feature detector options
   GFTTOptions gftt_opts_;             //!< Shi-Tomasi feature detector options

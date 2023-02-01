@@ -30,17 +30,27 @@ RadtanCamera::RadtanCamera(const CameraOptions& opts, const Vector4& intrinsics)
 {
 }
 
-Vector2 RadtanCamera::undistort(const Vector2& distorted_uv)
+void RadtanCamera::undistort(std::vector<Eigen::Vector2f>& uv, const bool& normalize)
 {
-  cv::Vec<fp, 2> uvn_cv;
-  cv::eigen2cv(distorted_uv, uvn_cv);
+  std::vector<cv::Point2f> uv_cv;
+  uv_cv.reserve(uv.size());
 
-  return undistort(uvn_cv);
+  for (const auto& coords : uv)
+  {
+    uv_cv.emplace_back(coords(0), coords(1));
+  }
+
+  undistort(uv_cv, normalize);
+
+  for (size_t i = 0; i < uv_cv.size(); ++i)
+  {
+    uv[i](0) = uv_cv[i].x;
+    uv[i](1) = uv_cv[i].y;
+  }
 }
 
-Vector2 RadtanCamera::undistort(const cv::Vec<fp, 2>& distorted_uv)
+void RadtanCamera::undistort(std::vector<cv::Point2f>& uv_cv, const bool& normalize)
 {
-  cv::Vec<fp, 2> uvn_cv;
   cv::Vec<fp, 4> dist_cv;
   cv::Matx<fp, 3, 3> K_cv;
 
@@ -50,13 +60,16 @@ Vector2 RadtanCamera::undistort(const cv::Vec<fp, 2>& distorted_uv)
   K_cv(1, 1) = intrinsics_(1);
   K_cv(0, 2) = intrinsics_(2);
   K_cv(1, 2) = intrinsics_(3);
+  K_cv(2, 2) = 1.0f;
 
-  cv::undistortPoints(distorted_uv, uvn_cv, K_cv, dist_cv);
-
-  Vector2 normalized_uv;
-  cv::cv2eigen(uvn_cv, normalized_uv);
-
-  return normalized_uv;
+  if (normalize)
+  {
+    cv::undistortPoints(uv_cv, uv_cv, K_cv, dist_cv);
+  }
+  else
+  {
+    cv::undistortPoints(uv_cv, uv_cv, K_cv, dist_cv, cv::noArray(), K_cv);
+  }
 }
 
 }  // namespace msceqf

@@ -33,10 +33,11 @@ state_transition_order: 1
 
 # Tracker
 equalization_method: histogram
+optical_flow_pyramid_levels: 3
 feature_detector: fast
 grid_x_size: 4
 grid_y_size: 3
-min_feature_pixel_distance: 0
+min_feature_pixel_distance: 5
 max_features: 150
 fast_threshold: 50
 shi_tomasi_quality_level: 0.01

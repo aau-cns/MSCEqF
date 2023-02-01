@@ -30,13 +30,20 @@ class PinholeCamera
   virtual ~PinholeCamera() = default;
 
   /**
-   * @brief Undistort given distorted point
+   * @brief Undistort given distorted point in Eigen format (std::vector<Eigen::Vector2f>)
    *
-   * @param distorted_uv
-   * @return Vector2
+   * @param uv
+   * @param normalize flag to decide wether normalize coordinates or not
    */
-  virtual Vector2 undistort(const Vector2& distorted_uv) = 0;
-  virtual Vector2 undistort(const cv::Vec<fp, 2>& distorted_uv) = 0;
+  virtual void undistort(std::vector<Eigen::Vector2f>& uv, const bool& normalize = false) = 0;
+
+  /**
+   * @brief Undistort given distorted point in OpenCV format (std::vector<cv::Point2f>)
+   *
+   * @param uv_cv
+   * @param normalize flag to decide wether normalize coordinates or not
+   */
+  virtual void undistort(std::vector<cv::Point2f>& uv_cv, const bool& normalize = false) = 0;
 
   /**
    * @brief Set the value of the intrinsic parameters
@@ -72,8 +79,21 @@ struct RadtanCamera final : public PinholeCamera
 {
   RadtanCamera(const CameraOptions& opts, const Vector4& intrinsics);
 
-  Vector2 undistort(const Vector2& distorted_uv) override;
-  Vector2 undistort(const cv::Vec<fp, 2>& distorted_uv) override;
+  /**
+   * @brief Undistort given distorted point in Eigen format (std::vector<Eigen::Vector2f>)
+   *
+   * @param uv
+   * @param normalize flag to decide wether normalize coordinates or not
+   */
+  void undistort(std::vector<Eigen::Vector2f>& uv, const bool& normalize) override;
+
+  /**
+   * @brief Undistort given distorted point in OpenCV format (std::vector<cv::Point2f>)
+   *
+   * @param uv_cv
+   * @param normalize flag to decide wether normalize coordinates or not
+   */
+  void undistort(std::vector<cv::Point2f>& uv_cv, const bool& normalize) override;
 };
 
 // [TODO] Add support for other distortion model

@@ -14,11 +14,11 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <iterator>
 #include <queue>
 #include <random>
 #include <type_traits>
-#include <vector>
 
 namespace utils
 {
@@ -82,7 +82,7 @@ static inline void trimString(std::string& s)
 }
 
 /**
- * @brief Flassten a vector of vectors
+ * @brief Flatten a vector of vectors
  *
  * @tparam T
  * @param vector_of_vectors
@@ -101,6 +101,15 @@ static std::vector<T> flatten(const std::vector<std::vector<T>>& vector_of_vecto
   }
   return flat;
 }
+
+/**
+ * @brief Perform 2^n with an integer n
+ *
+ * @param n
+ * @return int
+ */
+static inline int pow2(const int& n) { return static_cast<int>(std::ldexp(1.0f, n)); }
+
 }  // namespace utils
 
 /**

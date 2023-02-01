@@ -66,77 +66,24 @@ class Tracker
   void track(Camera& cam);
 
   /**
-   * @brief Detect features based on the selected feature detector.
-   * This method detects feature in a image splitting the image in a grid, and extracting features for each grid cell in
-   * parallel. The number of feature per cell is "dynamic". It starts with the policy that the extraction should be
-   * uniform for each cell but the max number of features are "redistributed" if the detection produces few features in
-   * some cells.
+   * @brief Detect and undistort features based on the selected feature detector.
+   * This method detects feature in a image through its pyramids. Each pyramid is split in a grid, and features are
+   * extracted for each grid cell in parallel. The number of feature per cell is "dynamic". It starts with the policy
+   * that the extraction should be uniform for each cell but the max number of features are "redistributed" if the
+   * detection produces few features in some cells.
    *
-   * @param cam
+   * @param pyramids
    * @param current_kpts
+   *
+   * @note This method undistort detected features but it *does not* normalize them
    */
-  void detect(Camera& cam, Keypoints& current_kpts);
+  void detectAndUndistort(std::vector<cv::Mat>& pyramids, cv::Mat& mask, Keypoints& current_kpts);
 
   /**
-   * @brief This method build a mask for keypoint extraction.
-   * Given an existing mask, this method mask out existing keypoints, as well as a small neighborhood to ensure a
-   * minimum pixel distance between keypoints
+   * @brief ...
    *
-   * @param mask
    */
-  void maskPreviouskeypoints(cv::Mat& mask);
-
-  /**
-   * @brief Remove keypoints which eulidean distance is smaller than min pixel distance using a two pointer approach
-   *
-   * @param feats Keypoints& or std::vector<cv::Pint2f>&
-   *
-   * @note This method *does not* ensure that two feature with distance smaller than threshold are removed
-   */
-  template <typename T>
-  void removeCloseFeatures(T& feats)
-  {
-    static_assert(std::is_same_v<T, Keypoints> || std::is_same_v<T, std::vector<cv::Point2f>>);
-    size_t i = 0, j = 0;
-    cv::Point2f ref(1, 1);
-    if constexpr (std::is_same_v<T, Keypoints>)
-    {
-      std::sort(feats.begin(), feats.end(),
-                [&ref](const cv::KeyPoint& pre, const cv::KeyPoint& post)
-                { return pre.pt.dot(ref) < post.pt.dot(ref); });
-    }
-    else
-    {
-      std::sort(feats.begin(), feats.end(),
-                [&ref](const cv::Point2f& pre, const cv::Point2f& post) { return pre.dot(ref) < post.dot(ref); });
-    }
-    while (j < feats.size())
-    {
-      cv::Point2f diff;
-      if constexpr (std::is_same_v<T, Keypoints>)
-      {
-        diff = feats[j].pt - feats[i].pt;
-      }
-      else
-      {
-        diff = feats[j] - feats[i];
-      }
-      if (std::sqrt(diff.dot(diff)) < opts_.min_px_dist_)
-      {
-        ++j;
-      }
-      else
-      {
-        if (i + 1 != j)
-        {
-          feats[i + 1] = feats[j];
-        }
-        ++i;
-        ++j;
-      }
-    }
-    feats.resize(i + 1);
-  }
+  void match();
 
   /**
    * @brief Extract keypoints for the given cell. Extracted keypoints are limited to a maximum number given by the
@@ -148,19 +95,68 @@ class Tracker
    */
   void extractCellKeypoints(const cv::Mat& cell, const cv::Mat& mask, Keypoints& cell_kpts);
 
-  TrackerOptions opts_;              //!< Tracker options
-  PinholeCameraUniquePtr cam_;       //!< Pointer to the pinhole camera object
-  cv::Ptr<cv::Feature2D> detector_;  //!< The feature detector
+  /**
+   * @brief This method build a mask for keypoint extraction.
+   * Given an existing mask, this method mask out existing keypoints, as well as a small neighborhood to ensure a
+   * minimum pixel distance between keypoints
+   *
+   * @param mask
+   */
+  void maskPreviouskeypoints(cv::Mat& mask);
 
-  Camera previous_camera_meas_;  //!< Previous frame recorded camera image and mask
-  Keypoints previous_kpts_;      //!< Keypoints detected in previous image
+  /**
+   * @brief This method build a mask for keypoint extraction.
+   * Given an existing mask, this method mask out given keypoints, as well as a small neighborhood to ensure a
+   * minimum pixel distance between keypoints
+   *
+   * @param mask
+   * @param kpts
+   * @param
+   */
+  template <typename T>
+  void maskGivenkeypoints(cv::Mat& mask, const T& kpts)
+  {
+    static_assert(std::is_same_v<T, Keypoints> || std::is_same_v<T, std::vector<cv::Point2f>>);
+    int px_dist = std::ceil(opts_.min_px_dist_ / 2);
+    for (const auto& kpt : kpts)
+    {
+      int x;
+      int y;
+      if constexpr (std::is_same_v<T, Keypoints>)
+      {
+        x = static_cast<int>(kpt.pt.x);
+        y = static_cast<int>(kpt.pt.y);
+      }
+      else
+      {
+        x = static_cast<int>(kpt.x);
+        y = static_cast<int>(kpt.y);
+      }
+      int x1 = std::max(0, x - px_dist);
+      int y1 = std::max(0, y - px_dist);
+      int x2 = std::min(mask.cols - 1, x + px_dist);
+      int y2 = std::min(mask.rows - 1, y + px_dist);
+      mask(cv::Rect(x1, y1, x2 - x1 + 1, y2 - y1 + 1)) = 0;
+    }
+  }
+
+  TrackerOptions opts_;  //!< Tracker options
+
+  PinholeCameraUniquePtr cam_;  //!< Pointer to the pinhole camera object
+
+  cv::Ptr<cv::Feature2D> detector_;      //!< The feature detector
+  std::atomic<uint> max_kpts_per_cell_;  //!< Maximum number of keypoints for each cell of the grid
+
+  std::vector<cv::Mat> previous_pyramids_;  //!< Pyramids for Optical Flow and feature extraction from previous image
+  cv::Mat previous_mask_;                   //!< Maks from previous image
+  Keypoints previous_kpts_;                 //!< Keypoints detected in previous image
+
+  std::vector<cv::Mat> current_pyramids_;  //!< Pyramids for Optical Flow and feature extraction from current image
+  Keypoints current_kpts;                  //!< Keypoints detected or tracked in current image
 
   Matches matches_;  //!< The set of mathces between the previous and the actual image
 
-  std::atomic<uint> max_kpts_per_cell_;  //!< Maximum number of keypoints for each cell of the grid
-
-  std::vector<cv::Mat> pyramids_;  //!< Pyramids for Optical Flow
-  cv::Size win_;                   //!< The Optical Flow window size
+  cv::Size win_;  //!< The Optical Flow window size
 };
 
 }  // namespace msceqf
