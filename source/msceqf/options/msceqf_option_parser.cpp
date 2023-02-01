@@ -211,7 +211,7 @@ void OptionParser::parseDetectorType(FeatureDetector& detector)
   {
     detector = FeatureDetector::FAST;
   }
-  else if (detectortype.compare("shi_tomasi") == 0)
+  else if (detectortype.compare("shi-tomasi") == 0)
   {
     detector = FeatureDetector::GFTT;
   }
