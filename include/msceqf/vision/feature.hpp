@@ -30,7 +30,7 @@ struct Feature
   using FeatureCoordinates = cv::Point2f;  //!< The feature coordinates
 
   /**
-   * @brief Feature constructor
+   * @brief Feature constructor given coordinates, normalized coordinates, timestamp and id
    *
    * @param uv
    * @param normalized_uv
@@ -43,7 +43,7 @@ struct Feature
   }
 
   /**
-   * @brief Feature constructor
+   * @brief Feature constructor given coordinates, normalized coordinates, timestamp and id
    *
    * @param u
    * @param v

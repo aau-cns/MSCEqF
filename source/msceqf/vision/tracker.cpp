@@ -23,10 +23,9 @@ Tracker::Tracker(const TrackerOptions& opts, const Vector4& intrinsics)
     , max_kpts_per_cell_(opts_.max_features_ / (opts_.grid_x_size_ * opts_.grid_y_size_ * opts_.pyramid_levels_))
     , previous_pyramids_()
     , previous_mask_()
-    , previous_kpts_()
+    , previous_features_()
     , current_pyramids_()
-    , current_kpts()
-    , matches_()
+    , current_features_()
     , win_(cv::Size(opts_.optical_flow_win_size_, opts_.optical_flow_win_size_))
 {
   assert(opts_.pyramid_levels_ > 0);
@@ -101,53 +100,113 @@ void Tracker::track(Camera& cam)
       cv::buildOpticalFlowPyramid(cam.image_, current_pyramids_, win_, opts_.pyramid_levels_ - 1) + 1;
 
   // If we have no previous keypoints, just detect new features and undistort them
-  if (previous_kpts_.empty())
+  if (previous_features_.empty())
   {
-    // utils::Logger::debug("No existing keypoints, detecting new keypoints");
-    detectAndUndistort(current_pyramids_, cam.mask_, current_kpts);
+    utils::Logger::debug("No existing keypoints, detecting new keypoints");
+    // detectAndUndistort(current_pyramids_, cam.mask_, current_features_, true);
+    detectAndUndistort(current_pyramids_, cam.mask_, current_features_);
+  }
+  else
+  {
+    std::vector<uchar> klt_mask;
+
+    // Match keypoints (track keypoints temporally with Optical flow)
+    matchKLT(previous_features_, current_features_, klt_mask);
+
+    // [TODO] Can I avoid this by always calling detect and undistort but check inside if i need features?
+    if (previous_features_.size() < opts_.min_features_)
+    {
+      std::vector<uchar> new_klt_mask;
+      FeaturesPoints new_previous_feats, new_current_feats;
+
+      utils::Logger::debug("keypoint below minimum value, detecting new keypoints");
+      detectAndUndistort(previous_pyramids_, previous_mask_, new_previous_feats);
+      matchKLT(new_previous_feats, new_current_feats, new_klt_mask);
+
+      // Merge new_current_kpts tracked with current_features_
+      current_features_.insert(current_features_.end(), std::make_move_iterator(new_current_feats.begin()),
+                               std::make_move_iterator(new_current_feats.end()));
+
+      // Merge new_klt_mask with klt_mask
+      klt_mask.insert(klt_mask.end(), std::make_move_iterator(new_klt_mask.begin()),
+                      std::make_move_iterator(new_klt_mask.end()));
+    }
+
+    // [TODO] IF NO NEW DETECTED current_features_ would have the same ids as previous_features_
+    // [TODO] How to keep track of the id when removing invalid??
+    // [TODO] IF THERE ARE NEW DETCTED a subset of current_features_ would have the same ids as previous_features_,
+    // while another subset would have new ids
+    // [TODO] How to keep track of the id when removing invalid??
+    // [TODO] I probably need a different data structure for this, something that relates features points as well as ids
+
+    // Normalize features (improve the conditioning of the problem)
+    // cam_->normalize(current_features_);
+
+    std::vector<uchar> ransac_mask;
+
+    // [TODO] Should i check to have at least 8 features?
+    // Reject outlier with RANSAC
+    cv::findFundamentalMat(previous_features_, current_features_, cv::FM_RANSAC, 0.25, 0.999, ransac_mask);
+
+    assert(klt_mask.size() == ransac_mask.size());
+
+    // Remove invalid features
+    std::vector<bool> valid(klt_mask.size());
+    for (size_t i = 0; i < valid.size(); i++)
+    {
+      valid[i] = klt_mask[i] && ransac_mask[i] && current_features_[i].x > 0 && current_features_[i].y > 0 &&
+                 current_features_[i].x < current_pyramids_[0].cols &&
+                 current_features_[i].y < current_pyramids_[0].rows;
+    }
+    current_features_.erase(
+        std::remove_if(current_features_.begin(), current_features_.end(),
+                       [&valid, this](const cv::Point2f& feat) { return !valid[&feat - &current_features_[0]]; }),
+        current_features_.end());
   }
 
-  // // Track keypoints temporally
-
-  // if (previous_kpts_.size() < opts_.min_features_)
-  // {
-  //   // utils::Logger::debug("keypoint below minimum value, detecting new keypoints");
-  //   Keypoints new_previous_kpts;
-  //   detectAndUndistort(previous_camera_meas_, new_previous_kpts);
-  //   undistortFeatures(new_previous_kpts);
-  //   // Track new_current_kpts from new_previous_kpts
-  //   // merge new_current_kpts tracked with current_kpts
-  // }
-
-  // undistortFeatures(current_kpts);
-  // //
-  // // END
-  // //
-
-  // // matches_ = ???;
+  // [TODO] Create Feature
+  // timestamp: from cam meas
+  // uv: denormalize normalized uv
+  // uvn: current_features_
+  // id: ???
+  // [TODO] need to think what i need. Do i need matches? or a feature database?
 
   // TEST
-  cv::drawKeypoints(cam.image_, current_kpts, cam.image_, cv::Scalar(0, 0, 255),
-                    cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
-  cv::imshow("Image with keypoints", cam.image_);
-  cv::waitKey();
+  Keypoints kpts;
+  for (auto feat : current_features_)
+  {
+    // cam_->denormalize(feat);
+    kpts.emplace_back(feat.x, feat.y, 5.0f);
+  }
+  cv::Mat tmp;
+  cv::drawKeypoints(cam.image_, kpts, tmp, cv::Scalar(0, 0, 255), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+  cv::imshow("Image with keypoints", tmp);
+  cv::waitKey(1);
 
-  // // Should i swap them? clear?
-  previous_pyramids_ = current_pyramids_;
-  previous_mask_ = cam.mask_;
-  previous_kpts_ = current_kpts;
+  // Swap pyramids and mask
+  previous_pyramids_.swap(current_pyramids_);
+  cv::swap(previous_mask_, cam.mask_);
+
+  // Copy keypoints
+  previous_features_.assign(current_features_.begin(), current_features_.end());
 }
 
-void Tracker::detectAndUndistort(std::vector<cv::Mat>& pyramids, cv::Mat& mask, Keypoints& current_kpts)
+void Tracker::detectAndUndistort(std::vector<cv::Mat>& pyramids,
+                                 cv::Mat& mask,
+                                 FeaturesPoints& current_features,
+                                 const bool& normalize)
 {
-  // Declare detected keypoints (through all the pyramid levels)
-  std::vector<std::vector<Feature::FeatureCoordinates>> detected(opts_.pyramid_levels_);
+  // Declare detected features (through all the pyramid levels)
+  std::vector<FeaturesPoints> detected(opts_.pyramid_levels_);
 
-  // Mask existing keypoints
-  maskPreviouskeypoints(mask);
+  // Mask existing features
+  maskGivenFeatures(mask, previous_features_);
 
   // Declare cell keypoints
   std::vector<Keypoints> cell_kpts(opts_.grid_x_size_ * opts_.grid_y_size_);
+
+  // Compute keypoints needed
+  uint needed_kpts = opts_.max_features_ - previous_features_.size();
 
   for (uint i = 0; i < opts_.pyramid_levels_; ++i)
   {
@@ -166,7 +225,7 @@ void Tracker::detectAndUndistort(std::vector<cv::Mat>& pyramids, cv::Mat& mask, 
 
     // Reset value of max keypoints per cell for the given pyramid
     max_kpts_per_cell_ =
-        std::max(uint(1), opts_.max_features_ / (opts_.grid_x_size_ * opts_.grid_y_size_ * opts_.pyramid_levels_));
+        std::max(uint(1), needed_kpts / (opts_.grid_x_size_ * opts_.grid_y_size_ * opts_.pyramid_levels_));
 
     std::atomic<size_t> num_detected(0);
     std::atomic<int> cell_cnt(0);
@@ -190,7 +249,7 @@ void Tracker::detectAndUndistort(std::vector<cv::Mat>& pyramids, cv::Mat& mask, 
                           num_detected += cell_kpts[cell_idx].size();
                           if (max_kpts_per_cell_.load() > 1)
                           {
-                            max_kpts_per_cell_ = ((opts_.max_features_ / opts_.pyramid_levels_) - num_detected.load()) /
+                            max_kpts_per_cell_ = ((needed_kpts / opts_.pyramid_levels_) - num_detected.load()) /
                                                  ((opts_.grid_x_size_ * opts_.grid_y_size_) - cell_cnt.load());
                           }
 
@@ -209,7 +268,7 @@ void Tracker::detectAndUndistort(std::vector<cv::Mat>& pyramids, cv::Mat& mask, 
                         }
                       });
 
-    // Flatten cell keypoints (convert to FeatureCoordinates vector)
+    // Flatten cell keypoints (convert to features)
     for (const auto& kpts : cell_kpts)
     {
       for (const auto& kpt : kpts)
@@ -218,41 +277,36 @@ void Tracker::detectAndUndistort(std::vector<cv::Mat>& pyramids, cv::Mat& mask, 
       }
     }
 
-    // mask already detected keypoints
-    maskGivenkeypoints(mask, detected[i]);
+    // mask already detected features
+    maskGivenFeatures(mask, detected[i]);
   }
 
-  // Flatten detected keypoints
-  std::vector<Feature::FeatureCoordinates> detected_flat = utils::flatten(detected);
+  // Flatten detected features
+  current_features = utils::flatten(detected);
 
   // // Remove features below minimum distance
   // if (opts_.min_px_dist_ > 0)
   // {
-  //   removeCloseFeatures(detected);
+  //   removeCloseFeatures(detected_flat);
   // }
+
+  // [TODO] Return if there are no features <-- manage this situation
 
   // Sub-pixel refinement for all the detected keypoints
   cv::TermCriteria criteria = cv::TermCriteria(cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 20, 0.001);
-  cv::cornerSubPix(pyramids[0], detected_flat, cv::Size(5, 5), cv::Size(-1, -1), criteria);
+  cv::cornerSubPix(pyramids[0], current_features, cv::Size(5, 5), cv::Size(-1, -1), criteria);
 
   // Undistort
-  cam_->undistort(detected_flat);
-
-  // Assign
-  current_kpts.reserve(detected_flat.size());
-  for (const auto& p : detected_flat)
-  {
-    current_kpts.emplace_back(p.x, p.y, 1.0f);
-  }
+  cam_->undistort(current_features, normalize);
 }
 
-void Tracker::maskPreviouskeypoints(cv::Mat& mask)
+void Tracker::maskGivenFeatures(cv::Mat& mask, const FeaturesPoints& points)
 {
   int px_dist = std::ceil(opts_.min_px_dist_ / 2);
-  for (const auto& kpt : previous_kpts_)
+  for (const auto& point : points)
   {
-    int x = static_cast<int>(kpt.pt.x);
-    int y = static_cast<int>(kpt.pt.y);
+    int x = static_cast<int>(point.x);
+    int y = static_cast<int>(point.y);
     int x1 = std::max(0, x - px_dist);
     int y1 = std::max(0, y - px_dist);
     int x2 = std::min(mask.cols - 1, x + px_dist);
@@ -276,15 +330,18 @@ void Tracker::extractCellKeypoints(const cv::Mat& cell, const cv::Mat& mask, Key
             [](const cv::KeyPoint& pre, const cv::KeyPoint& post) { return pre.response > post.response; });
 
   // Cap keypoints to max_kpts_per_cell_, keeping the ones with the highest score
-  assert((max_kpts_per_cell_.load() - previous_kpts_.size()) > 0);
-  cell_kpts.resize(std::min(cell_kpts.size(), (max_kpts_per_cell_.load() - previous_kpts_.size())));
+  assert((max_kpts_per_cell_.load() - previous_features_.size()) > 0);
+  cell_kpts.resize(std::min(cell_kpts.size(), (max_kpts_per_cell_.load() - previous_features_.size())));
 }
 
-// void Tracker::match()
-// {
-//   cv::TermCriteria criteria = cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 30, 0.01);
-//   cv::calcOpticalFlowPyrLK(img0pyr, img1pyr, pts0, pts1, mask_klt, error, win_, pyr_levels, criteria,
-//                            cv::OPTFLOW_USE_INITIAL_FLOW);
-// }
+void Tracker::matchKLT(FeaturesPoints& previous_features, FeaturesPoints& current_features, std::vector<uchar>& status)
+{
+  assert(previous_features.size() == current_features.size());
+
+  std::vector<float> error;
+  cv::TermCriteria criteria = cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 30, 0.01);
+  cv::calcOpticalFlowPyrLK(previous_pyramids_, current_pyramids_, previous_features, current_features, status, error,
+                           win_, opts_.pyramid_levels_ - 1, criteria, cv::OPTFLOW_USE_INITIAL_FLOW);
+}
 
 }  // namespace msceqf

@@ -25,6 +25,66 @@ PinholeCamera::PinholeCamera(const VectorX& distortion_coefficients,
 
 void PinholeCamera::setIntrinsics(const Vector4& intrinsics) { intrinsics_ = intrinsics; }
 
+void PinholeCamera::normalize(std::vector<Eigen::Vector2f>& uv)
+{
+  for (auto& coords : uv)
+  {
+    coords(0) = (coords(0) - intrinsics_(2)) / intrinsics_(0);
+    coords(1) = (coords(1) - intrinsics_(3)) / intrinsics_(1);
+  }
+}
+
+void PinholeCamera::normalize(std::vector<cv::Point2f>& uv)
+{
+  for (auto& coords : uv)
+  {
+    coords.x = (coords.x - intrinsics_(2)) / intrinsics_(0);
+    coords.y = (coords.y - intrinsics_(3)) / intrinsics_(1);
+  }
+}
+
+void PinholeCamera::normalize(Eigen::Vector2f& uv)
+{
+  uv(0) = (uv(0) - intrinsics_(2)) / intrinsics_(0);
+  uv(1) = (uv(1) - intrinsics_(3)) / intrinsics_(1);
+}
+
+void PinholeCamera::normalize(cv::Point2f& uv)
+{
+  uv.x = (uv.x - intrinsics_(2)) / intrinsics_(0);
+  uv.y = (uv.y - intrinsics_(3)) / intrinsics_(1);
+}
+
+void PinholeCamera::denormalize(std::vector<Eigen::Vector2f>& uv)
+{
+  for (auto& coords : uv)
+  {
+    coords(0) = coords(0) * intrinsics_(0) + intrinsics_(2);
+    coords(1) = coords(1) * intrinsics_(1) + intrinsics_(3);
+  }
+}
+
+void PinholeCamera::denormalize(std::vector<cv::Point2f>& uv)
+{
+  for (auto& coords : uv)
+  {
+    coords.x = coords.x * intrinsics_(0) + intrinsics_(2);
+    coords.y = coords.y * intrinsics_(1) + intrinsics_(3);
+  }
+}
+
+void PinholeCamera::denormalize(Eigen::Vector2f& uv)
+{
+  uv(0) = uv(0) * intrinsics_(0) + intrinsics_(2);
+  uv(1) = uv(1) * intrinsics_(1) + intrinsics_(3);
+}
+
+void PinholeCamera::denormalize(cv::Point2f& uv)
+{
+  uv.x = uv.x * intrinsics_(0) + intrinsics_(2);
+  uv.y = uv.y * intrinsics_(1) + intrinsics_(3);
+}
+
 RadtanCamera::RadtanCamera(const CameraOptions& opts, const Vector4& intrinsics)
     : PinholeCamera(opts.distortion_coefficients_, intrinsics, opts.resolution_(0), opts.resolution_(1))
 {
