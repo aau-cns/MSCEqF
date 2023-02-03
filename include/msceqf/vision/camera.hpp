@@ -18,7 +18,7 @@
 #include "msceqf/options/msceqf_options.hpp"
 #include "types/fptypes.hpp"
 
-namespace msceqf
+namespace msceqf::vision
 {
 /**
  * @brief This class represnt the base class for any pinhole camera type
@@ -180,6 +180,6 @@ template <typename T>
   }
 }
 
-}  // namespace msceqf
+}  // namespace msceqf::vision
 
 #endif  // CAMERA_HPP

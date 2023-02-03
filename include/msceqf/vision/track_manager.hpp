@@ -14,10 +14,10 @@
 
 #include <opencv2/opencv.hpp>
 
-#include "msceqf/vision/track.hpp"
+#include "msceqf/vision/tracker.hpp"
 #include "types/fptypes.hpp"
 
-namespace msceqf
+namespace msceqf::vision
 {
 
 /**
@@ -27,12 +27,14 @@ namespace msceqf
 class TrackManager
 {
  public:
-  using Tracks = std::unordered_map<uint, Track>;  //!< Tracks defined as a id-track map
+  //   Tracks getLostTracks();
+  //   Tracks getTracksAt();
 
- private:
-  Tracks tracks_;  //!< features tracks
+  //  private:
+  Tracker tracker_;  //!< Feature tracker
+  Tracks tracks_;    //!< Tracks
 };
 
-}  // namespace msceqf
+}  // namespace msceqf::vision
 
 #endif  // TRACK_MANAGER_HPP

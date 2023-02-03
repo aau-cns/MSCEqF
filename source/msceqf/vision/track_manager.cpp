@@ -11,7 +11,7 @@
 
 #include "msceqf/vision/track_manager.hpp"
 
-namespace msceqf
+namespace msceqf::vision
 {
 
 }  // namespace msceqf

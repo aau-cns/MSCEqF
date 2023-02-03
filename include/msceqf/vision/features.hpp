@@ -9,26 +9,27 @@
 //
 // You can contact the authors at <alessandro.fornasier@ieee.org>
 
-#ifndef TRACK_HPP
-#define TRACK_HPP
+#ifndef FEATURES_HPP
+#define FEATURES_HPP
 
 #include <opencv2/opencv.hpp>
 
-#include "msceqf/vision/features.hpp"
 #include "types/fptypes.hpp"
 
 namespace msceqf::vision
 {
+
+using FeaturesCoordinates = std::vector<cv::Point2f>;  //!< The features coordinates
+
 /**
- * @brief (Cache friendly) Track struct. Define a feature (labelled via a feature id) detected/tracked at different
- * points in time.
+ * @brief (Cache friendly) Features struct. Define a set of features detected/tracked.
  *
  * @note Note that feature cordinates are of cv::Point2f type for compatibility with OpenCV.
  *
  */
-struct Track
+struct Features
 {
-  using Times = std::vector<fp>;  //!< vector of timestamps
+  using FeatureIds = std::vector<uint>;  //!< Vector of feature ids
 
   /**
    * @brief Check if there valid coordinates in uvs_
@@ -45,7 +46,7 @@ struct Track
   inline size_t size() const noexcept
   {
     assert(uvs_.size() == normalized_uvs_.size());
-    assert(uvs_.size() == timestamps_.size());
+    assert(uvs_.size() == ids_.size());
     return uvs_.size();
   }
 
@@ -59,7 +60,7 @@ struct Track
   {
     assert(invalid.size() == uvs_.size());
     assert(uvs_.size() == normalized_uvs_.size());
-    assert(uvs_.size() == timestamps_.size());
+    assert(uvs_.size() == ids_.size());
 
     uvs_.erase(std::remove_if(uvs_.begin(), uvs_.end(),
                               [&invalid, this](const cv::Point2f& feat) { return invalid[&feat - &uvs_[0]]; }),
@@ -70,25 +71,16 @@ struct Track
                        [&invalid, this](const cv::Point2f& feat) { return invalid[&feat - &normalized_uvs_[0]]; }),
         normalized_uvs_.end());
 
-    timestamps_.erase(
-        std::remove_if(timestamps_.begin(), timestamps_.end(),
-                       [&invalid, this](const fp& timestamp) { return invalid[&timestamp - &timestamps_[0]]; }),
-        timestamps_.end());
+    ids_.erase(
+        std::remove_if(ids_.begin(), ids_.end(), [&invalid, this](const uint& id) { return invalid[&id - &ids_[0]]; }),
+        ids_.end());
   }
 
-  /**
-   * @brief Comparison operator with other tracks for sorting based on track length
-   *
-   */
-  friend bool operator<(const Track& lhs, const Track& rhs) { return lhs.size() < rhs.size(); }
-
-  FeaturesCoordinates uvs_;             //!< (u, v) coordinates of the same feature at different time steps
-  FeaturesCoordinates normalized_uvs_;  //!< Normalized (u, v) coordinates of the same feature at different time steps
-  Times timestamps_;                    //!< Timestamps of the camera measurement containing the feature
+  FeaturesCoordinates uvs_;             //!< (u, v) coordinates of the features detected/tracked
+  FeaturesCoordinates normalized_uvs_;  //!< Normalized (u, v) coordinates of features detected/tracked
+  FeatureIds ids_;                      //!< Id of the features detected/tracked
 };
-
-using Tracks = std::unordered_map<uint, std::vector<Track>>;  //!< Tracks defined as a a vector of tracks mapped by ids
 
 }  // namespace msceqf::vision
 
-#endif  // TRACK_HPP
+#endif  // FEATURES_HPP

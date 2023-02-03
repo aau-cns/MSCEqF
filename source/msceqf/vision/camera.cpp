@@ -13,7 +13,7 @@
 
 #include <opencv2/core/eigen.hpp>
 
-namespace msceqf
+namespace msceqf::vision
 {
 PinholeCamera::PinholeCamera(const VectorX& distortion_coefficients,
                              const Vector4 instrinsics,

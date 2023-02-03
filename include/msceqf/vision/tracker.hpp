@@ -14,23 +14,12 @@
 
 #include "msceqf/system/sensor_data.hpp"
 #include "msceqf/vision/camera.hpp"
+#include "msceqf/vision/features.hpp"
 #include "msceqf/vision/track.hpp"
 #include "types/fptypes.hpp"
 
-namespace msceqf
+namespace msceqf::vision
 {
-
-/**
- * @brief All the matches in two subsequent images.
- * A match represent a pair of two features, previous and actual.
- * These two features represent the same feature detected at different time, in subsequent images
- *
- */
-struct Matches
-{
-  std::vector<Feature> previus_;
-  std::vector<Feature> actual_;
-};
 
 /**
  * @brief This class implement the feature tracker module based on Lucas-Kanade optical flow.
@@ -40,8 +29,8 @@ struct Matches
 class Tracker
 {
  public:
-  using FeaturesPoints = std::vector<Feature::FeatureCoordinates>;  //!< A vector of features coordinates
-  using Keypoints = std::vector<cv::KeyPoint>;                      //!< A vector of features keypoints
+  using Keypoints = std::vector<cv::KeyPoint>;    //!< A vector of features keypoints
+  using TimedFeatures = std::pair<fp, Features>;  //!< Set of features associated with a time
 
   /**
    * @brief Tracker constructor
@@ -53,14 +42,26 @@ class Tracker
 
   /**
    * @brief This method process the input camera measurement.
+   * If first pre-process the camera image, and then it tracks features.
    *
    * @param cam
    */
   void processCamera(Camera& cam);
 
+  /**
+   * @brief [TODO]
+   *
+   * @param tracks_map
+   */
+  void updateTracks(Tracks& tracks) const;
+
  private:
   /**
-   * @brief ...
+   * @brief Detect/Tracks feature in the given camera measurement.
+   * If there are no previously detected features than this method simply detect features in hte given image.
+   * If there are previously detected features than this method tracks temporally these previously detected/tracked
+   * features. Moreover if the number of previously detected/tracked falls under a defined threshold these method
+   * performs re-detection in the previous image.
    *
    * @param cam
    */
@@ -71,27 +72,37 @@ class Tracker
    * This method detects feature in a image through its pyramids. Each pyramid is split in a grid, and features are
    * extracted for each grid cell in parallel. The number of feature per cell is "dynamic". It starts with the policy
    * that the extraction should be uniform for each cell but the max number of features are "redistributed" if the
-   * detection produces few features in some cells. After detection the feature ar undistorted and normalized if the
-   * normalized argument is set
-   *
+   * detection produces few features in some cells.
+   * Detected features are stored in original coordinates and normalized coordinates. An id, as well as the anchor
+   * timestamp (timestamp at which the feature was first detected) are assigned to each feature.
    *
    * @param pyramids
    * @param mask
-   * @param current_feature
-   * @param normalize
+   * @param features
+   * @param timestamp
    *
    * @note This method undistort detected features but it *does not* normalize them
    */
-  void detectAndUndistort(std::vector<cv::Mat>& pyramids,
-                          cv::Mat& mask,
-                          FeaturesPoints& current_feature,
-                          const bool& normalize = false);
+  void detectAndUndistort(std::vector<cv::Mat>& pyramids, cv::Mat& mask, Features& features);
+
+  // [TODO] here i need to think... If i simply give points, can i easily handle timestamp? can i easily handle
+  // extension of the detected features????
 
   /**
-   * @brief ...
+   * @brief Match features between consecutive images using Lukas-Kanade Optical Flow.
+   * This methods returns a mask with valid tracked/matched features
    *
+   * @param mask
    */
-  void matchKLT(FeaturesPoints& previous_features, FeaturesPoints& current_features, std::vector<uchar>& status);
+  void matchKLT(std::vector<uchar>& mask);
+
+  /**
+   * @brief Reject outlier using RANSAC
+   * This methods returns a mask with valid (inlier) features
+   *
+   * @param mask
+   */
+  void ransac(std::vector<uchar>& mask);
 
   /**
    * @brief Extract keypoints for the given cell. Extracted keypoints are limited to a maximum number given by the
@@ -111,7 +122,7 @@ class Tracker
    * @param mask
    * @param points
    */
-  void maskGivenFeatures(cv::Mat& mask, const FeaturesPoints& points);
+  void maskGivenFeatures(cv::Mat& mask, const FeaturesCoordinates& points);
 
   TrackerOptions opts_;  //!< Tracker options
 
@@ -119,21 +130,20 @@ class Tracker
 
   cv::Ptr<cv::Feature2D> detector_;      //!< The feature detector
   std::atomic<uint> max_kpts_per_cell_;  //!< Maximum number of keypoints for each cell of the grid
-  uint ids_;                             //!< Feature id counter
+  uint id_;                              //!< Feature id counter
 
   std::vector<cv::Mat> previous_pyramids_;  //!< Pyramids for Optical Flow and feature extraction from previous image
   cv::Mat previous_mask_;                   //!< Maks from previous image
-  FeaturesPoints previous_features_;        //!< Features detected in previous image
+  TimedFeatures previous_features_;         //!< Features detected in previous image associated to their timestamp
 
   std::vector<cv::Mat> current_pyramids_;  //!< Pyramids for Optical Flow and feature extraction from current image
-  FeaturesPoints current_features_;        //!< Features detected or tracked in current image
+  TimedFeatures current_features_;         //!< Features detected in previous image associated to their timestamp
 
   cv::Size win_;  //!< The Optical Flow window size
 };
 
-}  // namespace msceqf
+}  // namespace msceqf::vision
 
 #endif  // TRACKER_HPP
 
 // [TODO] Check constructor init list
-// [TODO] Implement 2-point RANSAC
