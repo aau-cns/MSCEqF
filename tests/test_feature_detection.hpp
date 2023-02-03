@@ -50,7 +50,6 @@ TEST(DetectionTest, fastDetectionMask)
   Camera cam;
   cam.image_ = img;
   cam.mask_ = cv::Mat::ones(cam.image_.rows, cam.image_.cols, CV_8UC1);
-
   cam.mask_(cv::Rect(160, 120, 320, 240)) = 0;
 
   Tracker tracker(sys.options().tracker_options_, sys.stateOptions().initial_camera_intrinsics_.k());

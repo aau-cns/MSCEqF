@@ -32,14 +32,15 @@ persistent_feature_init_delay: 1.0
 state_transition_order: 1
 
 # Tracker
-equalization_method: histogram
+equalization_method: none
 optical_flow_pyramid_levels: 3
-feature_detector: fast
-grid_x_size: 4
-grid_y_size: 3
+feature_detector: shi-tomasi
+grid_x_size: 6
+grid_y_size: 4
 min_feature_pixel_distance: 5
+min_features: 75
 max_features: 150
-fast_threshold: 50
+fast_threshold: 5
 shi_tomasi_quality_level: 0.01
 
 
