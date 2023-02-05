@@ -113,7 +113,6 @@ list(
     source/msceqf/filter/propagator/propagator.cpp
     source/msceqf/filter/initializer/static_initializer.cpp
     source/msceqf/vision/camera.cpp
-    source/msceqf/vision/track.cpp
     source/msceqf/vision/tracker.cpp
     source/msceqf/vision/track_manager.cpp
 )

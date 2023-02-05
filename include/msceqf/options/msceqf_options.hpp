@@ -121,12 +121,18 @@ struct TrackerOptions
   GFTTOptions gftt_opts_;             //!< Shi-Tomasi feature detector options
 };
 
+struct TrackManagerOptions
+{
+  TrackerOptions tracker_options_;  //!< The vision tracker options
+  size_t max_track_length_;         //!< The maximul length of a track
+};
+
 struct MSCEqFOptions
 {
-  StateOptions state_options_;            //!< The state options
-  PropagatorOptions propagator_options_;  //!< The propagator options
-  InitializerOptions init_options_;       //!< The initializer options
-  TrackerOptions tracker_options_;        //!< The vision tracker options
+  StateOptions state_options_;                 //!< The state options
+  PropagatorOptions propagator_options_;       //!< The propagator options
+  InitializerOptions init_options_;            //!< The initializer options
+  TrackManagerOptions track_manager_options_;  //!< The track manager options
 
   // fp persistent_feature_init_delay_;  //!< The delay in s before initializing persistent features
   // FeatureRepresentation msc_features_representation_ =

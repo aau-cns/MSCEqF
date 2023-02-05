@@ -18,11 +18,12 @@
 #include "test_common.hpp"
 #include "utils/logger.hpp"
 // #include "test_groups.hpp"
-#include "test_feature_detection.hpp"
+// #include "test_feature_detection.hpp"
 // #include "test_msceqf.hpp"
 // #include "test_params.hpp"
 // #include "test_state.hpp"
 // #include "test_symmetry.hpp"
+#include "test_feature_tracking.hpp"
 
 int main(int argc, char **argv)
 {

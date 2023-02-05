@@ -32,17 +32,20 @@ persistent_feature_init_delay: 1.0
 state_transition_order: 1
 
 # Tracker
-equalization_method: histogram
+equalization_method: none
 optical_flow_pyramid_levels: 3
-feature_detector: fast
-grid_x_size: 4
-grid_y_size: 3
+feature_detector: shi-tomasi
+grid_x_size: 6
+grid_y_size: 4
 min_feature_pixel_distance: 5
+min_features: 30
 max_features: 150
-fast_threshold: 50
-shi_tomasi_quality_level: 0.01
+fast_threshold: 5
+shi_tomasi_quality_level: 0.1
 
+# Track Manager
+max_track_length: 200
 
 # Logger level [0: Full, 1: INFO, 2: WARN, 3: ERR, 4: INACTIVE]
-logger_level: 0
-# logger_level: 4
+# logger_level: 0
+logger_level: 4

@@ -18,7 +18,7 @@
 #include "msceqf/options/msceqf_options.hpp"
 #include "types/fptypes.hpp"
 
-namespace msceqf
+namespace msceqf::vision
 {
 /**
  * @brief This class represnt the base class for any pinhole camera type
@@ -44,6 +44,62 @@ class PinholeCamera
    * @param normalize flag to decide wether normalize coordinates or not
    */
   virtual void undistort(std::vector<cv::Point2f>& uv_cv, const bool& normalize = false) = 0;
+
+  /**
+   * @brief Normalize multiple features uv coordinates in Eigen format (std::vector<Eigen::Vector2f>)
+   *
+   * @param uv
+   */
+  void normalize(std::vector<Eigen::Vector2f>& uv);
+
+  /**
+   * @brief Normalize multiple features uv coordinates in OpenCV format (std::vector<cv::Point2f>)
+   *
+   * @param uv
+   */
+  void normalize(std::vector<cv::Point2f>& uv);
+
+  /**
+   * @brief Normalize a single feature uv coordinates in Eigen format (Eigen::Vector2f)
+   *
+   * @param uv
+   */
+  void normalize(Eigen::Vector2f& uv);
+
+  /**
+   * @brief Normalize multiple features uv coordinates in OpenCV format (cv::Point2f)
+   *
+   * @param uv
+   */
+  void normalize(cv::Point2f& uv);
+
+  /**
+   * @brief Denormalize multiple features uv coordinates in Eigen format (std::vector<Eigen::Vector2f>)
+   *
+   * @param uv
+   */
+  void denormalize(std::vector<Eigen::Vector2f>& uv);
+
+  /**
+   * @brief Denormalize multiple features uv coordinates in OpenCV format (std::vector<cv::Point2f>)
+   *
+   * @param uv
+   */
+  void denormalize(std::vector<cv::Point2f>& uv);
+
+  /**
+   * @brief Denormalize a single feature uv coordinates in Eigen format (Eigen::Vector2f)
+   *
+   * @param uv
+   */
+  void denormalize(Eigen::Vector2f& uv);
+
+  /**
+   * @brief Denormalize multiple features uv coordinates in OpenCV format (cv::Point2f)
+   *
+   * @param uv
+   */
+  void denormalize(cv::Point2f& uv);
 
   /**
    * @brief Set the value of the intrinsic parameters
@@ -124,6 +180,6 @@ template <typename T>
   }
 }
 
-}  // namespace msceqf
+}  // namespace msceqf::vision
 
 #endif  // CAMERA_HPP

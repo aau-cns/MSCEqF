@@ -13,26 +13,77 @@
 #define TRACK_MANAGER_HPP
 
 #include <opencv2/opencv.hpp>
+#include <unordered_set>
 
-#include "msceqf/vision/track.hpp"
+#include "msceqf/vision/tracker.hpp"
 #include "types/fptypes.hpp"
 
-namespace msceqf
+namespace msceqf::vision
 {
 
 /**
- * @brief This class manages the multiple tracks
+ * @brief This class manages the multiple tracks of feature traked in time
  *
  */
 class TrackManager
 {
  public:
-  using Tracks = std::unordered_map<uint, Track>;  //!< Tracks defined as a id-track map
+  /**
+   * @brief TrackManager constructor
+   *
+   * @param opts
+   * @param intrinsics
+   */
+  TrackManager(const TrackManagerOptions& opts, const Vector4& intrinsics);
+
+  /**
+   * @brief Process a single camera measurement. Forward camera measurement to tracker, and update tracks
+   *
+   * @param cam
+   */
+  void processCamera(Camera& cam);
+
+  /**
+   * @brief Get all the active and lost tracks at a given timestamp. Active tracks are defined as tracks that have are
+   * actively tracked at a given timestamp. Lost tracks are defined as tracks that are not being tracked at a given
+   * timestamp and thus they do not have coordinates at a given timestamp.
+   *
+   * @param timestamp
+   * @param active
+   * @param lost
+   */
+  void tracksAt(const fp& timestamp, Tracks& active, Tracks& lost) const;
+
+  /**
+   * @brief Remove all the tracks corresponding to given ids
+   *
+   * @param ids
+   *
+   * @note The use of unordered_set as a hash set improves performance compared to a std::vector<uint>
+   */
+  void removeTracksId(const std::unordered_set<uint>& ids);
+
+  /**
+   * @brief Remove the tail of tracks. This method remove from each track all the coordinates as well as the timestamps
+   * that are older or equal to the given timestamp.
+   *
+   * @param timestamp
+   */
+  void removeTracksTail(const fp& timestamp);
 
  private:
-  Tracks tracks_;  //!< features tracks
+  /**
+   * @brief Updeate tracks with current features from tracker
+   *
+   */
+  void updateTracks();
+
+  Tracker tracker_;  //!< Feature tracker
+  Tracks tracks_;    //!< Tracks
+
+  size_t max_track_length_; //!< Maximum length of a single track
 };
 
-}  // namespace msceqf
+}  // namespace msceqf::vision
 
 #endif  // TRACK_MANAGER_HPP

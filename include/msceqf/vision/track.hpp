@@ -12,67 +12,119 @@
 #ifndef TRACK_HPP
 #define TRACK_HPP
 
-#include "msceqf/vision/feature.hpp"
+#include <opencv2/opencv.hpp>
+
+#include "msceqf/vision/features.hpp"
 #include "types/fptypes.hpp"
-#include "utils/logger.hpp"
 
-namespace msceqf
+namespace msceqf::vision
 {
-
 /**
- * @brief This class represent a single track.
- * A track is defined as a collection of the same features tracked temporally.
+ * @brief (Cache friendly) Track struct. Define a feature (labelled via a feature id) detected/tracked at different
+ * points in time.
+ *
+ * @note Note that feature cordinates are of cv::Point2f type for compatibility with OpenCV.
  *
  */
-class Track
+struct Track
 {
- public:
-  template <typename... Args>
-  Track(const fp& anchor_timestamp, Args&&... args) : anchor_timestamp_(anchor_timestamp), track_()
+  using Times = std::vector<fp>;  //!< vector of timestamps
+
+  /**
+   * @brief Check if there valid coordinates in uvs_
+   *
+   * @return true if coordinates are found, false otherwise
+   */
+  inline bool empty() const noexcept { return uvs_.empty(); }
+
+  /**
+   * @brief Return the amount of features (size of uvs_)
+   *
+   * @return size_t
+   */
+  inline size_t size() const noexcept
   {
-    insertFeature(std::forward<decltype(args)>(args)...);
+    assert(uvs_.size() == normalized_uvs_.size());
+    assert(uvs_.size() == timestamps_.size());
+    return uvs_.size();
   }
 
   /**
-   * @brief Insert a new feature in the features track
+   * @brief Remove invalid features coordinates, normalized feature coordinates and ids given a vector of boolean flags
+   * indicating invalid features
    *
-   * @tparam Args
-   * @param args
-   *
-   * @note A id check should be done prior calling this method
+   * @param invalid
    */
-  template <typename... Args>
-  void insertFeature(Args&&... args)
+  void removeInvalid(std::vector<bool>& invalid)
   {
-    if constexpr (std::is_constructible_v<Feature, decltype(args)...>)
+    assert(invalid.size() == uvs_.size());
+    assert(uvs_.size() == normalized_uvs_.size());
+    assert(uvs_.size() == timestamps_.size());
+
+    size_t i = 0;
+    size_t j = 0;
+
+    while (i < uvs_.size())
     {
-      track_.emplace_back(args...);
+      if (!invalid[i])
+      {
+        uvs_[j] = uvs_[i];
+        normalized_uvs_[j] = normalized_uvs_[i];
+        timestamps_[j] = timestamps_[i];
+        ++j;
+      }
+      ++i;
     }
-    else
-    {
-      utils::Logger::err("Wrong arguments given when trying to insert a new feature in the features track");
-    }
+
+    uvs_.resize(j);
+    normalized_uvs_.resize(j);
+    timestamps_.resize(j);
   }
 
   /**
-   * @brief Get the actual track
+   * @brief Remove the tail of the track. this method removes coordinates and timestamps that are older or equal than
+   * the given timestamp
    *
-   * @return const std::vector<Feature>&
+   * @param timestamp
    */
-  const std::vector<Feature>& getTrack() const;
+  void removeTail(const fp& timestamp)
+  {
+    assert(uvs_.size() == normalized_uvs_.size());
+    assert(uvs_.size() == timestamps_.size());
+
+    size_t j = 0;
+    size_t i = 0;
+
+    while (i < uvs_.size())
+    {
+      if (timestamps_[i] > timestamp)
+      {
+        uvs_[j] = uvs_[i];
+        normalized_uvs_[j] = normalized_uvs_[i];
+        timestamps_[j] = timestamps_[i];
+        ++j;
+      }
+      ++i;
+    }
+
+    uvs_.resize(j);
+    normalized_uvs_.resize(j);
+    timestamps_.resize(j);
+  }
 
   /**
-   * @brief Get the timestamp of the anchor camera measurement
+   * @brief Comparison operator with other tracks for sorting based on track length
    *
-   * @return const fp&
    */
-  const fp& getAnchorTimestamp() const;
+  friend bool operator<(const Track& lhs, const Track& rhs) { return lhs.size() < rhs.size(); }
 
- private:
-  std::vector<Feature> track_;  //<! Feature track
-  fp anchor_timestamp_ = -1;    //<! timestamp of the anchor camera measurement
+  FeaturesCoordinates uvs_;             //!< (u, v) coordinates of the same feature at different time steps
+  FeaturesCoordinates normalized_uvs_;  //!< Normalized (u, v) coordinates of the same feature at different time steps
+  Times timestamps_;                    //!< Timestamps of the camera measurement containing the feature
 };
 
-}  // namespace msceqf
+using Tracks = std::unordered_map<uint, Track>;  //!< Tracks defined as a a vector of tracks mapped by ids
+
+}  // namespace msceqf::vision
 
 #endif  // TRACK_HPP
