@@ -56,24 +56,30 @@ struct Features
    *
    * @param invalid
    */
-  void remove(std::vector<bool>& invalid)
+  void removeInvalid(std::vector<bool>& invalid)
   {
     assert(invalid.size() == uvs_.size());
     assert(uvs_.size() == normalized_uvs_.size());
     assert(uvs_.size() == ids_.size());
 
-    uvs_.erase(std::remove_if(uvs_.begin(), uvs_.end(),
-                              [&invalid, this](const cv::Point2f& feat) { return invalid[&feat - &uvs_[0]]; }),
-               uvs_.end());
+    size_t i = 0;
+    size_t j = 0;
 
-    normalized_uvs_.erase(
-        std::remove_if(normalized_uvs_.begin(), normalized_uvs_.end(),
-                       [&invalid, this](const cv::Point2f& feat) { return invalid[&feat - &normalized_uvs_[0]]; }),
-        normalized_uvs_.end());
+    while (i < uvs_.size())
+    {
+      if (!invalid[i])
+      {
+        uvs_[j] = uvs_[i];
+        normalized_uvs_[j] = normalized_uvs_[i];
+        ids_[j] = ids_[i];
+        ++j;
+      }
+      ++i;
+    }
 
-    ids_.erase(
-        std::remove_if(ids_.begin(), ids_.end(), [&invalid, this](const uint& id) { return invalid[&id - &ids_[0]]; }),
-        ids_.end());
+    uvs_.resize(j);
+    normalized_uvs_.resize(j);
+    ids_.resize(j);
   }
 
   FeaturesCoordinates uvs_;             //!< (u, v) coordinates of the features detected/tracked

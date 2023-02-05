@@ -94,32 +94,6 @@ void Tracker::processCamera(Camera& cam)
   track(cam);
 }
 
-void Tracker::updateTracks(Tracks& tracks) const
-{
-  if (current_features_.second.empty())
-  {
-    utils::Logger::warn("Impossible to update tracks. No features has been detected/tracked");
-    return;
-  }
-
-  // for each feature/id either initialize a new track or update the existing track associated to the id
-  for (size_t i = 0; i < current_features_.second.size(); ++i)
-  {
-    auto& uv = current_features_.second.uvs_[i];
-    auto& uvn = current_features_.second.normalized_uvs_[i];
-    auto& id = current_features_.second.ids_[i];
-
-    Track track;
-    track.uvs_.emplace_back(uv);
-    track.normalized_uvs_.emplace_back(uvn);
-    track.timestamps_.emplace_back(current_features_.first);
-
-    // Initialize new element into tracks or extend existing track
-    auto& track_ref = tracks.try_emplace(id, std::vector<Track>()).first->second;
-    track_ref.emplace_back(std::move(track));
-  }
-}
-
 void Tracker::track(Camera& cam)
 {
   // Assign timestamp
@@ -157,7 +131,7 @@ void Tracker::track(Camera& cam)
     // Remove invalid features (coordinates and ids)
     if (found_invalid)
     {
-      current_features_.second.remove(invalid);
+      current_features_.second.removeInvalid(invalid);
     }
   }
 
@@ -383,5 +357,7 @@ void Tracker::ransac(std::vector<uchar>& mask)
   cv::findFundamentalMat(previous_features_.second.normalized_uvs_, current_features_.second.normalized_uvs_,
                          cv::FM_RANSAC, 0.25, 0.999, mask);
 }
+
+const Tracker::TimedFeatures& Tracker::currentFeatures() const { return current_features_; }
 
 }  // namespace msceqf::vision

@@ -13,7 +13,7 @@
 #define TEST_DETECTION_HPP
 
 #include "msceqf/msceqf.hpp"
-#include "msceqf/vision/tracker.hpp"
+#include "msceqf/vision/track_manager.hpp"
 #include "utils/csv_parser.hpp"
 
 namespace msceqf::vision
@@ -24,7 +24,8 @@ TEST(DetectionTest, fastDetectionNoMask)
   std::string config_filepath_base = "/home/alfornasier/PhD/MSCEqF_dev/MSCEqF/config/";
 
   MSCEqF sys(config_filepath_base + "parameters.yaml");
-  Tracker tracker(sys.options().tracker_options_, sys.stateOptions().initial_camera_intrinsics_.k());
+
+  TrackManager track_manager(sys.options().track_manager_options_, sys.stateOptions().initial_camera_intrinsics_.k());
 
   Camera cam;
   Tracks tracks;
@@ -34,6 +35,10 @@ TEST(DetectionTest, fastDetectionNoMask)
   int radius = 100;
 
   int time = -1;
+
+  Tracker::Keypoints active_kpts, lost_kpts;
+  Tracks active_tracks, lost_tracks;
+  std::unordered_set<uint> ids_to_remove;
 
   for (int i = 0; i < 1000; ++i)
   {
@@ -48,24 +53,32 @@ TEST(DetectionTest, fastDetectionNoMask)
 
     cv::circle(cam.image_, center, radius, cv::Scalar(255), cv::FILLED);
 
-    tracker.processCamera(cam);
-    tracker.updateTracks(tracks);
+    track_manager.processCamera(cam);
+    track_manager.tracksAt(cam.timestamp_, active_tracks, lost_tracks);
 
-    Tracker::Keypoints kpts;
-    for (auto it = tracks.begin(); it != tracks.end(); ++it)
+    for (auto& [id, active_track] : active_tracks)
     {
-      auto feat = it->second.back().uvs_.back();
-
-      // Display only active tracks
-      if (it->second.back().timestamps_.back() == cam.timestamp_)
-      {
-        kpts.emplace_back(feat.x, feat.y, 5.0f);
-      }
+      active_kpts.emplace_back(active_track.uvs_.back().x, active_track.uvs_.back().y, 5.0f);
     }
-    cv::Mat tmp;
-    cv::drawKeypoints(cam.image_, kpts, tmp, cv::Scalar(0, 0, 255), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
-    cv::imshow("Image with keypoints", tmp);
+
+    for (auto& [id, lost_track] : lost_tracks)
+    {
+      lost_kpts.emplace_back(lost_track.uvs_.back().x, lost_track.uvs_.back().y, 5.0f);
+      ids_to_remove.insert(id);
+    }
+
+    track_manager.removeTracksId(ids_to_remove);
+
+    cv::drawKeypoints(cam.image_, active_kpts, cam.image_, cv::Scalar(0, 0, 255),
+                      cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+    cv::drawKeypoints(cam.image_, lost_kpts, cam.image_, cv::Scalar(0, 255, 0),
+                      cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+    cv::imshow("Image with keypoints", cam.image_);
     cv::waitKey(1);
+
+    active_kpts.clear();
+    lost_tracks.clear();
+    active_tracks.clear();
   }
 }
 

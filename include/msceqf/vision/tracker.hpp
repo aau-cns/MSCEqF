@@ -49,11 +49,11 @@ class Tracker
   void processCamera(Camera& cam);
 
   /**
-   * @brief [TODO]
+   * @brief Get the current detected/tracked features
    *
-   * @param tracks_map
+   * @return const TimedFeatures&
    */
-  void updateTracks(Tracks& tracks) const;
+  const TimedFeatures& currentFeatures() const;
 
  private:
   /**

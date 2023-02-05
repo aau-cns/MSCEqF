@@ -43,40 +43,47 @@ MSCEqFOptions OptionParser::parseOptions()
   ///
   /// Parse tracker parameters
   ///
-  readDefault(opts.tracker_options_.max_features_, 100, "max_features");
-  uint min_feats_default = std::min(uint(20), opts.tracker_options_.max_features_);
-  readDefault(opts.tracker_options_.min_features_, min_feats_default, "min_features");
-  readDefault(opts.tracker_options_.grid_x_size_, 8, "grid_x_size");
-  readDefault(opts.tracker_options_.grid_y_size_, 5, "grid_y_size");
-  readDefault(opts.tracker_options_.min_px_dist_, 5, "min_feature_pixel_distance");
+  readDefault(opts.track_manager_options_.tracker_options_.max_features_, 100, "max_features");
+  uint min_feats_default = std::min(uint(20), opts.track_manager_options_.tracker_options_.max_features_);
+  readDefault(opts.track_manager_options_.tracker_options_.min_features_, min_feats_default, "min_features");
+  readDefault(opts.track_manager_options_.tracker_options_.grid_x_size_, 8, "grid_x_size");
+  readDefault(opts.track_manager_options_.tracker_options_.grid_y_size_, 5, "grid_y_size");
+  readDefault(opts.track_manager_options_.tracker_options_.min_px_dist_, 5, "min_feature_pixel_distance");
 
-  readDefault(opts.tracker_options_.pyramid_levels_, 3, "optical_flow_pyramid_levels");
-  readDefault(opts.tracker_options_.optical_flow_win_size_, 21, "optical_flow_win_size");
+  readDefault(opts.track_manager_options_.tracker_options_.pyramid_levels_, 3, "optical_flow_pyramid_levels");
+  readDefault(opts.track_manager_options_.tracker_options_.optical_flow_win_size_, 21, "optical_flow_win_size");
 
   // Parse camera parameters
   parseCameraParameters(opts.state_options_.initial_camera_extrinsics_, opts.state_options_.initial_camera_intrinsics_,
-                        opts.tracker_options_.distortion_model_,
-                        opts.tracker_options_.cam_options_.distortion_coefficients_,
-                        opts.tracker_options_.cam_options_.resolution_);
+                        opts.track_manager_options_.tracker_options_.distortion_model_,
+                        opts.track_manager_options_.tracker_options_.cam_options_.distortion_coefficients_,
+                        opts.track_manager_options_.tracker_options_.cam_options_.resolution_);
 
   // Parse equalization method
-  parseEqualizationMethod(opts.tracker_options_.equalizer_);
+  parseEqualizationMethod(opts.track_manager_options_.tracker_options_.equalizer_);
 
   // Parse feature detector type
-  parseDetectorType(opts.tracker_options_.detector_);
+  parseDetectorType(opts.track_manager_options_.tracker_options_.detector_);
 
   // Parse feature detector params
-  switch (opts.tracker_options_.detector_)
+  switch (opts.track_manager_options_.tracker_options_.detector_)
   {
     case FeatureDetector::FAST:
-      readDefault(opts.tracker_options_.fast_opts_.fast_threshold_, 10, "fast_threshold");
+      readDefault(opts.track_manager_options_.tracker_options_.fast_opts_.fast_threshold_, 10, "fast_threshold");
       break;
     case FeatureDetector::GFTT:
-      readDefault(opts.tracker_options_.gftt_opts_.quality_level_, 0.05, "shi_tomasi_quality_level");
+      readDefault(opts.track_manager_options_.tracker_options_.gftt_opts_.quality_level_, 0.05,
+                  "shi_tomasi_quality_level");
       break;
     default:
       break;
   }
+
+  ///
+  /// Parse track manager parameters
+  ///
+
+  readDefault(opts.track_manager_options_.max_track_length_, 250, "max_track_length");
 
   ///
   /// Parse propagator options

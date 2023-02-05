@@ -55,25 +55,61 @@ struct Track
    *
    * @param invalid
    */
-  void remove(std::vector<bool>& invalid)
+  void removeInvalid(std::vector<bool>& invalid)
   {
     assert(invalid.size() == uvs_.size());
     assert(uvs_.size() == normalized_uvs_.size());
     assert(uvs_.size() == timestamps_.size());
 
-    uvs_.erase(std::remove_if(uvs_.begin(), uvs_.end(),
-                              [&invalid, this](const cv::Point2f& feat) { return invalid[&feat - &uvs_[0]]; }),
-               uvs_.end());
+    size_t i = 0;
+    size_t j = 0;
 
-    normalized_uvs_.erase(
-        std::remove_if(normalized_uvs_.begin(), normalized_uvs_.end(),
-                       [&invalid, this](const cv::Point2f& feat) { return invalid[&feat - &normalized_uvs_[0]]; }),
-        normalized_uvs_.end());
+    while (i < uvs_.size())
+    {
+      if (!invalid[i])
+      {
+        uvs_[j] = uvs_[i];
+        normalized_uvs_[j] = normalized_uvs_[i];
+        timestamps_[j] = timestamps_[i];
+        ++j;
+      }
+      ++i;
+    }
 
-    timestamps_.erase(
-        std::remove_if(timestamps_.begin(), timestamps_.end(),
-                       [&invalid, this](const fp& timestamp) { return invalid[&timestamp - &timestamps_[0]]; }),
-        timestamps_.end());
+    uvs_.resize(j);
+    normalized_uvs_.resize(j);
+    timestamps_.resize(j);
+  }
+
+  /**
+   * @brief Remove the tail of the track. this method removes coordinates and timestamps that are older or equal than
+   * the given timestamp
+   *
+   * @param timestamp
+   */
+  void removeTail(const fp& timestamp)
+  {
+    assert(uvs_.size() == normalized_uvs_.size());
+    assert(uvs_.size() == timestamps_.size());
+
+    size_t j = 0;
+    size_t i = 0;
+
+    while (i < uvs_.size())
+    {
+      if (timestamps_[i] > timestamp)
+      {
+        uvs_[j] = uvs_[i];
+        normalized_uvs_[j] = normalized_uvs_[i];
+        timestamps_[j] = timestamps_[i];
+        ++j;
+      }
+      ++i;
+    }
+
+    uvs_.resize(j);
+    normalized_uvs_.resize(j);
+    timestamps_.resize(j);
   }
 
   /**
@@ -87,7 +123,7 @@ struct Track
   Times timestamps_;                    //!< Timestamps of the camera measurement containing the feature
 };
 
-using Tracks = std::unordered_map<uint, std::vector<Track>>;  //!< Tracks defined as a a vector of tracks mapped by ids
+using Tracks = std::unordered_map<uint, Track>;  //!< Tracks defined as a a vector of tracks mapped by ids
 
 }  // namespace msceqf::vision
 
