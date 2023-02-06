@@ -9,11 +9,11 @@
 //
 // You can contact the authors at <alessandro.fornasier@ieee.org>
 
-#include "msceqf/vision/camera.hpp"
+#include "vision/camera.hpp"
 
 #include <opencv2/core/eigen.hpp>
 
-namespace msceqf::vision
+namespace msceqf
 {
 PinholeCamera::PinholeCamera(const VectorX& distortion_coefficients,
                              const Vector4 instrinsics,

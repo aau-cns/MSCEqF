@@ -13,7 +13,7 @@
 #define TEST_DETECTION_HPP
 
 #include "msceqf/msceqf.hpp"
-#include "msceqf/vision/tracker.hpp"
+#include "vision/tracker.hpp"
 #include "utils/csv_parser.hpp"
 
 namespace msceqf

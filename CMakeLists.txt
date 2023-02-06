@@ -112,9 +112,9 @@ list(
     source/msceqf/symmetry/symmetry.cpp
     source/msceqf/filter/propagator/propagator.cpp
     source/msceqf/filter/initializer/static_initializer.cpp
-    source/msceqf/vision/camera.cpp
-    source/msceqf/vision/tracker.cpp
-    source/msceqf/vision/track_manager.cpp
+    source/vision/camera.cpp
+    source/vision/tracker.cpp
+    source/vision/track_manager.cpp
 )
 
 ## Declare a C++ library

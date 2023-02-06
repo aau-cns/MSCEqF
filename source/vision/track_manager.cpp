@@ -9,11 +9,11 @@
 //
 // You can contact the authors at <alessandro.fornasier@ieee.org>
 
-#include "msceqf/vision/track_manager.hpp"
+#include "vision/track_manager.hpp"
 
 #include "utils/logger.hpp"
 
-namespace msceqf::vision
+namespace msceqf
 {
 
 TrackManager::TrackManager(const TrackManagerOptions& opts, const Vector4& intrinsics)
@@ -27,6 +27,8 @@ void TrackManager::processCamera(Camera& cam)
   updateTracks();
 }
 
+const Tracks& TrackManager::tracks() const { return tracks_; }
+
 void TrackManager::tracksAt(const fp& timestamp, Tracks& active, Tracks& lost) const
 {
   for (const auto& [id, track] : tracks_)
@@ -38,6 +40,17 @@ void TrackManager::tracksAt(const fp& timestamp, Tracks& active, Tracks& lost) c
     else
     {
       lost.insert_or_assign(id, track);
+    }
+  }
+}
+
+void TrackManager::activeTracksAt(const fp& timestamp, Tracks& active) const
+{
+  for (const auto& [id, track] : tracks_)
+  {
+    if (std::find(track.timestamps_.begin(), track.timestamps_.end(), timestamp) != track.timestamps_.end())
+    {
+      active.insert_or_assign(id, track);
     }
   }
 }
@@ -99,4 +112,4 @@ void TrackManager::updateTracks()
   }
 }
 
-}  // namespace msceqf::vision
+}  // namespace msceqf

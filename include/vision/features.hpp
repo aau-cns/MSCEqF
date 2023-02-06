@@ -16,7 +16,7 @@
 
 #include "types/fptypes.hpp"
 
-namespace msceqf::vision
+namespace msceqf
 {
 
 using FeaturesCoordinates = std::vector<cv::Point2f>;  //!< The features coordinates
@@ -87,6 +87,6 @@ struct Features
   FeatureIds ids_;                      //!< Id of the features detected/tracked
 };
 
-}  // namespace msceqf::vision
+}  // namespace msceqf
 
 #endif  // FEATURES_HPP

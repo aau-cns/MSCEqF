@@ -9,8 +9,8 @@
 //
 // You can contact the authors at <alessandro.fornasier@ieee.org>
 
-#ifndef MSCEQF_OPTIONS_HPP
-#define MSCEQF_OPTIONS_HPP
+#ifndef OPTIONS_HPP
+#define OPTIONS_HPP
 
 #include "types/fptypes.hpp"
 
@@ -83,9 +83,10 @@ struct PropagatorOptions
 
 struct InitializerOptions
 {
-  fp disparity_threshold_;  //!< the disparity threshold for the static initializer
-  fp acc_threshold_;        //!< The acceleration threshold for the static initializer
-  uint imu_init_window_;    //!< The window in seconds used to check for acceleration spikes
+  fp disparity_threshold_;   //!< the disparity threshold for the static initializer
+  fp acc_threshold_;         //!< The acceleration threshold for the static initializer
+  size_t imu_init_window_;   //!< The window in seconds used to check for acceleration spikes
+  size_t disparity_window_;  //!< The window is seconds used to check disparity
 };
 
 struct CameraOptions
@@ -143,4 +144,4 @@ struct MSCEqFOptions
 
 }  // namespace msceqf
 
-#endif  // MSCEQF_OPTIONS_HPP
+#endif  // OPTIONS_HPP

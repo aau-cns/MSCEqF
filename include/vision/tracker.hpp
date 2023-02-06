@@ -12,13 +12,13 @@
 #ifndef TRACKER_HPP
 #define TRACKER_HPP
 
-#include "msceqf/system/sensor_data.hpp"
-#include "msceqf/vision/camera.hpp"
-#include "msceqf/vision/features.hpp"
-#include "msceqf/vision/track.hpp"
+#include "sensors/sensor_data.hpp"
 #include "types/fptypes.hpp"
+#include "vision/camera.hpp"
+#include "vision/features.hpp"
+#include "vision/track.hpp"
 
-namespace msceqf::vision
+namespace msceqf
 {
 
 /**
@@ -142,7 +142,7 @@ class Tracker
   cv::Size win_;  //!< The Optical Flow window size
 };
 
-}  // namespace msceqf::vision
+}  // namespace msceqf
 
 #endif  // TRACKER_HPP
 

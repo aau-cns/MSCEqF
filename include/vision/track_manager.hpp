@@ -15,10 +15,10 @@
 #include <opencv2/opencv.hpp>
 #include <unordered_set>
 
-#include "msceqf/vision/tracker.hpp"
 #include "types/fptypes.hpp"
+#include "vision/tracker.hpp"
 
-namespace msceqf::vision
+namespace msceqf
 {
 
 /**
@@ -44,6 +44,13 @@ class TrackManager
   void processCamera(Camera& cam);
 
   /**
+   * @brief get all the tracks
+   *
+   * @return const Tracks&
+   */
+  const Tracks& tracks() const;
+
+  /**
    * @brief Get all the active and lost tracks at a given timestamp. Active tracks are defined as tracks that have are
    * actively tracked at a given timestamp. Lost tracks are defined as tracks that are not being tracked at a given
    * timestamp and thus they do not have coordinates at a given timestamp.
@@ -53,6 +60,15 @@ class TrackManager
    * @param lost
    */
   void tracksAt(const fp& timestamp, Tracks& active, Tracks& lost) const;
+
+  /**
+   * @brief Get all the active tracks at a given timestamp. Active tracks are defined as tracks that have are
+   * actively tracked at a given timestamp.
+   *
+   * @param timestamp
+   * @param active
+   */
+  void activeTracksAt(const fp& timestamp, Tracks& active) const;
 
   /**
    * @brief Remove all the tracks corresponding to given ids
@@ -81,9 +97,9 @@ class TrackManager
   Tracker tracker_;  //!< Feature tracker
   Tracks tracks_;    //!< Tracks
 
-  size_t max_track_length_; //!< Maximum length of a single track
+  size_t max_track_length_;  //!< Maximum length of a single track
 };
 
-}  // namespace msceqf::vision
+}  // namespace msceqf
 
 #endif  // TRACK_MANAGER_HPP

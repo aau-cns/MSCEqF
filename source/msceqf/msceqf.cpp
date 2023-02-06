@@ -11,6 +11,8 @@
 
 #include "msceqf/msceqf.hpp"
 
+#include <future>
+
 namespace msceqf
 {
 
@@ -19,6 +21,7 @@ MSCEqF::MSCEqF(const std::string& params_filepath)
     , opts_(parser_.parseOptions())
     , X_(opts_.state_options_)
     , xi0_(opts_.state_options_)
+    , track_manager_(opts_.track_manager_options_, opts_.state_options_.initial_camera_intrinsics_.k())
     , initializer_(opts_.init_options_)
     , propagator_(opts_.propagator_options_)
 {
@@ -45,14 +48,15 @@ void MSCEqF::processImuMeasurement(const Imu& imu)
   }
 }
 
-void MSCEqF::processCameraMeasurement(const Camera& cam)
+void MSCEqF::processCameraMeasurement(Camera& cam)
 {
   assert(cam.timestamp_ >= 0);
   assert(cam.image_.size() == cam.mask_.size());
 
   if (!is_filter_initialized_)
   {
-    is_filter_initialized_ = initializer_.detectMotion();
+    track_manager_.processCamera(cam);
+    is_filter_initialized_ = initializer_.detectMotion(track_manager_.tracks());
   }
 
   if (cam.timestamp_ < timestamp_)
@@ -61,11 +65,23 @@ void MSCEqF::processCameraMeasurement(const Camera& cam)
     return;
   }
 
-  // [TODO] manage stochastic cloning
-  if (!propagator_.propagate(X_, xi0_, timestamp_, cam.timestamp_))
+  // Parallelize propagation and image processing, synchronization is not needed since there are no data races
+  auto future_propagation = std::async([&]() { return propagator_.propagate(X_, xi0_, timestamp_, cam.timestamp_); });
+  auto future_image_processing = std::async([&]() { track_manager_.processCamera(cam); });
+
+  if (!future_propagation.get())
   {
     utils::Logger::err("Propagation failure.");
+    return;
   }
+
+  auto future_cloning = std::async([&]() { /* clone */ });
+
+  future_image_processing.wait();
+  future_cloning.wait();
+
+  // [TODO] Cloning
+  // [TODO] Update
 }
 
 const MSCEqFOptions& MSCEqF::options() const { return opts_; }

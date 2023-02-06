@@ -13,10 +13,10 @@
 #define TEST_DETECTION_HPP
 
 #include "msceqf/msceqf.hpp"
-#include "msceqf/vision/track_manager.hpp"
+#include "vision/track_manager.hpp"
 #include "utils/csv_parser.hpp"
 
-namespace msceqf::vision
+namespace msceqf
 {
 
 TEST(DetectionTest, fastDetectionNoMask)
@@ -82,6 +82,6 @@ TEST(DetectionTest, fastDetectionNoMask)
   }
 }
 
-}  // namespace msceqf::vision
+}  // namespace msceqf
 
 #endif  // TEST_DETECTION_HPP

@@ -38,9 +38,12 @@ void StaticInitializer::insertImu(const Imu& imu)
   }
 }
 
-bool StaticInitializer::detectMotion() { return accelerationCheck() && disparityCheck(); }
+bool StaticInitializer::detectMotion(const Tracks& tracks) const
+{
+  return accelerationCheck() && disparityCheck(tracks);
+}
 
-bool StaticInitializer::accelerationCheck()
+bool StaticInitializer::accelerationCheck() const
 {
   if (opts_.acc_threshold_ > 0 &&
       (imu_buffer_.back().timestamp_ - imu_buffer_.front().timestamp_) < opts_.imu_init_window_)
@@ -56,8 +59,9 @@ bool StaticInitializer::accelerationCheck()
   }
 
   std::vector<fp> acc_diff_norm_square;
+  acc_diff_norm_square.reserve(imu_buffer_.size());
   std::transform(imu_buffer_.begin(), imu_buffer_.end(), std::back_inserter(acc_diff_norm_square),
-                 [&acc_mean](Imu& imu) { return (imu.acc_ - acc_mean).dot(imu.acc_ - acc_mean); });
+                 [&acc_mean](const Imu& imu) { return (imu.acc_ - acc_mean).dot(imu.acc_ - acc_mean); });
   fp acc_std = std::reduce(acc_diff_norm_square.begin(), acc_diff_norm_square.end());
 
   if (acc_std < opts_.acc_threshold_)
@@ -69,6 +73,30 @@ bool StaticInitializer::accelerationCheck()
   return true;
 }
 
-bool StaticInitializer::disparityCheck() { return true; }
+bool StaticInitializer::disparityCheck(const Tracks& tracks) const
+{
+  size_t first_track_lenght = tracks.begin()->second.timestamps_.back() - tracks.begin()->second.timestamps_.front();
+
+  if (first_track_lenght < opts_.disparity_window_)
+  {
+    utils::Logger::info("feature tracks not long enough for disparity check in static initializer");
+    return false;
+  }
+
+  fp average_disparity = 0;
+  int track_cnt = 0;
+
+  for (const auto& [id, track] : tracks)
+  {
+    if (track.size() == first_track_lenght)
+    {
+      average_disparity += cv::norm(track.uvs_.back() - track.uvs_.front());
+      ++track_cnt;
+    }
+  }
+  average_disparity /= track_cnt;
+
+  return average_disparity > opts_.disparity_threshold_ ? true : false;
+}
 
 }  // namespace msceqf

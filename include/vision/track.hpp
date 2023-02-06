@@ -14,10 +14,10 @@
 
 #include <opencv2/opencv.hpp>
 
-#include "msceqf/vision/features.hpp"
 #include "types/fptypes.hpp"
+#include "vision/features.hpp"
 
-namespace msceqf::vision
+namespace msceqf
 {
 /**
  * @brief (Cache friendly) Track struct. Define a feature (labelled via a feature id) detected/tracked at different
@@ -125,6 +125,6 @@ struct Track
 
 using Tracks = std::unordered_map<uint, Track>;  //!< Tracks defined as a a vector of tracks mapped by ids
 
-}  // namespace msceqf::vision
+}  // namespace msceqf
 
 #endif  // TRACK_HPP

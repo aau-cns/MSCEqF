@@ -9,8 +9,8 @@
 //
 // You can contact the authors at <alessandro.fornasier@ieee.org>
 
-#ifndef MSCEQF_OPTIONS_PARSER_HPP
-#define MSCEQF_OPTIONS_PARSER_HPP
+#ifndef OPTIONS_PARSER_HPP
+#define OPTIONS_PARSER_HPP
 
 #include <yaml-cpp/yaml.h>
 
@@ -224,4 +224,4 @@ class OptionParser
 
 }  // namespace msceqf
 
-#endif  // MSCEQF_OPTIONS_HPP
+#endif  // OPTIONS_HPP

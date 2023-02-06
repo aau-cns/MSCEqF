@@ -102,6 +102,28 @@ static std::vector<T> flatten(const std::vector<std::vector<T>>& vector_of_vecto
   return flat;
 }
 
+// /**
+//  * @brief Flatten a vector of vectors and insert in given vector (append if the given vector in non empty)
+//  *
+//  * @tparam T
+//  * @param vector_of_vectors
+//  * @return std::vector<T>
+//  *
+//  * @note the vector of vectors is moved into flat so it becames unusable
+//  */
+// template <typename T>
+// static void flattenInto(const std::vector<std::vector<T>>& vector_of_vectors, std::vector<T>& flat)
+// {
+//   size_t total_size =
+//       flat.size() + std::accumulate(vector_of_vectors.begin(), vector_of_vectors.end(), 0,
+//                                     [](size_t size, const std::vector<T>& vec) { return size + vec.size(); });
+//   flat.reserve(total_size);
+//   for (const auto& vec : vector_of_vectors)
+//   {
+//     flat.insert(flat.end(), std::make_move_iterator(vec.begin()), std::make_move_iterator(vec.end()));
+//   }
+// }
+
 /**
  * @brief Perform 2^n with an integer n
  *

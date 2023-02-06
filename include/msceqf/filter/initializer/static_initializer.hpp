@@ -13,9 +13,10 @@
 #define STATIC_INITIALIZER_HPP
 
 #include "msceqf/options/msceqf_options.hpp"
-#include "msceqf/system/sensor_data.hpp"
+#include "sensors/sensor_data.hpp"
 #include "types/fptypes.hpp"
 #include "utils/tools.hpp"
+#include "vision/track.hpp"
 
 namespace msceqf
 {
@@ -42,9 +43,11 @@ class StaticInitializer
   /**
    * @brief This function detects if the platform is moving based on acceleration measurements and image disparity
    *
+   * @param tracks tracks up to date used for disparity check
    * @return true if motion is detected, flase otherwise
    */
-  [[nodiscard]] bool detectMotion();
+
+  [[nodiscard]] bool detectMotion(const Tracks& tracks) const;
 
  private:
   /**
@@ -53,15 +56,19 @@ class StaticInitializer
    *
    * @return true if acceleration spike has been detected, false otherwise
    */
-  [[nodiscard]] bool accelerationCheck();
+  [[nodiscard]] bool accelerationCheck() const;
 
   /**
    * @brief Perform disparity check
    *
+   * @param tracks tracks up to date used for disparity check
    * @return true if disparity check succeed (diparity above threshold), false if no disparity is detected (disparity
    * below threshold)
+   *
+   * @note This method checks only tracks that are as long as the first track. This ideally should avoid to use newly
+   * detected/tracked features corresponding to temporary objects moving in front of the camera
    */
-  [[nodiscard]] bool disparityCheck();
+  [[nodiscard]] bool disparityCheck(const Tracks& tracks) const;
 
   InitializerOptions opts_;  //!< The initializer options
 

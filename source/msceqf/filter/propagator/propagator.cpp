@@ -146,7 +146,7 @@ bool Propagator::propagate(MSCEqFState& X, const SystemState& xi0, fp& timestamp
     return false;
   }
 
-  Propagator::ImuBuffer propagation_buffer = getImuReadings(std::as_const(timestamp), new_timestamp);
+  Propagator::ImuBuffer propagation_buffer = getImuReadings(timestamp, new_timestamp);
 
   if (propagation_buffer.empty())
   {

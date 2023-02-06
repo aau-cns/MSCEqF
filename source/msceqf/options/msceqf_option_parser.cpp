@@ -104,8 +104,9 @@ MSCEqFOptions OptionParser::parseOptions()
 
   // Initializer options
   readDefault(opts.init_options_.imu_init_window_, 0.5, "static_initializer_imu_window");
-  readDefault(opts.init_options_.disparity_threshold_, 1.0, "static_initializer_disparity_threshold");
+  readDefault(opts.init_options_.disparity_window_, 0.5, "static_initializer_disparity_window");
   readDefault(opts.init_options_.acc_threshold_, 0.0, "static_initializer_acc_threshold");
+  readDefault(opts.init_options_.disparity_threshold_, 1.0, "static_initializer_disparity_threshold");
 
   ///
   /// Parse other options

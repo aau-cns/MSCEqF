@@ -18,6 +18,7 @@
 
 namespace msceqf
 {
+
 /**
  * @brief Struct for one IMU reading.
  * It includes timestamp, angular velocity and linear acceleration.

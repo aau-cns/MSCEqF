@@ -9,12 +9,12 @@
 //
 // You can contact the authors at <alessandro.fornasier@ieee.org>
 
-#include "msceqf/vision/tracker.hpp"
+#include "vision/tracker.hpp"
 
 #include "utils/logger.hpp"
 #include "utils/tools.hpp"
 
-namespace msceqf::vision
+namespace msceqf
 {
 
 Tracker::Tracker(const TrackerOptions& opts, const Vector4& intrinsics)
@@ -360,4 +360,4 @@ void Tracker::ransac(std::vector<uchar>& mask)
 
 const Tracker::TimedFeatures& Tracker::currentFeatures() const { return current_features_; }
 
-}  // namespace msceqf::vision
+}  // namespace msceqf
