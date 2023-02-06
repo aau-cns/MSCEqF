@@ -50,14 +50,21 @@ class MSCEqFStateElement
    *
    * @return int
    */
-  [[nodiscard]] int getIndex() { return idx_; }
+  [[nodiscard]] const uint& getIndex() { return idx_; }
 
   /**
    * @brief Get the degrees of freedom of the state element (dimension of relative covariance and residual block)
    *
    * @return int
    */
-  [[nodiscard]] int getDof() { return dof_; }
+  [[nodiscard]] const uint& getDof() { return dof_; }
+
+  /**
+   * @brief Update index
+   *
+   * @param new_idx
+   */
+  void updateIndex(const uint& new_idx) { idx_ = new_idx; }
 
   /**
    * @brief update function to update the value of the state element by right multiplication

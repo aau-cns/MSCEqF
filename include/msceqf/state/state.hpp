@@ -14,8 +14,8 @@
 
 #include <variant>
 
-#include "msceqf/state/state_elements.hpp"
 #include "msceqf/options/msceqf_options.hpp"
+#include "msceqf/state/state_elements.hpp"
 
 namespace msceqf
 {
@@ -147,6 +147,21 @@ class MSCEqFState
   void initializeStateElement(const MSCEqFStateKey& key, const MatrixX& cov_block);
 
   /**
+   * @brief Augment the MSCEqF clones map with a new clone of the actual E element of the MSCEqF state.
+   * The new clone is mapped via the given timestamp
+   *
+   * @param timestamp
+   */
+  void stochasticCloning(const fp& timestamp);
+
+  /**
+   * @brief Marginalize out clone at a given timestamp
+   *
+   * @param timestamp
+   */
+  void marginalizeCloneAt(const fp& timestamp);
+
+  /**
    * @brief Get a random MSCEqF state
    * This method *WILL NOT* change the actual values of the state.
    * This method *WILL NOT* initialize the covariance or the clones map.
@@ -192,8 +207,9 @@ class MSCEqFState
    *
    * @param key state element name or feature id
    * @param ptr pointer to MSCEqF state element
+   * @return true if the element has been succesfully inserted, false if a corresponding key existed already
    */
-  void insertStateElement(const MSCEqFStateKey& key, MSCEqFStateElementUniquePtr ptr);
+  [[nodiscard]] bool insertStateElement(const MSCEqFStateKey& key, MSCEqFStateElementUniquePtr ptr);
 
   /**
    * @brief Get the MSCEqF element pointer (base) given the key

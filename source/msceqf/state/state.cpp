@@ -158,47 +158,107 @@ void MSCEqFState::initializeStateElement(const MSCEqFStateKey& key, const Matrix
   // Get index (actual size of covairance)
   uint idx = cov_.rows();
 
+  bool success = false;
   if (std::holds_alternative<MSCEqFStateElementName>(key))
   {
     switch (std::get<MSCEqFStateElementName>(key))
     {
       case MSCEqFStateElementName::Dd:
-        insertStateElement(key, std::move(createMSCEqFStateElement<MSCEqFSDBState>(idx)));
+        success = insertStateElement(key, std::move(createMSCEqFStateElement<MSCEqFSDBState>(idx)));
         break;
       case MSCEqFStateElementName::E:
-        insertStateElement(key, std::move(createMSCEqFStateElement<MSCEqFSE3State>(idx)));
+        success = insertStateElement(key, std::move(createMSCEqFStateElement<MSCEqFSE3State>(idx)));
         break;
       case MSCEqFStateElementName::L:
-        insertStateElement(key, std::move(createMSCEqFStateElement<MSCEqFInState>(idx)));
+        success = insertStateElement(key, std::move(createMSCEqFStateElement<MSCEqFInState>(idx)));
         break;
     }
   }
   else
   {
-    insertStateElement(std::get<uint>(key), std::move(createMSCEqFStateElement<MSCEqFSOT3State>(idx)));
+    success = insertStateElement(std::get<uint>(key), std::move(createMSCEqFStateElement<MSCEqFSOT3State>(idx)));
   }
 
-  uint size_increment = state_[key]->getDof();
-  cov_.conservativeResizeLike(MatrixX::Zero(idx + size_increment, idx + size_increment));
+  if (success)
+  {
+    uint size_increment = state_[key]->getDof();
+    cov_.conservativeResizeLike(MatrixX::Zero(idx + size_increment, idx + size_increment));
 
-  assert(cov_block.rows() == cov_block.cols());
-  assert(cov_block.rows() == size_increment);
+    assert(cov_block.rows() == cov_block.cols());
+    assert(cov_block.rows() == size_increment);
 
-  cov_.block(idx, idx, size_increment, size_increment) = cov_block;
+    cov_.block(idx, idx, size_increment, size_increment) = cov_block;
 
-  // utils::Logger::debug("Assigned covariance block from (" + std::to_string(idx) + "," + std::to_string(idx) +
-  //                      "), to (" + std::to_string(idx + size_increment) + "," + std::to_string(idx + size_increment)
-  //                      +
-  //                      "). Full covariance is now: \n" +
-  //                      static_cast<std::ostringstream&>(std::ostringstream() << cov_).str());
+    // utils::Logger::debug("Assigned covariance block from (" + std::to_string(idx) + "," + std::to_string(idx) +
+    //                      "), to (" + std::to_string(idx + size_increment) + "," + std::to_string(idx +
+    //                      size_increment) +
+    //                      "). Full covariance is now: \n" +
+    //                      static_cast<std::ostringstream&>(std::ostringstream() << cov_).str());
+  }
+  else
+  {
+    utils::Logger::debug("Failed to initialize new state element with key: " + toString(key));
+  }
 }
 
-void MSCEqFState::insertStateElement(const MSCEqFStateKey& key, MSCEqFStateElementUniquePtr ptr)
+void MSCEqFState::stochasticCloning(const fp& timestamp)
+{
+  const uint old_size = cov_.rows();
+
+  auto ptr = std::static_pointer_cast<MSCEqFSE3State>(state_.at(MSCEqFStateElementName::E));
+  assert(ptr != nullptr);
+
+  MSCEqFSE3StateSharedPtr clone = std::make_shared<MSCEqFSE3State>(*ptr);
+  clone->updateIndex(old_size);
+
+  if (clones_.try_emplace(timestamp, clone).second)
+  {
+    utils::Logger::debug("Created MSCEqF Clone element at time: " + std::to_string(timestamp));
+
+    const uint& E_idx = ptr->getIndex();
+    const uint& size_increment = clone->getDof();
+
+    cov_.conservativeResizeLike(MatrixX::Zero(old_size + size_increment, old_size + size_increment));
+
+    cov_.block(old_size, old_size, size_increment, size_increment) =
+        cov_.block(E_idx, E_idx, size_increment, size_increment);
+    cov_.block(0, old_size, old_size, size_increment) = cov_.block(0, E_idx, old_size, size_increment);
+    cov_.block(old_size, 0, size_increment, old_size) = cov_.block(E_idx, 0, size_increment, old_size);
+  }
+  else
+  {
+    utils::Logger::debug("Failed to create MSCEqF Clone element at time: " + std::to_string(timestamp));
+  }
+}
+
+void MSCEqFState::marginalizeCloneAt(const fp& timestamp)
+{
+  MSCEqFSE3StateSharedPtr clone_to_remove = clones_.at(timestamp);
+  const uint& idx = clone_to_remove->getIndex();
+  const uint& size = clone_to_remove->getDof();
+
+  // Create a binary mask to slice the covariance
+  Eigen::MatrixXd mask = Eigen::MatrixXd::Ones(cov_.rows(), cov_.cols());
+  mask.block(idx, 0, size, cov_.cols()) = Eigen::MatrixXd::Zero(size, cov_.cols());
+  mask.block(0, idx, cov_.rows(), size) = Eigen::MatrixXd::Zero(cov_.rows(), size);
+
+  // Slice the covariance
+  cov_ = (mask.array() == 1).select(cov_, 0);
+  cov_.conservativeResize(cov_.rows() - size, cov_.cols() - size);
+
+  // Remove clone
+  clones_.erase(timestamp);
+}
+
+bool MSCEqFState::insertStateElement(const MSCEqFStateKey& key, MSCEqFStateElementUniquePtr ptr)
 {
   assert(ptr != nullptr);
-  state_.try_emplace(key, std::move(ptr));
-
-  utils::Logger::info("Created MSCEqF State element [" + toString(key) + "]");
+  if (state_.try_emplace(key, std::move(ptr)).second)
+  {
+    utils::Logger::info("Created MSCEqF State element [" + toString(key) + "]");
+    return true;
+  }
+  return false;
 }
 
 const MSCEqFStateElementSharedPtr& MSCEqFState::getPtr(const MSCEqFStateKey& key) const

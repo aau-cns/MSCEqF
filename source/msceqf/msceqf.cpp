@@ -75,12 +75,12 @@ void MSCEqF::processCameraMeasurement(Camera& cam)
     return;
   }
 
-  auto future_cloning = std::async([&]() { /* clone */ });
+  // Parallelize stochastic cloning and image processing, synchronization is not needed since there are no data races
+  auto future_cloning = std::async([&]() { X_.stochasticCloning(cam.timestamp_); });
 
   future_image_processing.wait();
   future_cloning.wait();
 
-  // [TODO] Cloning
   // [TODO] Update
 }
 
