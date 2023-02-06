@@ -141,6 +141,18 @@ const In& SystemState::K() const
   }
 }
 
+const Vector4 SystemState::k() const
+{
+  if (opts_.enable_camera_intrinsics_calibration_)
+  {
+    return std::static_pointer_cast<CameraIntrinsicState>(state_.at(SystemStateElementName::K))->K_.k();
+  }
+  else
+  {
+    return opts_.initial_camera_intrinsics_.k();
+  }
+}
+
 const Vector3& SystemState::f(const uint& feat_id) const
 {
   return std::static_pointer_cast<FeatureState>(state_.at(feat_id))->f_;

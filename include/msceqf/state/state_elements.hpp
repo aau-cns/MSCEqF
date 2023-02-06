@@ -293,7 +293,7 @@ using MSCEqFSOT3StateUniquePtr = std::unique_ptr<MSCEqFSOT3State>;
 template <typename T>
 [[nodiscard]] static MSCEqFStateElementUniquePtr createMSCEqFStateElement(const uint& idx)
 {
-  if constexpr (std::is_constructible_v<T, decltype(idx)>)
+  if constexpr (std::is_base_of_v<MSCEqFStateElement, T>)
   {
     return std::make_unique<T>(idx);
   }

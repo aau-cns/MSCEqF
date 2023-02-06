@@ -82,4 +82,10 @@
 # Pycharm
 **/.idea
 
+# Codechecker
+.codechecker
 
+# Other
+CMakeFiles
+TODO
+_deps

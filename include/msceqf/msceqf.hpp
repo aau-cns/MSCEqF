@@ -12,10 +12,12 @@
 #ifndef MSCEQF_HPP
 #define MSCEQF_HPP
 
-#include "msceqf/filter/propagator.hpp"
+#include "msceqf/filter/initializer/static_initializer.hpp"
+#include "msceqf/filter/propagator/propagator.hpp"
 #include "msceqf/options/msceqf_option_parser.hpp"
 #include "msceqf/state/state.hpp"
 #include "msceqf/system/system.hpp"
+#include "vision/track_manager.hpp"
 
 namespace msceqf
 {
@@ -37,7 +39,7 @@ class MSCEqF
    * @param meas measurement
    */
   template <typename T>
-  void processMeasurement(const T& meas)
+  void processMeasurement(T& meas)
   {
     if constexpr (std::is_same_v<T, Imu>)
     {
@@ -91,15 +93,17 @@ class MSCEqF
    *
    * @param cam
    */
-  void processCameraMeasurement(const Camera& cam);
+  void processCameraMeasurement(Camera& cam);
 
   OptionParser parser_;  //!< The parser to parse all the configuration from a yaml file
   MSCEqFOptions opts_;   //!< All the MSCEqF options
 
-  MSCEqFState X_;    //!< The state of the MSCEqF
-  SystemState xi0_;  //!< The origin state of the System
+  MSCEqFState X_;          //!< The state of the MSCEqF
+  const SystemState xi0_;  //!< The origin state of the System
 
-  Propagator propagator_;  //!< The MSCEqF propagator
+  TrackManager track_manager_;     //!< The MSCEqF track manager
+  StaticInitializer initializer_;  //!< The MSCEqF static initializer
+  Propagator propagator_;          //!< The MSCEqF propagator
 
   fp timestamp_ = -1;  //!< The timestamp of the actual estimate
 

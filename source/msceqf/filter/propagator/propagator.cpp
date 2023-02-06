@@ -9,7 +9,7 @@
 //
 // You can contact the authors at <alessandro.fornasier@ieee.org>
 
-#include "msceqf/filter/propagator.hpp"
+#include "msceqf/filter/propagator/propagator.hpp"
 
 #include <unsupported/Eigen/MatrixFunctions>
 #include <utility>
@@ -19,7 +19,7 @@
 
 namespace msceqf
 {
-Propagator::Propagator(const MSCEqFOptions& opts)
+Propagator::Propagator(const PropagatorOptions& opts)
     : imu_buffer_()
     , Q_(Matrix12::Zero())
     , state_transition_order_(opts.state_transition_order_)
@@ -146,7 +146,7 @@ bool Propagator::propagate(MSCEqFState& X, const SystemState& xi0, fp& timestamp
     return false;
   }
 
-  Propagator::ImuBuffer propagation_buffer = getImuReadings(std::as_const(timestamp), new_timestamp);
+  Propagator::ImuBuffer propagation_buffer = getImuReadings(timestamp, new_timestamp);
 
   if (propagation_buffer.empty())
   {

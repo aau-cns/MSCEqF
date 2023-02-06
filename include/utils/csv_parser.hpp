@@ -20,7 +20,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "msceqf/system/sensor_data.hpp"
+#include "sensors/sensor_data.hpp"
 #include "utils/logger.hpp"
 #include "utils/tools.hpp"
 

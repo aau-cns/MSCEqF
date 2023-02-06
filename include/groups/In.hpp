@@ -159,6 +159,18 @@ class In
   }
 
   /**
+   * @brief Get the vector representation of In
+   *
+   * @return const Eigen::Matrix<FPType, 4, 1>&
+   */
+  [[nodiscard]] const VectorType k() const
+  {
+    VectorType k;
+    k << fx_, fy_, cx_, cy_;
+    return k;
+  }
+
+  /**
    * @brief Get the matrix representation of In
    *
    * @return const Eigen::Matrix<FPType, 3, 3>&

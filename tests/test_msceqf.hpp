@@ -196,7 +196,7 @@ TEST(MSCEqFPropagationTest, CovariancePropagation)
       0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
       0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0;
 
-  if (sys.options().state_transition_order_ == 1)
+  if (sys.options().propagator_options_.state_transition_order_ == 1)
   {
     MatrixEquality(sys.Covariance(), ExpectedCov, 1e-3);
   }

@@ -14,7 +14,7 @@
 
 #include "msceqf/options/msceqf_options.hpp"
 #include "msceqf/symmetry/symmetry.hpp"
-#include "msceqf/system/sensor_data.hpp"
+#include "sensors/sensor_data.hpp"
 #include "msceqf/system/system.hpp"
 #include "types/fptypes.hpp"
 #include "utils/tools.hpp"
@@ -32,7 +32,7 @@ class Propagator
    *
    * @param opts
    */
-  Propagator(const MSCEqFOptions& opts);
+  Propagator(const PropagatorOptions& opts);
 
   /**
    * @brief insert a new IMU measurement into the imu buffer, if the given IMU measurement has a grater timestamp than

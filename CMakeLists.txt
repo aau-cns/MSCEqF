@@ -17,7 +17,6 @@ find_dependency(Eigen3 3.4)
 
 ## Include and set up external libraries
 include(FetchContent)
-include(ExternalProject)
 
 # Googletest
 if(${BUILD_TESTS})
@@ -58,10 +57,22 @@ FetchContent_Declare(
     GIT_SHALLOW     TRUE
     GIT_PROGRESS    TRUE
 )
-# FetchContent_GetProperties(yaml-cpp)
 list(APPEND external yaml-cpp)
 list(APPEND include_dirs ${YAML_CPP_INCLUDE_DIR})
 list(APPEND libs yaml-cpp::yaml-cpp ${YAML_CPP_LIBRARIES})
+
+# # OpenCV
+# FetchContent_Declare(
+#     opencv
+#     GIT_REPOSITORY https://github.com/opencv/opencv.git
+#     GIT_TAG        4.7.0
+#     GIT_SHALLOW     TRUE
+#     GIT_PROGRESS    TRUE
+# )
+# list(APPEND external opencv)
+find_package(OpenCV 3 REQUIRED)
+list(APPEND include_dirs ${OpenCV_INCLUDE_DIRS})
+list(APPEND libs ${OpenCV_LIBRARIES})
 
 FetchContent_MakeAvailable(${external})
 
@@ -86,8 +97,8 @@ message(STATUS "CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE}.")
 # Set CMAKE compile flags
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -O3 -fsee -fomit-frame-pointer -fno-signed-zeros -fno-math-errno -funroll-loops")
 # set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g3 -Wall -Wextra -Werror -Wuninitialized -Wmaybe-uninitialized -pedantic -fno-omit-frame-pointer -fsanitize=thread")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -O0 -g3 -Wall -Wextra -Werror -Wuninitialized -Wmaybe-uninitialized -pedantic -fno-omit-frame-pointer -fsanitize=address -fsanitize-recover=address")
-# set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g3 -Wall -Wextra -Werror -Wuninitialized -Wmaybe-uninitialized -pedantic -fno-omit-frame-pointer -fsanitize=undefined")
+# set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -O0 -g3 -Wall -Wextra -Werror -Wuninitialized -Wmaybe-uninitialized -pedantic -fno-omit-frame-pointer -fsanitize=address -fsanitize-recover=address")
+set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g3 -Wall -Wextra -Werror -Wuninitialized -Wmaybe-uninitialized -pedantic -fno-omit-frame-pointer -fsanitize=undefined")
 # set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -O0 -g3 -Wall -Wextra -Werror -Wuninitialized -Wmaybe-uninitialized -pedantic -fno-omit-frame-pointer -Wpadded")
 message(STATUS "CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS}.")
 
@@ -99,7 +110,11 @@ list(
     source/msceqf/state/state.cpp
     source/msceqf/system/system.cpp
     source/msceqf/symmetry/symmetry.cpp
-    source/msceqf/filter/propagator.cpp
+    source/msceqf/filter/propagator/propagator.cpp
+    source/msceqf/filter/initializer/static_initializer.cpp
+    source/vision/camera.cpp
+    source/vision/tracker.cpp
+    source/vision/track_manager.cpp
 )
 
 ## Declare a C++ library

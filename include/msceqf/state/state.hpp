@@ -14,8 +14,8 @@
 
 #include <variant>
 
-#include "msceqf/options/msceqf_options.hpp"
 #include "msceqf/state/state_elements.hpp"
+#include "msceqf/options/msceqf_options.hpp"
 
 namespace msceqf
 {
@@ -217,9 +217,6 @@ class MSCEqFState
 // [TODO] Marginalize method
 
 // [TODO] Delayed feature init
-
-// [TODO] Update method, is it needed? I guess so to update... Can i have a single method to modify the values of the
-// state that i can use in both propoagationa and update?
 
 }  // namespace msceqf
 
