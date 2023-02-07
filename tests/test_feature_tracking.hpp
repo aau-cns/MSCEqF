@@ -13,8 +13,8 @@
 #define TEST_DETECTION_HPP
 
 #include "msceqf/msceqf.hpp"
-#include "vision/track_manager.hpp"
 #include "utils/csv_parser.hpp"
+#include "vision/track_manager.hpp"
 
 namespace msceqf
 {
@@ -37,8 +37,7 @@ TEST(DetectionTest, fastDetectionNoMask)
   int time = -1;
 
   Tracker::Keypoints active_kpts, lost_kpts;
-  Tracks active_tracks, lost_tracks;
-  std::unordered_set<uint> ids_to_remove;
+  std::unordered_set<uint> active_tracks, lost_tracks;
 
   for (int i = 0; i < 1000; ++i)
   {
@@ -54,20 +53,21 @@ TEST(DetectionTest, fastDetectionNoMask)
     cv::circle(cam.image_, center, radius, cv::Scalar(255), cv::FILLED);
 
     track_manager.processCamera(cam);
-    track_manager.tracksAt(cam.timestamp_, active_tracks, lost_tracks);
 
-    for (auto& [id, active_track] : active_tracks)
+    const auto& tracks = track_manager.tracks();
+    track_manager.tracksIds(cam.timestamp_, active_tracks, lost_tracks);
+
+    for (auto& id : active_tracks)
     {
-      active_kpts.emplace_back(active_track.uvs_.back().x, active_track.uvs_.back().y, 5.0f);
+      active_kpts.emplace_back(tracks.at(id).uvs_.back().x, tracks.at(id).uvs_.back().y, 5.0f);
     }
 
-    for (auto& [id, lost_track] : lost_tracks)
+    for (auto& id : lost_tracks)
     {
-      lost_kpts.emplace_back(lost_track.uvs_.back().x, lost_track.uvs_.back().y, 5.0f);
-      ids_to_remove.insert(id);
+      lost_kpts.emplace_back(tracks.at(id).uvs_.back().x, tracks.at(id).uvs_.back().y, 5.0f);
     }
 
-    track_manager.removeTracksId(ids_to_remove);
+    track_manager.removeTracksId(lost_tracks);
 
     cv::drawKeypoints(cam.image_, active_kpts, cam.image_, cv::Scalar(0, 0, 255),
                       cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);

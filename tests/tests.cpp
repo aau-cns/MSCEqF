@@ -15,8 +15,9 @@
 #include <cstdlib>
 #include <ctime>
 
-#include "test_common.hpp"
 #include "utils/logger.hpp"
+#include "utils/tools.hpp"
+#include "test_common.hpp"
 // #include "test_groups.hpp"
 // #include "test_feature_detection.hpp"
 // #include "test_msceqf.hpp"
