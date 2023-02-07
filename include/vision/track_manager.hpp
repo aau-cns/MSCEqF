@@ -51,24 +51,33 @@ class TrackManager
   const Tracks& tracks() const;
 
   /**
-   * @brief Get all the active and lost tracks at a given timestamp. Active tracks are defined as tracks that have are
-   * actively tracked at a given timestamp. Lost tracks are defined as tracks that are not being tracked at a given
-   * timestamp and thus they do not have coordinates at a given timestamp.
+   * @brief Get all the ids corresponding to active and lost tracks at a given timestamp. Active tracks are defined as
+   * tracks that have are actively tracked at a given timestamp. Lost tracks are defined as tracks that are not being
+   * tracked at a given timestamp and thus they do not have coordinates at a given timestamp.
    *
    * @param timestamp
-   * @param active
-   * @param lost
+   * @param active_ids
+   * @param lost_ids
    */
-  void tracksAt(const fp& timestamp, Tracks& active, Tracks& lost) const;
+  void tracksIds(const fp& timestamp, std::unordered_set<uint>& active_ids, std::unordered_set<uint>& lost_ids) const;
 
   /**
-   * @brief Get all the active tracks at a given timestamp. Active tracks are defined as tracks that have are
-   * actively tracked at a given timestamp.
+   * @brief Get all the ids corresponding to active tracks at a given timestamp. Active tracks are defined as
+   * tracks that have are actively tracked at a given timestamp.
    *
    * @param timestamp
-   * @param active
+   * @param active_ids
    */
-  void activeTracksAt(const fp& timestamp, Tracks& active) const;
+  void activeTracksIds(const fp& timestamp, std::unordered_set<uint>& active_ids) const;
+
+  /**
+   * @brief Get all the ids corresponding to lost tracks at a given timestamp. Lost tracks are defined as tracks that
+   * are not being tracked at a given timestamp and thus they do not have coordinates at a given timestamp.
+   *
+   * @param timestamp
+   * @param lost_ids
+   */
+  void lostTracksIds(const fp& timestamp, std::unordered_set<uint>& lost_ids) const;
 
   /**
    * @brief Remove all the tracks corresponding to given ids

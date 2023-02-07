@@ -73,8 +73,7 @@ class Tracker
    * extracted for each grid cell in parallel. The number of feature per cell is "dynamic". It starts with the policy
    * that the extraction should be uniform for each cell but the max number of features are "redistributed" if the
    * detection produces few features in some cells.
-   * Detected features are stored in original coordinates and normalized coordinates. An id, as well as the anchor
-   * timestamp (timestamp at which the feature was first detected) are assigned to each feature.
+   * Detected features are stored in original coordinates and normalized coordinates. An id is assigned to each feature.
    *
    * @param pyramids
    * @param mask

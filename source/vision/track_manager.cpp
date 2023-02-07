@@ -29,28 +29,41 @@ void TrackManager::processCamera(Camera& cam)
 
 const Tracks& TrackManager::tracks() const { return tracks_; }
 
-void TrackManager::tracksAt(const fp& timestamp, Tracks& active, Tracks& lost) const
+void TrackManager::tracksIds(const fp& timestamp,
+                             std::unordered_set<uint>& active_ids,
+                             std::unordered_set<uint>& lost_ids) const
 {
   for (const auto& [id, track] : tracks_)
   {
     if (std::find(track.timestamps_.begin(), track.timestamps_.end(), timestamp) != track.timestamps_.end())
     {
-      active.insert_or_assign(id, track);
+      active_ids.insert(id);
     }
     else
     {
-      lost.insert_or_assign(id, track);
+      lost_ids.insert(id);
     }
   }
 }
 
-void TrackManager::activeTracksAt(const fp& timestamp, Tracks& active) const
+void TrackManager::activeTracksIds(const fp& timestamp, std::unordered_set<uint>& active_ids) const
 {
   for (const auto& [id, track] : tracks_)
   {
     if (std::find(track.timestamps_.begin(), track.timestamps_.end(), timestamp) != track.timestamps_.end())
     {
-      active.insert_or_assign(id, track);
+      active_ids.insert(id);
+    }
+  }
+}
+
+void TrackManager::lostTracksIds(const fp& timestamp, std::unordered_set<uint>& lost_ids) const
+{
+  for (const auto& [id, track] : tracks_)
+  {
+    if (std::find(track.timestamps_.begin(), track.timestamps_.end(), timestamp) == track.timestamps_.end())
+    {
+      lost_ids.insert(id);
     }
   }
 }
