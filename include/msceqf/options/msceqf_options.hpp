@@ -76,10 +76,15 @@ struct PropagatorOptions
   int state_transition_order_;  //!< The order for the computation of the state transition matrix
 };
 
-// class UpdaterOptions
-// {
-
-// };
+struct UpdaterOptions
+{
+  bool refine_traingulation_;  //!< Boolean to enable feature triangulation refinement via nonlinear optimization
+  fp min_depth_;               //!< Minimum depth of triangulated features
+  fp max_depth_;               //!< Maximum depth of triangulated features
+  uint max_iterations_;        //!< Maximum number of iteration for features triangulation refinement
+  fp tollerance_;              //!< Tollerance for features triangulation refinement
+  FeatureRepresentation msc_features_representation_;  //!< Multi State Constraint features representation
+};
 
 struct InitializerOptions
 {
@@ -132,14 +137,9 @@ struct MSCEqFOptions
 {
   StateOptions state_options_;                 //!< The state options
   PropagatorOptions propagator_options_;       //!< The propagator options
+  UpdaterOptions updater_options_;             //!< The updater options
   InitializerOptions init_options_;            //!< The initializer options
   TrackManagerOptions track_manager_options_;  //!< The track manager options
-
-  // fp persistent_feature_init_delay_;  //!< The delay in s before initializing persistent features
-  // FeatureRepresentation msc_features_representation_ =
-  //     FeatureRepresentation::ANCHORED_INVERSE_DEPTH;  //!< Multi State Constraint features representation
-  // FeatureRepresentation persistent_features_representation_ =
-  //     FeatureRepresentation::ANCHORED_INVERSE_DEPTH;  //!< persistent features representation
 };
 
 }  // namespace msceqf

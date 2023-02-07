@@ -14,6 +14,7 @@
 
 #include "msceqf/filter/initializer/static_initializer.hpp"
 #include "msceqf/filter/propagator/propagator.hpp"
+#include "msceqf/filter/updater/updater.hpp"
 #include "msceqf/options/msceqf_option_parser.hpp"
 #include "msceqf/state/state.hpp"
 #include "msceqf/system/system.hpp"
@@ -104,6 +105,8 @@ class MSCEqF
   TrackManager track_manager_;     //!< The MSCEqF track manager
   StaticInitializer initializer_;  //!< The MSCEqF static initializer
   Propagator propagator_;          //!< The MSCEqF propagator
+
+  std::unordered_set<uint> ids_to_update_;  //!< Ids of track to update
 
   fp timestamp_ = -1;  //!< The timestamp of the actual estimate
 

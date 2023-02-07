@@ -195,6 +195,13 @@ class OptionParser
   void parseEqualizationMethod(EqualizationMethod& eq);
 
   /**
+   * @brief Parse the feature representation
+   *
+   * @param rep
+   */
+  void parseFeatureRepresentation(FeatureRepresentation& rep);
+
+  /**
    * @brief Parse the feature detector type
    *
    * @param detector

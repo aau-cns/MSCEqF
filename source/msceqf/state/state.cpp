@@ -148,7 +148,6 @@ void MSCEqFState::preallocate()
     ++num_elements;
   }
   state_.reserve(num_elements);
-  clones_.reserve(opts_.num_clones_);
 }
 
 void MSCEqFState::initializeStateElement(const MSCEqFStateKey& key, const MatrixX& cov_block)
@@ -249,6 +248,8 @@ void MSCEqFState::marginalizeCloneAt(const fp& timestamp)
   // Remove clone
   clones_.erase(timestamp);
 }
+
+const fp& MSCEqFState::cloneTimestampToMarginalize() const { return clones_.cbegin()->first; }
 
 bool MSCEqFState::insertStateElement(const MSCEqFStateKey& key, MSCEqFStateElementUniquePtr ptr)
 {

@@ -12,6 +12,7 @@
 #ifndef STATE_HPP
 #define STATE_HPP
 
+#include <map>
 #include <variant>
 
 #include "msceqf/options/msceqf_options.hpp"
@@ -30,7 +31,7 @@ class MSCEqFState
  public:
   using MSCEqFStateKey = std::variant<MSCEqFStateElementName, uint>;  //!< Key to access the msceqf state map
   using MSCEqFStateMap = std::unordered_map<MSCEqFStateKey, MSCEqFStateElementSharedPtr>;  //!< MSCEqF state map
-  using MSCEqFClonesMap = std::unordered_map<fp, MSCEqFSE3StateSharedPtr>;                 //!< MSCEqF clones map
+  using MSCEqFClonesMap = std::map<fp, MSCEqFSE3StateSharedPtr>;                           //!< MSCEqF clones map
 
   /**
    * @brief Deleted default constructor
@@ -119,6 +120,21 @@ class MSCEqFState
    * @note This function does not introduce any runtime overhead due to casting, because it uses static_pointer_cast
    */
   [[nodiscard]] const SOT3& Q(const uint& feat_id) const;
+
+  /**
+   * @brief Get the amount of clones
+   *
+   * @return const size_t
+   */
+  [[nodiscard]] inline size_t clonesSize() const { return clones_.size(); }
+
+  /**
+   * @brief Get the timestamp of the colne to marginalize.
+   * We implement our keyframing strategy here. So far we simply marginalize the oldest clone.
+   *
+   * @return const fp&
+   */
+  [[nodiscard]] const fp& cloneTimestampToMarginalize() const;
 
   /**
    * @brief Get a reference to the covariance matrix
@@ -221,7 +237,7 @@ class MSCEqFState
 
   friend class Symmetry;    //!< Symmetry can access private members of MSCEqFState
   friend class Propagator;  //!< Propagator can access private members of MSCEqFState
-  // friend class Updater;     //!< Updater can access private members of MSCEqFState
+  friend class Updater;     //!< Updater can access private members of MSCEqFState
 
   MatrixX cov_;             //!< MSCEqF State covariance (Sigma matrix)
   MSCEqFStateMap state_;    //!< MSCEqF State elements mapped by their names

@@ -99,6 +99,17 @@ MSCEqFOptions OptionParser::parseOptions()
   readDefault(opts.propagator_options_.imu_buffer_max_size_, 1000, "imu_buffer_max_size");
 
   ///
+  /// Parse updater options
+  ///
+
+  readDefault(opts.updater_options_.refine_traingulation_, true, "refine_traingulation");
+  readDefault(opts.updater_options_.min_depth_, 0.1, "feature_min_depth");
+  readDefault(opts.updater_options_.max_depth_, 100, "feature_max_depth");
+  readDefault(opts.updater_options_.max_iterations_, 10, "feature_refinement_max_iterations");
+  readDefault(opts.updater_options_.tollerance_, 1e-12, "feature_refinement_tollerance");
+  parseFeatureRepresentation(opts.updater_options_.msc_features_representation_);
+
+  ///
   /// Parse initalizer options
   ///
 
@@ -207,6 +218,31 @@ void OptionParser::parseEqualizationMethod(EqualizationMethod& eq)
   else
   {
     throw std::runtime_error("Wrong or unsupported equalization method. Please use histogram or clahe.");
+  }
+}
+
+void OptionParser::parseFeatureRepresentation(FeatureRepresentation& rep)
+{
+  std::string representation;
+  readDefault(representation, "anchored_inverse_depth", "feature_representation");
+
+  if (representation.compare("euclidean") == 0)
+  {
+    rep = FeatureRepresentation::EUCLIDEAN;
+  }
+  else if (representation.compare("anchored_inverse_depth") == 0)
+  {
+    rep = FeatureRepresentation::ANCHORED_INVERSE_DEPTH;
+  }
+  else if (representation.compare("anchored_polar") == 0)
+  {
+    rep = FeatureRepresentation::ANCHORED_POLAR;
+  }
+  else
+  {
+    throw std::runtime_error(
+        "Wrong or unsupported feature representation type. Please use euclidea, anchored_inverse_depth, or "
+        "anchored_polar.");
   }
 }
 

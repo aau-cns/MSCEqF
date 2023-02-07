@@ -211,13 +211,13 @@ void Propagator::propagateCovariance(MSCEqFState& X, const SystemState& xi0, con
 
   // Core covariance propagation Phi * Sigma * Phi^T
   X.cov_.block(0, 0, Phi_core.rows(), Phi_core.cols()) =
-      (Phi_core * X.cov_.block(0, 0, Phi_core.rows(), Phi_core.cols()) * Phi_core.transpose()).eval();
+      Phi_core * X.cov_.block(0, 0, Phi_core.rows(), Phi_core.cols()) * Phi_core.transpose();
 
   // [TODO] features covariance propagation
 
   // Add discrete time processs noise covariance
   MatrixX M = inputMatrix(X, xi0, dt);
-  X.cov_.block(0, 0, M.rows(), M.cols()) = (X.cov_.block(0, 0, M.rows(), M.cols()) + M).eval();
+  X.cov_.block(0, 0, M.rows(), M.cols()) = X.cov_.block(0, 0, M.rows(), M.cols()) + M;
 }
 
 MatrixX Propagator::coreStateTransitionMatrix(MSCEqFState& X, const SystemState& xi0, const Imu& u, const fp& dt)

@@ -58,6 +58,7 @@ void MSCEqF::processCameraMeasurement(Camera& cam)
     track_manager_.processCamera(cam);
     is_filter_initialized_ = initializer_.detectMotion(track_manager_.tracks());
   }
+  // [TODO] What to do when it gets initialized??
 
   if (cam.timestamp_ < timestamp_)
   {
@@ -81,7 +82,26 @@ void MSCEqF::processCameraMeasurement(Camera& cam)
   future_image_processing.wait();
   future_cloning.wait();
 
-  // [TODO] Update
+  track_manager_.lostTracksIds(cam.timestamp_, ids_to_update_);
+
+  bool marginalize = false;
+  if (X_.clonesSize() == opts_.state_options_.num_clones_)
+  {
+    track_manager_.activeTracksIds(X_.cloneTimestampToMarginalize(), ids_to_update_);
+    marginalize = true;
+  }
+
+  // Update
+  // updater_.update(X, xi0, ids_to_update_, track_manager_.tracks())
+
+  if (marginalize)
+  {
+    X_.marginalizeCloneAt(cam.timestamp_);
+  }
+
+  // Remove tracks used for update and clear ids_to_update_
+  track_manager_.removeTracksId(ids_to_update_);
+  ids_to_update_.clear();
 }
 
 const MSCEqFOptions& MSCEqF::options() const { return opts_; }
