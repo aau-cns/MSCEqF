@@ -240,7 +240,7 @@ class SO3
   const SO3& multiplyRight(const SO3& other)
   {
     q_ = q_ * other.q_;
-    R_ = (R_ * other.R_).eval();
+    R_ = R_ * other.R_;
     return *this;
   }
 
@@ -254,7 +254,7 @@ class SO3
   const SO3& multiplyLeft(const SO3& other)
   {
     q_ = other.q_ * q_;
-    R_ = (other.R_ * R_).eval();
+    R_ = other.R_ * R_;
     return *this;
   }
 
