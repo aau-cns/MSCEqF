@@ -66,7 +66,7 @@ TEST(MSCEqFPropagationTest, meanPropagation)
   MSCEqF sys(config_filepath_base + "parameters.yaml");
 
   Camera cam;
-  for (const auto& imu : csv_parser.getImuData())
+  for (auto& imu : csv_parser.getImuData())
   {
     sys.processMeasurement(imu);
     cam.timestamp_ = imu.timestamp_;
@@ -87,7 +87,8 @@ TEST(MSCEqFPropagationTest, meanPropagation)
                      createSystemStateElement<ExtendedPoseState>(std::make_tuple(expected_T))),
       std::make_pair(SystemStateElementName::b, createSystemStateElement<BiasState>(std::make_tuple())));
 
-  SystemStateEquality(estimate, expected);
+  // The tollerance to 1e-4 is given due to limited precision of extrinsic calibration
+  SystemStateEquality(estimate, expected, std::vector<uint>(), 1e-4);
 }
 
 // Camera timestamp in between Imu timestamps
@@ -198,11 +199,11 @@ TEST(MSCEqFPropagationTest, CovariancePropagation)
 
   if (sys.options().propagator_options_.state_transition_order_ == 1)
   {
-    MatrixEquality(sys.Covariance(), ExpectedCov, 1e-3);
+    MatrixEquality(sys.Covariance().block(0, 0, 25, 25), ExpectedCov, 1e-3);
   }
   else
   {
-    MatrixEquality(sys.Covariance(), ExpectedCov);
+    MatrixEquality(sys.Covariance().block(0, 0, 25, 25), ExpectedCov);
   }
 }
 

@@ -111,6 +111,7 @@ list(
     source/msceqf/system/system.cpp
     source/msceqf/symmetry/symmetry.cpp
     source/msceqf/filter/propagator/propagator.cpp
+    source/msceqf/filter/updater/updater.cpp
     source/msceqf/filter/initializer/static_initializer.cpp
     source/vision/camera.cpp
     source/vision/tracker.cpp
