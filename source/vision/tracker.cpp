@@ -73,6 +73,8 @@ Tracker::Tracker(const TrackerOptions& opts, const Vector4& intrinsics)
 
 void Tracker::processCamera(Camera& cam)
 {
+  assert(!cam.image_.empty());
+
   if (cam.image_.channels() > 1)
   {
     cv::cvtColor(cam.image_, cam.image_, cv::COLOR_BGR2GRAY);
