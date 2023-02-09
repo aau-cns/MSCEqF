@@ -202,6 +202,13 @@ class OptionParser
   void parseFeatureRepresentation(FeatureRepresentation& rep);
 
   /**
+   * @brief Parse the projection method
+   *
+   * @param proj
+   */
+  void parseProjectionMethod(ProjectionMethod& proj);
+
+  /**
    * @brief Parse the feature detector type
    *
    * @param detector

@@ -9,25 +9,70 @@
 //
 // You can contact the authors at <alessandro.fornasier@ieee.org>
 
-#include "msceqf/filter/updater/updater.hpp"
-
 #include <opencv2/opencv.hpp>
 
+#include "msceqf/filter/updater/updater.hpp"
 #include "utils/logger.hpp"
 
 namespace msceqf
 {
 
-Updater::Updater(const UpdaterOptions& opts) : opts_(opts) {}
-
-void Updater::update([[maybe_unused]] MSCEqFState& X,
-                     [[maybe_unused]] const SystemState& xi0,
-                     const Tracks& tracks,
-                     const std::unordered_set<uint>& ids) const
+Updater::Updater(const UpdaterOptions& opts, const SystemState& xi0)
+    : opts_(opts), xi0_(xi0), ph_(nullptr), chi2_table_(), total_size_(0)
 {
+  switch (opts_.projection_method_)
+  {
+    case ProjectionMethod::UNIT_SPHERE:
+      ph_ = createProjectionHelper<ProjectionHelperS2>(opts_.msc_features_representation_);
+      break;
+    case ProjectionMethod::UNIT_PLANE:
+      ph_ = createProjectionHelper<ProjectionHelperZ1>(opts_.msc_features_representation_);
+      break;
+    default:
+      break;
+  }
+
+  for (uint dof = 1; dof <= 1000; ++dof)
+  {
+    boost::math::chi_squared chi_squared_dist(dof);
+    chi2_table_[dof] = boost::math::quantile(chi_squared_dist, 0.95);
+  }
+}
+
+void Updater::update(MSCEqFState& X, const Tracks& tracks, const std::unordered_set<uint>& ids)
+{
+  // Compute number of columns of C matrix
+  size_t cols = 15;
+  if (X.opts_.enable_camera_extrinsics_calibration_)
+  {
+    cols += 6;
+  }
+  if (X.opts_.enable_camera_intrinsics_calibration_)
+  {
+    cols += 4;
+  }
+
+  // Compute the maximum number of rows of C matrix and residual
+  size_t rows = 0;
+  for (const auto& [id, track] : tracks)
+  {
+    rows += track.size();
+  }
+  rows *= ph_->block_rows_;
+
+  // Preallocate C matrix and residual
+  MatrixX C = MatrixX::Zero(rows, cols);
+  VectorX res = VectorX::Zero(rows);
+
+  // Reset number of features in update
+  total_size_ = 0;
+
+  // For each track triangulate the feature, compute C matrices and residual blocks, and performe chi2 rejection test
   for (const auto& id : ids)
   {
-    if (tracks.at(id).size() < 2)
+    const auto& track = tracks.at(id);
+
+    if (track.size() < 2)
     {
       continue;
     }
@@ -35,16 +80,57 @@ void Updater::update([[maybe_unused]] MSCEqFState& X,
     Vector3 A_f = Vector3::Zero();
     const SE3& A_E = X.clones_.at(tracks.at(id).timestamps_.front())->E_;
 
-    if (!linearTriangulation(X, tracks.at(id), A_E, A_f))
+    if (!linearTriangulation(X, track, A_E, A_f))
     {
+      utils::Logger::debug("Linear triangulation failed for track id: " + std::to_string(id));
       continue;
     }
 
     if (opts_.refine_traingulation_)
     {
-      nonlinearTriangulation(X, tracks.at(id), A_E, A_f);
+      nonlinearTriangulation(X, track, A_E, A_f);
     }
+
+    const auto& track_size = track.size();
+
+    // For each feature measurement in track compute the innovation block
+    // (Ct matrix block, Cf matrix block and residual block)
+    MatrixX Cf = MatrixX::Zero(ph_->block_rows_ * track_size, 3);
+    for (size_t i = 0; i < track_size; ++i)
+    {
+      Vector2 uvn(track.normalized_uvs_[i].x, track.normalized_uvs_[i].y);
+      FeatHelper feat(A_E, A_f, uvn, X.clones_.at(track.timestamps_[i]), track.timestamps_[i]);
+
+      const auto& row_idx = total_size_ + (ph_->block_rows_ * i);
+
+      ph_->innovationBlock(X, xi0_, feat, C.middleRows(row_idx, ph_->block_rows_),
+                           res.middleRows(row_idx, ph_->block_rows_),
+                           Cf.middleRows(ph_->block_rows_ * i, ph_->block_rows_));
+    }
+
+    const auto& Ct_block = C.middleRows(total_size_, ph_->block_rows_ * track_size);
+    const auto& res_block = res.middleRows(total_size_, ph_->block_rows_ * track_size);
+
+    // Perform nullspace projection of Cf
+    UpdaterHelper::nullspaceProjection(Cf, Ct_block, res_block);
+
+    // Perform chi2 test
+    if (!UpdaterHelper::chi2Test(X, Ct_block, res_block, opts_.pixel_std_, chi2_table_))
+    {
+      utils::Logger::debug("Chi2 test failed for track id: " + std::to_string(id));
+      continue;
+    }
+
+    // Update total size of C matrix and residual
+    total_size_ += ph_->block_rows_ * track_size;
   }
+
+  // Resize residual and C matrix based on total_size_
+  res.conservativeResize(total_size_);
+  C.conservativeResize(total_size_, cols);
+
+  // [TODO] Update compression
+  // [TODO] Update
 }
 
 bool Updater::linearTriangulation(const MSCEqFState& X, const Track& track, const SE3& A_E, Vector3& A_f) const
@@ -94,7 +180,7 @@ void Updater::nonlinearTriangulation(const MSCEqFState& X, const Track& track, c
 
   for (uint iterations = 0; iterations < opts_.max_iterations_; ++iterations)
   {
-    nonlinearTriangulationResidualJacobian(X, track, A_E, A_f, A_f_invdepth, res, J);
+    nonlinearTriangulationResidualJacobian(X, track, A_E, A_f, res, J);
     Vector3 delta = J.colPivHouseholderQr().solve(res);
 
     actual_res_norm = res.norm();
@@ -135,22 +221,15 @@ void Updater::nonlinearTriangulation(const MSCEqFState& X, const Track& track, c
   A_f = A_f_tpm;
 }
 
-void Updater::nonlinearTriangulationResidualJacobian(const MSCEqFState& X,
-                                                     const Track& track,
-                                                     const SE3& A_E,
-                                                     const Vector3& A_f,
-                                                     const Vector3& A_f_invdepth,
-                                                     VectorX& res,
-                                                     MatrixX& J) const
+void Updater::nonlinearTriangulationResidualJacobian(
+    const MSCEqFState& X, const Track& track, const SE3& A_E, const Vector3& A_f, VectorX& res, MatrixX& J) const
 {
   J.setZero();
   res.setZero();
 
-  Eigen::Matrix<fp, 3, 2> J_rep = Eigen::Matrix<fp, 3, 2>::Zero();
-
-  J_rep.block<2, 2>(0, 0) = Matrix2::Identity();
-  J_rep.block<3, 1>(0, 2) = -A_f_invdepth;
-  J_rep = A_f_invdepth(2) * J_rep;
+  Matrix3 J_rep = Matrix3::Identity();
+  J_rep.block<3, 1>(0, 2) = -A_f;
+  J_rep = A_f(2) * J_rep;
 
   for (size_t i = 0; i < track.size(); ++i)
   {

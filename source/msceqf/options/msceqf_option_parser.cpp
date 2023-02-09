@@ -108,6 +108,8 @@ MSCEqFOptions OptionParser::parseOptions()
   readDefault(opts.updater_options_.max_iterations_, 10, "feature_refinement_max_iterations");
   readDefault(opts.updater_options_.tollerance_, 1e-12, "feature_refinement_tollerance");
   parseFeatureRepresentation(opts.updater_options_.msc_features_representation_);
+  parseProjectionMethod(opts.updater_options_.projection_method_);
+  readDefault(opts.updater_options_.pixel_std_, 1.0, "pixel_standerd_deviation");
 
   ///
   /// Parse initalizer options
@@ -241,8 +243,28 @@ void OptionParser::parseFeatureRepresentation(FeatureRepresentation& rep)
   else
   {
     throw std::runtime_error(
-        "Wrong or unsupported feature representation type. Please use euclidea, anchored_inverse_depth, or "
+        "Wrong or unsupported feature representation type. Please use euclidean, anchored_inverse_depth, or "
         "anchored_polar.");
+  }
+}
+
+void OptionParser::parseProjectionMethod(ProjectionMethod& proj)
+{
+  std::string method;
+  readDefault(method, "unit_plane", "measurement_projection_method");
+
+  if (method.compare("unit_plane") == 0)
+  {
+    proj = ProjectionMethod::UNIT_PLANE;
+  }
+  else if (method.compare("unit_sphere") == 0)
+  {
+    proj = ProjectionMethod::UNIT_SPHERE;
+  }
+  else
+  {
+    throw std::runtime_error(
+        "Wrong or unsupported measurement projection method. Please use unit_plane or unit_sphere.");
   }
 }
 

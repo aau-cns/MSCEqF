@@ -61,6 +61,19 @@ list(APPEND external yaml-cpp)
 list(APPEND include_dirs ${YAML_CPP_INCLUDE_DIR})
 list(APPEND libs yaml-cpp::yaml-cpp ${YAML_CPP_LIBRARIES})
 
+# Boost
+# FetchContent_Declare(
+#     Boost
+#     GIT_REPOSITORY  https://github.com/boostorg/boost.git
+#     GIT_TAG         boost-1.81.0 
+#     GIT_SHALLOW     TRUE
+#     GIT_PROGRESS    TRUE
+# )
+# list(APPEND external Boost)
+find_package(Boost REQUIRED)
+list(APPEND include_dirs ${Boost_INCLUDE_DIRS})
+list(APPEND libs ${Boost_LIBRARIES})
+
 # # OpenCV
 # FetchContent_Declare(
 #     opencv
@@ -75,6 +88,11 @@ list(APPEND include_dirs ${OpenCV_INCLUDE_DIRS})
 list(APPEND libs ${OpenCV_LIBRARIES})
 
 FetchContent_MakeAvailable(${external})
+
+message(STATUS "Eigen:    " ${EIGEN3_VERSION})
+message(STATUS "Yaml-cpp: " ${YAML_CPP})
+message(STATUS "Boost:    " ${Boost_VERSION})
+message(STATUS "OpenCV:   " ${OpenCV_VERSION})
 
 ## Try to compile with C++ 17 (make sure GCC>=7, clang>=5, MSVC>=19.12)
 include(CheckCXXCompilerFlag)
@@ -112,6 +130,7 @@ list(
     source/msceqf/symmetry/symmetry.cpp
     source/msceqf/filter/propagator/propagator.cpp
     source/msceqf/filter/updater/updater.cpp
+    source/msceqf/filter/updater/updater_helper.cpp
     source/msceqf/filter/initializer/static_initializer.cpp
     source/vision/camera.cpp
     source/vision/tracker.cpp

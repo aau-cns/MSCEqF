@@ -142,6 +142,52 @@ const MatrixX MSCEqFState::CovBlock(const MSCEqFStateKey& key) const
   return cov_.block(getPtr(key)->getIndex(), getPtr(key)->getIndex(), getPtr(key)->getDof(), getPtr(key)->getDof());
 }
 
+const MatrixX MSCEqFState::subCov(const std::vector<MSCEqFStateKey>& keys) const
+{
+  assert(!keys.empty());
+
+  // All the blocks of the covariance submatrix in column-major order.
+  std::vector<MatrixX> column_major_blocks;
+
+  uint total_size = 0;
+  for (size_t c = 0; c < keys.size(); ++c)
+  {
+    const uint& col_idx = getPtr(keys[c])->getIndex();
+    const uint& col_dof = getPtr(keys[c])->getDof();
+
+    total_size += col_dof;
+
+    for (size_t r = 0; r < keys.size(); ++r)
+    {
+      const uint& row_idx = r == c ? col_idx : getPtr(keys[r])->getIndex();
+      const uint& row_dof = r == c ? col_dof : getPtr(keys[r])->getIndex();
+
+      column_major_blocks.emplace_back(cov_.block(row_idx, col_idx, row_dof, col_dof));
+    }
+  }
+
+  MatrixX sub_cov = MatrixX::Zero(total_size, total_size);
+
+  // Assign blocks in column_major_blocks to sub_cov.
+  uint cur_row = 0;
+  uint cur_col = 0;
+  for (uint i = 0; i < column_major_blocks.size(); ++i)
+  {
+    sub_cov.block(cur_row, cur_col, column_major_blocks[i].rows(), column_major_blocks[i].cols()) =
+        column_major_blocks[i];
+
+    cur_col += column_major_blocks[i].cols();
+
+    if (cur_col == total_size)
+    {
+      cur_col = 0;
+      cur_row += column_major_blocks[i].rows();
+    }
+  }
+
+  return sub_cov;
+}
+
 void MSCEqFState::preallocate()
 {
   size_t num_elements = 1 + opts_.num_persistent_features_;

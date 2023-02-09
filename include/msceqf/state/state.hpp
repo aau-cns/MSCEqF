@@ -160,6 +160,15 @@ class MSCEqFState
   [[nodiscard]] const MatrixX CovBlock(const MSCEqFStateKey& key) const;
 
   /**
+   * @brief get a constant copy of the the covariance submatrix constructed with covariance blocks relative to the
+   * elements corresponding to the given keys. *Keys need to be ordered*
+   *
+   * @param keys
+   * @return const MatrixX
+   */
+  [[nodiscard]] const MatrixX subCov(const std::vector<MSCEqFStateKey>& keys) const;
+
+  /**
    * @brief Initialize MSCEqF state element into the state map, and the relative covariance block.
    *
    * @param key state element name or feature id

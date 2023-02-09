@@ -24,6 +24,12 @@ enum class FeatureRepresentation
   ANCHORED_INVERSE_DEPTH,
 };
 
+enum class ProjectionMethod
+{
+  UNIT_SPHERE,
+  UNIT_PLANE,
+};
+
 enum class DistortionModel
 {
   RADTAN,
@@ -70,10 +76,8 @@ struct PropagatorOptions
   fp acceleration_std_;           //!< Continuous time acceleration standard deviation
   fp angular_velocity_bias_std_;  //!< Continuous time angular velocity bias (random walk) standard deviation
   fp acceleration_bias_std_;      //!< Continuous time acceleration bias (random walk) standard deviation
-
-  uint imu_buffer_max_size_;  //!< The maximum size of the propagator's imu buffer
-
-  int state_transition_order_;  //!< The order for the computation of the state transition matrix
+  uint imu_buffer_max_size_;      //!< The maximum size of the propagator's imu buffer
+  int state_transition_order_;    //!< The order for the computation of the state transition matrix
 };
 
 struct UpdaterOptions
@@ -84,6 +88,8 @@ struct UpdaterOptions
   uint max_iterations_;        //!< Maximum number of iteration for features triangulation refinement
   fp tollerance_;              //!< Tollerance for features triangulation refinement
   FeatureRepresentation msc_features_representation_;  //!< Multi State Constraint features representation
+  ProjectionMethod projection_method_;                 //!< The feature projection method
+  fp pixel_std_;                                       //!< The pixel standard deviation
 };
 
 struct InitializerOptions

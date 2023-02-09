@@ -39,18 +39,8 @@ class MSCEqF
    * @tparam T Type of the measurement
    * @param meas measurement
    */
-  template <typename T>
-  void processMeasurement(T& meas)
-  {
-    if constexpr (std::is_same_v<T, Imu>)
-    {
-      processImuMeasurement(meas);
-    }
-    else
-    {
-      processCameraMeasurement(meas);
-    }
-  }
+  void processMeasurement(const Imu& meas) { processImuMeasurement(meas); }
+  void processMeasurement(Camera& meas) { processCameraMeasurement(meas); }
 
   /**
    * @brief Get a constant reference to the MSCEqF options

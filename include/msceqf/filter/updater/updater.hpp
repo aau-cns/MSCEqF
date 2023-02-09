@@ -14,21 +14,27 @@
 
 #include <unordered_set>
 
-#include "msceqf/options/msceqf_options.hpp"
-#include "msceqf/system/system.hpp"
 #include "types/fptypes.hpp"
+#include "msceqf/options/msceqf_options.hpp"
+#include "msceqf/filter/updater/updater_helper.hpp"
+#include "msceqf/system/system.hpp"
 #include "vision/track.hpp"
 
 namespace msceqf
 {
 
+/**
+ * @brief Updater class. This class implements the Multi State Constraint update step of the MSCEqF filter.
+ *
+ */
 class Updater
 {
  public:
-  Updater(const UpdaterOptions& opts);
+  Updater(const UpdaterOptions& opts, const SystemState& xi0);
 
-  void update(MSCEqFState& X, const SystemState& xi0, const Tracks& tracks, const std::unordered_set<uint>& ids) const;
+  void update(MSCEqFState& X, const Tracks& tracks, const std::unordered_set<uint>& ids);
 
+ private:
   /**
    * @brief Linear feature triangulation (DLT). This triangulates the given features using all the views the features is
    * seen from.
@@ -56,7 +62,6 @@ class Updater
    */
   void nonlinearTriangulation(const MSCEqFState& X, const Track& track, const SE3& A_E, Vector3& A_f) const;
 
- private:
   /**
    * @brief Compute the residual for the nonlinear optimization
    *
@@ -64,20 +69,18 @@ class Updater
    * @param track track of the feature to triangulate
    * @param A_E Anchor E element
    * @param A_f Pre-triangulated feature
-   * @param A_f_invdepth Inverse depth representation of pre-triangulated feature
    * @param res residual
    * @param J Jacobian
    */
-  void nonlinearTriangulationResidualJacobian(const MSCEqFState& X,
-                                              const Track& track,
-                                              const SE3& A_E,
-                                              const Vector3& A_f,
-                                              const Vector3& A_f_invdepth,
-                                              VectorX& res,
-                                              MatrixX& J) const;
+  void nonlinearTriangulationResidualJacobian(
+      const MSCEqFState& X, const Track& track, const SE3& A_E, const Vector3& A_f, VectorX& res, MatrixX& J) const;
 
  private:
-  UpdaterOptions opts_;  //!< The MSCEqF updater options
+  UpdaterOptions opts_;            //!< The MSCEqF updater options
+  const SystemState& xi0_;         //!< The system state origin
+  ProjectionHelperUniquePtr ph_;   //!< Projection helper
+  std::map<uint, fp> chi2_table_;  //!< Chi squared table for outlier rejection
+  size_t total_size_;              //!< Total size of C matrix and residual for update
 };
 
 }  // namespace msceqf
