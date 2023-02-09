@@ -129,6 +129,12 @@ const SOT3& MSCEqFState::Q(const uint& feat_id) const
   return std::static_pointer_cast<MSCEqFSOT3State>(state_.at(feat_id))->Q_;
 }
 
+const uint& MSCEqFState::stateElementIndex(const MSCEqFStateKey& key) const
+{
+  assert(key.valueless_by_exception() == false);
+  return state_.at(key)->getIndex();
+}
+
 const MatrixX& MSCEqFState::Cov() const { return cov_; }
 
 const MatrixX MSCEqFState::CovBlock(const MSCEqFStateKey& key) const
@@ -247,6 +253,8 @@ void MSCEqFState::marginalizeCloneAt(const fp& timestamp)
 
   // Remove clone
   clones_.erase(timestamp);
+
+  utils::Logger::debug("Marginalized MSCEqF Clone element at time: " + std::to_string(timestamp));
 }
 
 const fp& MSCEqFState::cloneTimestampToMarginalize() const { return clones_.cbegin()->first; }
