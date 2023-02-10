@@ -24,6 +24,10 @@ MSCEqF::MSCEqF(const std::string& params_filepath)
     , track_manager_(opts_.track_manager_options_, opts_.state_options_.initial_camera_intrinsics_.k())
     , initializer_(opts_.init_options_)
     , propagator_(opts_.propagator_options_)
+    , updater_(opts_.updater_options_, xi0_)
+    , ids_to_update_()
+    , timestamp_(-1)
+    , is_filter_initialized_(false)
 {
 }
 
@@ -93,7 +97,7 @@ void MSCEqF::processCameraMeasurement(Camera& cam)
   }
 
   // Update
-  // updater_.update(X, xi0, ids_to_update_, track_manager_.tracks())
+  updater_.update(X_, track_manager_.tracks(), ids_to_update_);
 
   if (marginalize)
   {

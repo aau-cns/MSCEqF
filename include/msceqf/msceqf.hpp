@@ -95,12 +95,13 @@ class MSCEqF
   TrackManager track_manager_;     //!< The MSCEqF track manager
   StaticInitializer initializer_;  //!< The MSCEqF static initializer
   Propagator propagator_;          //!< The MSCEqF propagator
+  Updater updater_;                //!< The MSCEqF updater
 
   std::unordered_set<uint> ids_to_update_;  //!< Ids of track to update
 
-  fp timestamp_ = -1;  //!< The timestamp of the actual estimate
+  fp timestamp_;  //!< The timestamp of the actual estimate
 
-  bool is_filter_initialized_ = false;  //!< Flag that indicates that the filter is initialized
+  bool is_filter_initialized_;  //!< Flag that indicates that the filter is initialized
 };
 
 }  // namespace msceqf

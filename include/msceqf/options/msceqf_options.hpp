@@ -90,6 +90,7 @@ struct UpdaterOptions
   FeatureRepresentation msc_features_representation_;  //!< Multi State Constraint features representation
   ProjectionMethod projection_method_;                 //!< The feature projection method
   fp pixel_std_;                                       //!< The pixel standard deviation
+  bool curvature_correction_;                          //!< Boolean to enable the curvature correction
 };
 
 struct InitializerOptions

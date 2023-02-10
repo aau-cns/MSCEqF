@@ -33,7 +33,7 @@ void ProjectionHelperS2::innovationBlock([[maybe_unused]] const MSCEqFState& X,
                                          [[maybe_unused]] const SystemState& xi0,
                                          [[maybe_unused]] const FeatHelper& feat,
                                          [[maybe_unused]] MatrixXBlockRowRef C_block_row,
-                                         [[maybe_unused]] VectorXBlockRowRef res_block_row,
+                                         [[maybe_unused]] VectorXBlockRowRef delta_block_row,
                                          [[maybe_unused]] MatrixXBlockRowRef Cf_block_row)
 {
   throw std::runtime_error("Update with S2 projection not implemented yet");
@@ -43,7 +43,7 @@ void ProjectionHelperZ1::innovationBlock(const MSCEqFState& X,
                                          const SystemState& xi0,
                                          const FeatHelper& feat,
                                          MatrixXBlockRowRef C_block_row,
-                                         VectorXBlockRowRef res_block_row,
+                                         VectorXBlockRowRef delta_block_row,
                                          MatrixXBlockRowRef Cf_block_row)
 {
   // feature in origin frmae and camera frame
@@ -92,7 +92,7 @@ void ProjectionHelperZ1::innovationBlock(const MSCEqFState& X,
   }
 
   // Residual
-  res_block_row = feat.uvn_ - (xi0.K().asMatrix() * Lpi_homogenous).segment<2>(0);
+  delta_block_row = feat.uvn_ - (xi0.K().asMatrix() * Lpi_homogenous).segment<2>(0);
 }
 
 Eigen::Matrix<fp, 2, 4> UpdaterHelper::Xi(const Vector3& f)
@@ -113,10 +113,9 @@ Matrix3 UpdaterHelper::inverseDepthJacobian(const Vector3& A_f)
   return Cid;
 }
 
-void UpdaterHelper::nullspaceProjection(Eigen::Ref<MatrixX> Cf, MatrixXBlockRowRef Ct, VectorXBlockRowRef res)
+void UpdaterHelper::nullspaceProjection(Eigen::Ref<MatrixX> Cf, MatrixXBlockRowRef Ct, VectorXBlockRowRef delta)
 {
   Eigen::HouseholderQR<Eigen::Ref<MatrixX>> QR(Cf);
-  QR.compute(Cf);
 
   MatrixX Q = MatrixX::Identity(Cf.rows(), Cf.rows());
   Q.applyOnTheLeft(QR.householderQ());
@@ -124,16 +123,30 @@ void UpdaterHelper::nullspaceProjection(Eigen::Ref<MatrixX> Cf, MatrixXBlockRowR
   MatrixX A = Q.block(0, 0, Cf.rows(), Cf.cols()).transpose();
 
   Ct = A * Ct;
-  res = A * res;
+  delta = A * delta;
+}
+
+void UpdaterHelper::updateQRCompression(MatrixX& C, VectorX& delta)
+{
+  Eigen::HouseholderQR<MatrixX> QR(C.rows(), C.cols());
+  QR.compute(C);
+
+  MatrixX Q = MatrixX::Identity(C.rows(), C.rows());
+  Q.applyOnTheLeft(QR.householderQ());
+
+  MatrixX A = Q.block(0, 0, C.rows(), C.cols()).transpose();
+
+  C = A * C;
+  delta = A * delta;
 }
 
 bool UpdaterHelper::chi2Test(const MSCEqFState& X,
                              const MatrixXBlockRowRef Ct_block,
-                             const VectorXBlockRowRef res_block,
+                             const VectorXBlockRowRef delta_block,
                              const fp& pixel_std,
                              const std::map<uint, fp>& chi2_table)
 {
-  const auto& dof = res_block.rows();
+  const auto& dof = delta_block.rows();
 
   // get covariance of variables involved in update
   std::vector<MSCEqFState::MSCEqFStateKey> keys;
@@ -151,8 +164,8 @@ bool UpdaterHelper::chi2Test(const MSCEqFState& X,
   }
 
   MatrixX S = Ct_block * X.subCov(keys) * Ct_block.transpose();
-  S.diagonal() += (pixel_std * pixel_std) * Eigen::VectorXd::Ones(S.rows());
-  fp chi2 = res_block.dot(S.llt().solve(res_block));
+  S.diagonal() += Eigen::VectorXd::Ones(S.rows()) * pixel_std * pixel_std;
+  fp chi2 = delta_block.dot(S.llt().solve(delta_block));
 
   // Compute chi2 threshold
   fp chi2_threshold;

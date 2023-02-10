@@ -75,12 +75,26 @@ class Updater
   void nonlinearTriangulationResidualJacobian(
       const MSCEqFState& X, const Track& track, const SE3& A_E, const Vector3& A_f, VectorX& res, MatrixX& J) const;
 
+  /**
+   * @brief Perfom the update step of the MSCEqF filter
+   *
+   * @param X MSCEqF state
+   * @param C Ouput matrix
+   * @param delta residual delta
+   * @param R Measurement noise covariance
+   */
+  void UpdateMSCEqF(MSCEqFState& X, const MatrixX& C, const VectorX& delta, const MatrixX& R) const;
+
  private:
-  UpdaterOptions opts_;            //!< The MSCEqF updater options
-  const SystemState& xi0_;         //!< The system state origin
-  ProjectionHelperUniquePtr ph_;   //!< Projection helper
+  UpdaterOptions opts_;  //!< The MSCEqF updater options
+
+  const SystemState& xi0_;  //!< The system state origin
+
+  ProjectionHelperUniquePtr ph_;  //!< Projection helper
+
   std::map<uint, fp> chi2_table_;  //!< Chi squared table for outlier rejection
-  size_t total_size_;              //!< Total size of C matrix and residual for update
+
+  size_t total_size_;  //!< Total size of C matrix and residual for update
 };
 
 }  // namespace msceqf

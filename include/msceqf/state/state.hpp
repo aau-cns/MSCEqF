@@ -130,6 +130,14 @@ class MSCEqFState
   [[nodiscard]] const uint& stateElementIndex(const MSCEqFStateKey& key) const;
 
   /**
+   * @brief Get a reference to the dof of the state element corresponding to the given key
+   *
+   * @param key
+   * @return const uint&
+   */
+  [[nodiscard]] const uint& stateElementDof(const MSCEqFStateKey& key) const;
+
+  /**
    * @brief Get the amount of clones
    *
    * @return const size_t

@@ -80,14 +80,14 @@ class ProjectionHelper
    * @param X MSCEqF state
    * @param feat Feature helper
    * @param C_block_row Block row of the C matrix
-   * @param res_block_row Block of the residual
+   * @param delta_block_row Block of the residual delta
    * @param Cf_block_row Block of the Cf matrix
    */
   virtual void innovationBlock(const MSCEqFState& X,
                                const SystemState& xi0,
                                const FeatHelper& feat,
                                MatrixXBlockRowRef C_block_row,
-                               VectorXBlockRowRef res_block_row,
+                               VectorXBlockRowRef delta_block_row,
                                MatrixXBlockRowRef Cf_block_row) = 0;
 
   size_t block_rows_;  //!< Number of rows of a C matrix block and a residual block
@@ -144,14 +144,14 @@ class ProjectionHelperS2 : public ProjectionHelper
    * @param X MSCEqF state
    * @param feat Feature helper
    * @param C_block_row Block row of the C matrix
-   * @param res_block_row Block of the residual
+   * @param delta_block_row Block of the residual delta
    * @param Cf_block_row Block of the Cf matrix
    */
   void innovationBlock(const MSCEqFState& X,
                        const SystemState& xi0,
                        const FeatHelper& feat,
                        MatrixXBlockRowRef C_block_row,
-                       VectorXBlockRowRef res_block_row,
+                       VectorXBlockRowRef delta_block_row,
                        MatrixXBlockRowRef Cf_block_row) override;
 };
 
@@ -193,14 +193,14 @@ class ProjectionHelperZ1 : public ProjectionHelper
    * @param X MSCEqF state
    * @param feat Feature helper
    * @param C_block_row Block row of the C matrix
-   * @param res_block_row Block of the residual
+   * @param delta_block_row Block of the residual delta
    * @param Cf_block_row Block of the Cf matrix
    */
   void innovationBlock(const MSCEqFState& X,
                        const SystemState& xi0,
                        const FeatHelper& feat,
                        MatrixXBlockRowRef C_block_row,
-                       VectorXBlockRowRef res_block_row,
+                       VectorXBlockRowRef delta_block_row,
                        MatrixXBlockRowRef Cf_block_row) override;
 };
 
@@ -255,17 +255,36 @@ struct UpdaterHelper
   [[nodiscard]] static Matrix3 inverseDepthJacobian(const Vector3& A_f);
 
   /**
-   * @brief Project the nullspace of the Cf matrix on the Ct matrix and the residual using QR decomposition
+   * @brief Perform in-place nullspace projection of the Cf matrix on the Ct matrix and the residual using QR
+   * decomposition
    *
-   * @param Ct
-   * @param res
-   * @param Cf
+   * @param Ct C matrix
+   * @param delta residual
+   * @param Cf Cf matrix
    */
-  static void nullspaceProjection(Eigen::Ref<MatrixX> Cf, MatrixXBlockRowRef Ct, VectorXBlockRowRef res);
+  static void nullspaceProjection(Eigen::Ref<MatrixX> Cf, MatrixXBlockRowRef Ct, VectorXBlockRowRef delta);
 
+  /**
+   * @brief Perform in-place compression of the C matrix and the residual using QR decomposition
+   *
+   * @param C C matrix
+   * @param delta residual
+   */
+  static void updateQRCompression(MatrixX& C, VectorX& delta);
+
+  /**
+   * @brief Perform chi2 test (based on precomputed table) on the given block of the residual
+   *
+   * @param X MSCEqF state
+   * @param Ct_block Block of the Ct matrix
+   * @param delta_block Block of the residual delta
+   * @param pixel_std Standard deviation of the pixel noise
+   * @param chi2_table Chi2 table (precomputed)
+   * @return true if test passed, false otherwise
+   */
   [[nodiscard]] static bool chi2Test(const MSCEqFState& X,
                                      const MatrixXBlockRowRef Ct_block,
-                                     const VectorXBlockRowRef res_block,
+                                     const VectorXBlockRowRef delta_block,
                                      const fp& pixel_std,
                                      const std::map<uint, fp>& chi2_table);
 };

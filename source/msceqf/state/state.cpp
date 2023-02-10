@@ -129,11 +129,9 @@ const SOT3& MSCEqFState::Q(const uint& feat_id) const
   return std::static_pointer_cast<MSCEqFSOT3State>(state_.at(feat_id))->Q_;
 }
 
-const uint& MSCEqFState::stateElementIndex(const MSCEqFStateKey& key) const
-{
-  assert(key.valueless_by_exception() == false);
-  return state_.at(key)->getIndex();
-}
+const uint& MSCEqFState::stateElementIndex(const MSCEqFStateKey& key) const { return getPtr(key)->getIndex(); }
+
+const uint& MSCEqFState::stateElementDof(const MSCEqFStateKey& key) const { return getPtr(key)->getDof(); }
 
 const MatrixX& MSCEqFState::Cov() const { return cov_; }
 

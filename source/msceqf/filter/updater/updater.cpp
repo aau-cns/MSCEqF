@@ -60,14 +60,14 @@ void Updater::update(MSCEqFState& X, const Tracks& tracks, const std::unordered_
   }
   rows *= ph_->block_rows_;
 
-  // Preallocate C matrix and residual
+  // Preallocate C matrix and residual delta
   MatrixX C = MatrixX::Zero(rows, cols);
-  VectorX res = VectorX::Zero(rows);
+  VectorX delta = VectorX::Zero(rows);
 
   // Reset number of features in update
   total_size_ = 0;
 
-  // For each track triangulate the feature, compute C matrices and residual blocks, and performe chi2 rejection test
+  // For each track triangulate the feature, compute C and delta blocks, and performe chi2 rejection test
   for (const auto& id : ids)
   {
     const auto& track = tracks.at(id);
@@ -94,7 +94,7 @@ void Updater::update(MSCEqFState& X, const Tracks& tracks, const std::unordered_
     const auto& track_size = track.size();
 
     // For each feature measurement in track compute the innovation block
-    // (Ct matrix block, Cf matrix block and residual block)
+    // (Ct matrix block, Cf matrix block and delta block)
     MatrixX Cf = MatrixX::Zero(ph_->block_rows_ * track_size, 3);
     for (size_t i = 0; i < track_size; ++i)
     {
@@ -104,12 +104,12 @@ void Updater::update(MSCEqFState& X, const Tracks& tracks, const std::unordered_
       const auto& row_idx = total_size_ + (ph_->block_rows_ * i);
 
       ph_->innovationBlock(X, xi0_, feat, C.middleRows(row_idx, ph_->block_rows_),
-                           res.middleRows(row_idx, ph_->block_rows_),
+                           delta.middleRows(row_idx, ph_->block_rows_),
                            Cf.middleRows(ph_->block_rows_ * i, ph_->block_rows_));
     }
 
     const auto& Ct_block = C.middleRows(total_size_, ph_->block_rows_ * track_size);
-    const auto& res_block = res.middleRows(total_size_, ph_->block_rows_ * track_size);
+    const auto& res_block = delta.middleRows(total_size_, ph_->block_rows_ * track_size);
 
     // Perform nullspace projection of Cf
     UpdaterHelper::nullspaceProjection(Cf, Ct_block, res_block);
@@ -121,16 +121,25 @@ void Updater::update(MSCEqFState& X, const Tracks& tracks, const std::unordered_
       continue;
     }
 
-    // Update total size of C matrix and residual
+    // Update total size of C matrix and residual delta
     total_size_ += ph_->block_rows_ * track_size;
   }
 
-  // Resize residual and C matrix based on total_size_
-  res.conservativeResize(total_size_);
+  // Resize residual delta and C matrix based on total_size_
+  delta.conservativeResize(total_size_);
   C.conservativeResize(total_size_, cols);
 
-  // [TODO] Update compression
-  // [TODO] Update
+  // Update compression
+  if (C.rows() > C.cols())
+  {
+    UpdaterHelper::updateQRCompression(C, delta);
+  }
+
+  // Define measurement noise covariance
+  MatrixX R = MatrixX::Identity(C.rows(), C.rows()) * opts_.pixel_std_ * opts_.pixel_std_;
+
+  // MSCEqF Update
+  UpdateMSCEqF(X, C, delta, R);
 }
 
 bool Updater::linearTriangulation(const MSCEqFState& X, const Track& track, const SE3& A_E, Vector3& A_f) const
@@ -171,7 +180,7 @@ void Updater::nonlinearTriangulation(const MSCEqFState& X, const Track& track, c
   Vector3 A_f_invdepth(A_f(0) / A_f(2), A_f(1) / A_f(2), 1 / A_f(2));
 
   MatrixX J = MatrixX::Zero(2 * X.clones_.size(), 3);
-  VectorX res = VectorX::Zero(2 * X.clones_.size());
+  VectorX delta = VectorX::Zero(2 * X.clones_.size());
 
   fp initial_residual_norm;
   fp actual_res_norm;
@@ -180,10 +189,10 @@ void Updater::nonlinearTriangulation(const MSCEqFState& X, const Track& track, c
 
   for (uint iterations = 0; iterations < opts_.max_iterations_; ++iterations)
   {
-    nonlinearTriangulationResidualJacobian(X, track, A_E, A_f, res, J);
-    Vector3 delta = J.colPivHouseholderQr().solve(res);
+    nonlinearTriangulationResidualJacobian(X, track, A_E, A_f, delta, J);
+    Vector3 delta = J.colPivHouseholderQr().solve(delta);
 
-    actual_res_norm = res.norm();
+    actual_res_norm = delta.norm();
 
     if (iterations == 0)
     {
@@ -222,10 +231,10 @@ void Updater::nonlinearTriangulation(const MSCEqFState& X, const Track& track, c
 }
 
 void Updater::nonlinearTriangulationResidualJacobian(
-    const MSCEqFState& X, const Track& track, const SE3& A_E, const Vector3& A_f, VectorX& res, MatrixX& J) const
+    const MSCEqFState& X, const Track& track, const SE3& A_E, const Vector3& A_f, VectorX& delta, MatrixX& J) const
 {
   J.setZero();
-  res.setZero();
+  delta.setZero();
 
   Matrix3 J_rep = Matrix3::Identity();
   J_rep.block<3, 1>(0, 2) = -A_f;
@@ -239,12 +248,67 @@ void Updater::nonlinearTriangulationResidualJacobian(
     Vector3 Ci_f_invdepth(Ci_f(0) / Ci_f(2), Ci_f(1) / Ci_f(2), 1 / Ci_f(2));
 
     Vector2 uvn(track.normalized_uvs_[i].x, track.normalized_uvs_[i].y);
-    res.block(2 * i, 0, 2, 1) = uvn - Ci_f_invdepth.block(0, 0, 2, 1);
+    delta.block(2 * i, 0, 2, 1) = uvn - Ci_f_invdepth.block(0, 0, 2, 1);
 
     J.block(2 * i, 0, 2, 2) = Matrix2::Identity();
     J.block(2 * i, 2, 2, 1) = -Ci_f_invdepth.block<2, 1>(0, 0);
     J.block(2 * i, 0, 2, 3) = Ci_f_invdepth(2) * J.block(2 * i, 0, 2, 3) * E.R() * J_rep;
   }
+}
+
+void Updater::UpdateMSCEqF(MSCEqFState& X, const MatrixX& C, const VectorX& delta, const MatrixX& R) const
+{
+  //
+  //
+  // Delta = self.InnovationLift @ K @ delta
+  // self.X_hat = SymGroup.exp(Delta) * self.X_hat
+  // self.Sigma = (np.eye(self.dof) - K @ Ct) @ self.Sigma
+  //
+  //
+
+  // get covariance of variables involved in update
+  std::vector<MSCEqFState::MSCEqFStateKey> keys;
+  if (X.opts_.enable_camera_extrinsics_calibration_)
+  {
+    keys.push_back(MSCEqFStateElementName::E);
+  }
+  else
+  {
+    // [TODO]
+  }
+  if (X.opts_.enable_camera_intrinsics_calibration_)
+  {
+    keys.push_back(MSCEqFStateElementName::L);
+  }
+
+  // Compute Kalman gain and innovation
+  MatrixX G = X.cov_ * C.transpose();
+  MatrixX S = C * X.subCov(keys) * C.transpose() + R;
+  MatrixX K = G * S.inverse();
+
+  // Update state
+  X.state_.at(MSCEqFStateElementName::Dd)
+      ->updateLeft(delta.segment(X.stateElementIndex(MSCEqFStateElementName::Dd),
+                                 X.stateElementDof(MSCEqFStateElementName::Dd)));
+  if (X.opts_.enable_camera_extrinsics_calibration_)
+  {
+    X.state_.at(MSCEqFStateElementName::E)
+        ->updateLeft(delta.segment(X.stateElementIndex(MSCEqFStateElementName::E),
+                                   X.stateElementDof(MSCEqFStateElementName::E)));
+  }
+  else
+  {
+    // [TODO]
+  }
+  if (X.opts_.enable_camera_intrinsics_calibration_)
+  {
+    X.state_.at(MSCEqFStateElementName::L)
+        ->updateLeft(delta.segment(X.stateElementIndex(MSCEqFStateElementName::L),
+                                   X.stateElementDof(MSCEqFStateElementName::L)));
+  }
+
+  // Update covariance
+  X.cov_ -= K * G.transpose();
 }
 
 }  // namespace msceqf

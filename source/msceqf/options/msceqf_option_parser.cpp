@@ -110,6 +110,7 @@ MSCEqFOptions OptionParser::parseOptions()
   parseFeatureRepresentation(opts.updater_options_.msc_features_representation_);
   parseProjectionMethod(opts.updater_options_.projection_method_);
   readDefault(opts.updater_options_.pixel_std_, 1.0, "pixel_standerd_deviation");
+  readDefault(opts.updater_options_.curvature_correction_, false, "curveture_correction");
 
   ///
   /// Parse initalizer options
