@@ -75,9 +75,15 @@ bool StaticInitializer::accelerationCheck() const
 
 bool StaticInitializer::disparityCheck(const Tracks& tracks) const
 {
-  size_t first_track_lenght = tracks.begin()->second.timestamps_.back() - tracks.begin()->second.timestamps_.front();
+  const auto& longest_track = std::max_element(tracks.begin(), tracks.end(),
+                                               [](const auto& pre, const auto& post) {
+                                                 return pre.second.timestamps_.size() < post.second.timestamps_.size();
+                                               })
+                                  ->second;
 
-  if (first_track_lenght < opts_.disparity_window_)
+  const fp& longest_track_time = longest_track.timestamps_.back() - longest_track.timestamps_.front();
+
+  if (longest_track_time < opts_.disparity_window_)
   {
     utils::Logger::info("feature tracks not long enough for disparity check in static initializer");
     return false;
@@ -88,7 +94,7 @@ bool StaticInitializer::disparityCheck(const Tracks& tracks) const
 
   for (const auto& [id, track] : tracks)
   {
-    if (track.size() == first_track_lenght)
+    if (track.size() == longest_track.size())
     {
       average_disparity += cv::norm(track.uvs_.back() - track.uvs_.front());
       ++track_cnt;
