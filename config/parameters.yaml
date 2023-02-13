@@ -48,5 +48,5 @@ shi_tomasi_quality_level: 0.05
 max_track_length: 25
 
 # Logger level [0: Full, 1: INFO, 2: WARN, 3: ERR, 4: INACTIVE]
-# logger_level: 0
-logger_level: 4
+logger_level: 0
+# logger_level: 4

@@ -153,3 +153,8 @@ if(${BUILD_TESTS})
     include(GoogleTest)
     gtest_discover_tests(msceqf_tests)
 endif()
+
+## Declare C++ examples
+add_executable(msceqf_euroc examples/euroc/euroc.cpp)
+target_include_directories(msceqf_euroc PRIVATE ${include_dirs})
+target_link_libraries(msceqf_euroc ${PROJECT_NAME} pthread)
