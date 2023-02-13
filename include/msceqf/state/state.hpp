@@ -145,7 +145,7 @@ class MSCEqFState
   [[nodiscard]] inline size_t clonesSize() const { return clones_.size(); }
 
   /**
-   * @brief Get the timestamp of the colne to marginalize.
+   * @brief Get the timestamp of the clone to marginalize.
    * We implement our keyframing strategy here. So far we simply marginalize the oldest clone.
    *
    * @return const fp&
@@ -157,7 +157,7 @@ class MSCEqFState
    *
    * @return const MatrixX&
    */
-  [[nodiscard]] const MatrixX& Cov() const;
+  [[nodiscard]] const MatrixX& cov() const;
 
   /**
    * @brief get a constant copy of the covariance block relative to the element corresponding to the given key
@@ -165,7 +165,7 @@ class MSCEqFState
    * @param key state element name or feature id
    * @return const MatrixX
    */
-  [[nodiscard]] const MatrixX CovBlock(const MSCEqFStateKey& key) const;
+  [[nodiscard]] const MatrixX covBlock(const MSCEqFStateKey& key) const;
 
   /**
    * @brief get a constant copy of the the covariance submatrix constructed with covariance blocks relative to the

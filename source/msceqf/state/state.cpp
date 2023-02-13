@@ -133,9 +133,9 @@ const uint& MSCEqFState::stateElementIndex(const MSCEqFStateKey& key) const { re
 
 const uint& MSCEqFState::stateElementDof(const MSCEqFStateKey& key) const { return getPtr(key)->getDof(); }
 
-const MatrixX& MSCEqFState::Cov() const { return cov_; }
+const MatrixX& MSCEqFState::cov() const { return cov_; }
 
-const MatrixX MSCEqFState::CovBlock(const MSCEqFStateKey& key) const
+const MatrixX MSCEqFState::covBlock(const MSCEqFStateKey& key) const
 {
   return cov_.block(getPtr(key)->getIndex(), getPtr(key)->getIndex(), getPtr(key)->getDof(), getPtr(key)->getDof());
 }
@@ -158,7 +158,7 @@ const MatrixX MSCEqFState::subCov(const std::vector<MSCEqFStateKey>& keys) const
     for (size_t r = 0; r < keys.size(); ++r)
     {
       const uint& row_idx = r == c ? col_idx : getPtr(keys[r])->getIndex();
-      const uint& row_dof = r == c ? col_dof : getPtr(keys[r])->getIndex();
+      const uint& row_dof = r == c ? col_dof : getPtr(keys[r])->getDof();
 
       column_major_blocks.emplace_back(cov_.block(row_idx, col_idx, row_dof, col_dof));
     }
@@ -174,12 +174,12 @@ const MatrixX MSCEqFState::subCov(const std::vector<MSCEqFStateKey>& keys) const
     sub_cov.block(cur_row, cur_col, column_major_blocks[i].rows(), column_major_blocks[i].cols()) =
         column_major_blocks[i];
 
-    cur_col += column_major_blocks[i].cols();
+    cur_row += column_major_blocks[i].rows();
 
-    if (cur_col == total_size)
+    if (cur_row == total_size)
     {
-      cur_col = 0;
-      cur_row += column_major_blocks[i].rows();
+      cur_row = 0;
+      cur_col += column_major_blocks[i].cols();
     }
   }
 
