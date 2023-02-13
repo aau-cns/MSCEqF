@@ -96,6 +96,19 @@ class TrackManager
    */
   void removeTracksTail(const fp& timestamp);
 
+  /**
+   * @brief Clear all the tracks
+   *
+   */
+  inline void clear() { tracks_.clear(); }
+
+  /**
+   * @brief Update camera intrinsics with latest estimated values
+   *
+   * @param intrinsics
+   */
+  inline void updateCameraIntrinsics(const Vector4& intrinsics) { tracker_.updateCameraIntrinsics(intrinsics); }
+
  private:
   /**
    * @brief Updeate tracks with current features from tracker

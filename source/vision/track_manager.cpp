@@ -70,6 +70,11 @@ void TrackManager::lostTracksIds(const fp& timestamp, std::unordered_set<uint>& 
 
 void TrackManager::removeTracksId(const std::unordered_set<uint>& ids)
 {
+  if (ids.empty())
+  {
+    return;
+  }
+
   for (auto it = tracks_.begin(); it != tracks_.end();)
   {
     if (ids.count(it->first))

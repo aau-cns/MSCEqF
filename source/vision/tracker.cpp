@@ -325,7 +325,7 @@ void Tracker::extractCellKeypoints(const cv::Mat& cell, const cv::Mat& mask, Key
             [](const cv::KeyPoint& pre, const cv::KeyPoint& post) { return pre.response > post.response; });
 
   // Cap keypoints to max_kpts_per_cell_, keeping the ones with the highest score
-  cell_kpts.resize(std::min(cell_kpts.size(), (max_kpts_per_cell_.load() - previous_features_.second.size())));
+  cell_kpts.resize(std::min(cell_kpts.size(), static_cast<size_t>(max_kpts_per_cell_.load())));
 }
 
 void Tracker::matchKLT(std::vector<uchar>& mask)

@@ -55,6 +55,13 @@ class Tracker
    */
   const TimedFeatures& currentFeatures() const;
 
+  /**
+   * @brief This method update the underlying camera intrinsic parameters.
+   *
+   * @param intrinsics
+   */
+  inline void updateCameraIntrinsics(const Vector4& intrinsics) { cam_->setIntrinsics(intrinsics); }
+
  private:
   /**
    * @brief Detect/Tracks feature in the given camera measurement.
