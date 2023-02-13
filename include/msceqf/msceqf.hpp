@@ -12,6 +12,8 @@
 #ifndef MSCEQF_HPP
 #define MSCEQF_HPP
 
+#include <future>
+
 #include "msceqf/filter/initializer/static_initializer.hpp"
 #include "msceqf/filter/propagator/propagator.hpp"
 #include "msceqf/filter/updater/updater.hpp"

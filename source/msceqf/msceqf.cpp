@@ -11,8 +11,6 @@
 
 #include "msceqf/msceqf.hpp"
 
-#include <future>
-
 namespace msceqf
 {
 
@@ -60,12 +58,20 @@ void MSCEqF::processCameraMeasurement(Camera& cam)
   if (!is_filter_initialized_)
   {
     track_manager_.processCamera(cam);
-    is_filter_initialized_ = initializer_.detectMotion(track_manager_.tracks());
+    if (initializer_.detectMotion(track_manager_.tracks()))
+    {
+      utils::Logger::info("Static initialization succeeded");
+      track_manager_.clear();
+      is_filter_initialized_ = true;
+    }
+    cv::imshow("Image with keypoints", cam.image_);
+    cv::waitKey(1);
+    return;
   }
 
   if (cam.timestamp_ < timestamp_)
   {
-    utils::Logger::warn("Received Camera measurement older than actual state estimate. Discarding measurement.");
+    utils::Logger::warn("Received Camera measurement older than actual state estimate. Discarding measurement");
     return;
   }
 
@@ -75,7 +81,7 @@ void MSCEqF::processCameraMeasurement(Camera& cam)
 
   if (!future_propagation.get())
   {
-    utils::Logger::err("Propagation failure.");
+    utils::Logger::err("Propagation failure");
     return;
   }
 
@@ -84,6 +90,25 @@ void MSCEqF::processCameraMeasurement(Camera& cam)
 
   future_image_processing.wait();
   future_cloning.wait();
+
+  //
+  // [VISUALIZATION-DEBUG]
+  //
+  Tracker::Keypoints active_kpts;
+  std::unordered_set<uint> active_ids;
+  track_manager_.activeTracksIds(cam.timestamp_, active_ids);
+  const auto& tracks = track_manager_.tracks();
+  for (auto& id : active_ids)
+  {
+    active_kpts.emplace_back(tracks.at(id).uvs_.back().x, tracks.at(id).uvs_.back().y, 5.0f);
+  }
+  cv::drawKeypoints(cam.image_, active_kpts, cam.image_, cv::Scalar(0, 0, 255),
+                    cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
+  cv::imshow("Image with keypoints", cam.image_);
+  cv::waitKey(1);
+  //
+  //
+  //
 
   track_manager_.lostTracksIds(cam.timestamp_, ids_to_update_);
 
@@ -99,6 +124,20 @@ void MSCEqF::processCameraMeasurement(Camera& cam)
   // Update
   updater_.update(X_, track_manager_.tracks(), ids_to_update_);
 
+  // Get state estimate
+  SystemState xi = stateEstimate();
+
+  // [DEBUG]
+  std::cout << "EST quaternion: " << Quaternion(xi.P().R()).coeffs().transpose() << std::endl;
+  std::cout << "EST position: " << xi.P().x().transpose() << std::endl;
+
+  // Update camera intrinsics if we are doing online camera intrinsic calibration
+  if (X_.opts_.enable_camera_intrinsics_calibration_)
+  {
+    track_manager_.updateCameraIntrinsics(xi.k());
+  }
+
+  // Marginalize
   if (marginalize)
   {
     X_.marginalizeCloneAt(marginalize_timestamp);
@@ -113,7 +152,7 @@ const MSCEqFOptions& MSCEqF::options() const { return opts_; }
 
 const StateOptions& MSCEqF::stateOptions() const { return opts_.state_options_; }
 
-const MatrixX& MSCEqF::Covariance() const { return X_.Cov(); }
+const MatrixX& MSCEqF::Covariance() const { return X_.cov(); }
 
 const SystemState MSCEqF::stateEstimate() const { return Symmetry::phi(X_, xi0_); }
 
