@@ -142,7 +142,7 @@ class SystemState
    * If the camera intrinsics are not are not estimated online then the fixed calibration value provided in the options
    * is returned
    *
-   * @return const Vector4&
+   * @return const Vector4
    */
   [[nodiscard]] const Vector4 k() const;
 
