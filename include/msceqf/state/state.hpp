@@ -204,15 +204,22 @@ class MSCEqFState
 
   /**
    * @brief Get a random MSCEqF state
-   * This method *WILL NOT* change the actual values of the state.
+   * This method *WILL NOT* change the actual values of the state, just return a random state.
    * This method *WILL NOT* initialize the covariance or the clones map.
    * This method will only initialize the state map with random values.
    *
    * *THIS IS MEANT TO BE AN HELPER FUNCTION FOR DEBUG/TESTING*
    *
-   * @return const MSCEqFState&
+   * @return const MSCEqFState
    */
   [[nodiscard]] const MSCEqFState Random() const;
+
+  /**
+   * @brief Set the MSCEqF state to a specific orientation
+   *
+   * *THIS IS MEANT TO BE AN HELPER FUNCTION FOR DEBUG/TESTING*
+   */
+  void setMSCEqFStateInitialOrientation(const Quaternion& q);
 
   /**
    * @brief operator* overloading for MSCEqFState.

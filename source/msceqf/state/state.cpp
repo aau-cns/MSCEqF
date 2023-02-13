@@ -360,6 +360,25 @@ const MSCEqFState MSCEqFState::Random() const
   return result;
 }
 
+void MSCEqFState::setMSCEqFStateInitialOrientation(const Quaternion& q)
+{
+  auto& Dd = std::static_pointer_cast<MSCEqFSDBState>(getPtr(MSCEqFStateElementName::Dd))->Dd_;
+
+  // [DEBUG] remove bias
+  Dd.multiplyRight(SDB(SE23(q.normalized(), {Vector3::Zero(), Vector3::Zero()}), Vector6::Zero()));
+
+  utils::Logger::debug("Set initial MSCEqF core state to:");
+
+  utils::Logger::debug("Quaternion: " +
+                       static_cast<std::ostringstream&>(std::ostringstream() << Dd.D().q().coeffs().transpose()).str());
+  utils::Logger::debug("velocity: " +
+                       static_cast<std::ostringstream&>(std::ostringstream() << Dd.D().v().transpose()).str());
+  utils::Logger::debug("Position: " +
+                       static_cast<std::ostringstream&>(std::ostringstream() << Dd.D().p().transpose()).str());
+  utils::Logger::debug("Biases: " +
+                       static_cast<std::ostringstream&>(std::ostringstream() << Dd.delta().transpose()).str());
+}
+
 const MSCEqFState MSCEqFState::operator*(const MSCEqFState& other) const
 {
   MSCEqFState result(*this);
