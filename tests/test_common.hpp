@@ -76,25 +76,25 @@ void MSCEqFStateEquality(const msceqf::MSCEqFState& X1,
 {
   MatrixEquality(X1.D().asMatrix(), X2.D().asMatrix(), tol);
   MatrixEquality(X1.delta(), X2.delta(), tol);
-  MatrixEquality(X1.CovBlock(msceqf::MSCEqFStateElementName::Dd), X2.CovBlock(msceqf::MSCEqFStateElementName::Dd), tol);
+  MatrixEquality(X1.covBlock(msceqf::MSCEqFStateElementName::Dd), X2.covBlock(msceqf::MSCEqFStateElementName::Dd), tol);
 
   assert(X1.opts_.enable_camera_extrinsics_calibration_ == X2.opts_.enable_camera_extrinsics_calibration_);
   if (X1.opts_.enable_camera_extrinsics_calibration_)
   {
     MatrixEquality(X1.E().asMatrix(), X2.E().asMatrix(), tol);
-    MatrixEquality(X1.CovBlock(msceqf::MSCEqFStateElementName::E), X2.CovBlock(msceqf::MSCEqFStateElementName::E), tol);
+    MatrixEquality(X1.covBlock(msceqf::MSCEqFStateElementName::E), X2.covBlock(msceqf::MSCEqFStateElementName::E), tol);
   }
   assert(X1.opts_.enable_camera_intrinsics_calibration_ == X2.opts_.enable_camera_intrinsics_calibration_);
   if (X1.opts_.enable_camera_intrinsics_calibration_)
   {
     MatrixEquality(X1.L().asMatrix(), X2.L().asMatrix(), tol);
-    MatrixEquality(X1.CovBlock(msceqf::MSCEqFStateElementName::L), X2.CovBlock(msceqf::MSCEqFStateElementName::L), tol);
+    MatrixEquality(X1.covBlock(msceqf::MSCEqFStateElementName::L), X2.covBlock(msceqf::MSCEqFStateElementName::L), tol);
   }
 
   for (const auto& id : feat_ids)
   {
     MatrixEquality(X1.Q(id).asMatrix(), X2.Q(id).asMatrix(), tol);
-    MatrixEquality(X1.CovBlock(id), X2.CovBlock(id), tol);
+    MatrixEquality(X1.covBlock(id), X2.covBlock(id), tol);
   }
 }
 

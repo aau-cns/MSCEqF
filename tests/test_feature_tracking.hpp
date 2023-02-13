@@ -128,6 +128,46 @@ TEST(TrackingTest, TrackingMask)
   }
 }
 
+TEST(TrackingTest, TrackingEuroc)
+{
+  const std::string dataset_name = "V1_01_easy";
+  const std::string dataset_path = "/media/alfornasier/PortableSSD/alfornasier/Datasets/Euroc/" + dataset_name;
+  const std::string imu_path = dataset_path + "/mav0/imu0/data.csv";
+  const std::string cam_path = dataset_path + "/mav0/cam0/data.csv";
+  const std::string cam_image_path = dataset_path + "/mav0/cam0/data/";
+  const std::string groundtruth_path = "";
+
+  const std::vector<std::string> imu_header = {"#timestamp [ns]",     "w_RS_S_x [rad s^-1]", "w_RS_S_y [rad s^-1]",
+                                               "w_RS_S_z [rad s^-1]", "a_RS_S_x [m s^-2]",   "a_RS_S_y [m s^-2]",
+                                               "a_RS_S_z [m s^-2]"};
+  const std::vector<std::string> groundtruth_header = {};
+  const std::vector<std::string> cam_header = {"#timestamp [ns]", "filename"};
+
+  utils::csvParser dataset_parser(imu_path, groundtruth_path, cam_path, cam_image_path, imu_header, groundtruth_header,
+                                  cam_header);
+
+  dataset_parser.parseAndCheck();
+
+  msceqf::MSCEqF sys("/home/alfornasier/PhD/MSCEqF_dev/MSCEqF/examples/euroc/config.yaml");
+
+  TrackManager track_manager(sys.options().track_manager_options_, sys.stateOptions().initial_camera_intrinsics_.k());
+
+  Tracker::Keypoints active_kpts, lost_kpts;
+  std::unordered_set<uint> active_tracks, lost_tracks;
+
+  const auto timestamps = dataset_parser.getSensorsTimestamps();
+  for (const auto& timestamp : timestamps)
+  {
+    auto data = dataset_parser.consumeSensorReadingAt(timestamp);
+    if (std::holds_alternative<msceqf::Camera>(data))
+    {
+      auto& cam = std::get<msceqf::Camera>(data);
+      track_manager.processCamera(cam);
+      track(cam, track_manager, active_kpts, lost_kpts, active_tracks, lost_tracks);
+    }
+  }
+}
+
 }  // namespace msceqf
 
 #endif  // TEST_TRACKING_HPP

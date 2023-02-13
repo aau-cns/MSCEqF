@@ -302,9 +302,9 @@ TEST(MSCEqFStateTest, MSCEqFStateConstructionTest)
       Dd_cov.block(0, 0, 9, 9) = opts.state_options_.D_init_cov_;
       Dd_cov.block(9, 9, 6, 6) = opts.state_options_.delta_init_cov_;
 
-      MatrixEquality(state.CovBlock(MSCEqFStateElementName::Dd), Dd_cov);
-      MatrixEquality(state.CovBlock(MSCEqFStateElementName::E), opts.state_options_.E_init_cov_);
-      MatrixEquality(state.CovBlock(MSCEqFStateElementName::L), opts.state_options_.L_init_cov_);
+      MatrixEquality(state.covBlock(MSCEqFStateElementName::Dd), Dd_cov);
+      MatrixEquality(state.covBlock(MSCEqFStateElementName::E), opts.state_options_.E_init_cov_);
+      MatrixEquality(state.covBlock(MSCEqFStateElementName::L), opts.state_options_.L_init_cov_);
 
       MSCEqFState state_copy(state);
       MSCEqFStateEquality(state, state_copy);

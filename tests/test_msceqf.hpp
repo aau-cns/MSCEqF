@@ -55,15 +55,14 @@ TEST(MSCEqFTest, Construction)
 
 TEST(MSCEqFPropagationTest, meanPropagation)
 {
-  std::string data_filepath_base = "/home/alfornasier/PhD/MSCEqF_dev/MSCEqF/tests/data/";
-  utils::csvParser csv_parser(data_filepath_base + "noisefree_trajectory.csv",
-                              {"t", "w_x", "w_y", "w_z", "a_x", "a_y", "a_z"},
+  std::string data_filepath = "/home/alfornasier/PhD/MSCEqF_dev/MSCEqF/tests/data/noisefree_trajectory.csv";
+  utils::csvParser csv_parser(data_filepath, data_filepath, "", "", {"t", "w_x", "w_y", "w_z", "a_x", "a_y", "a_z"},
                               {"t", "q_x", "q_y", "q_z", "q_w", "p_x", "p_y", "p_z", "v_x", "v_y", "v_z", "b_w_x",
-                               "b_w_y", "b_w_z", "b_a_x", "b_a_y", "b_a_z"});
+                               "b_w_y", "b_w_z", "b_a_x", "b_a_y", "b_a_z"},
+                              {});
   csv_parser.parseAndCheck();
 
-  std::string config_filepath_base = "/home/alfornasier/PhD/MSCEqF_dev/MSCEqF/config/";
-  MSCEqF sys(config_filepath_base + "parameters.yaml");
+  MSCEqF sys("/home/alfornasier/PhD/MSCEqF_dev/MSCEqF/config/parameters.yaml");
 
   Camera cam;
   for (auto& imu : csv_parser.getImuData())
@@ -103,8 +102,7 @@ INSTANTIATE_TEST_CASE_P(ImuMeasurementSelectionTest,
 
 TEST(MSCEqFPropagationTest, CovariancePropagation)
 {
-  std::string filepath_base = "/home/alfornasier/PhD/MSCEqF_dev/MSCEqF/config/";
-  MSCEqF sys(filepath_base + "parameters.yaml");
+  MSCEqF sys("/home/alfornasier/PhD/MSCEqF_dev/MSCEqF/config/parameters.yaml");
 
   Imu imu0, imu1;
   imu0.timestamp_ = 100;
