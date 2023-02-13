@@ -454,6 +454,31 @@ class csvParser
     throw std::runtime_error("No sensor reading found at timestamp " + std::to_string(timestamp));
   }
 
+  /**
+   * @brief Get Groundtruth data that is closer to a given timestamp
+   *
+   * @param timestamp
+   * @return msceqf::Groundtruth
+   */
+  const msceqf::Groundtruth getCloserGroundtruthAt(const msceqf::fp& timestamp) const
+  {
+    auto gt = std::find_if(groundtruth_data_.begin(), groundtruth_data_.end(),
+                           [&](const auto& gt) { return gt.timestamp_ > timestamp; });
+
+    if (gt == groundtruth_data_.end())
+    {
+      throw std::runtime_error("No groundtruth data found at timestamp " + std::to_string(timestamp));
+    }
+
+    if (gt != groundtruth_data_.begin() &&
+        (std::abs(gt->timestamp_ - timestamp) > std::abs((gt - 1)->timestamp_ - timestamp)))
+    {
+      return *(gt - 1);
+    }
+
+    return *gt;
+  }
+
  private:
   /**
    * @brief Parse a single line of the .csv file
