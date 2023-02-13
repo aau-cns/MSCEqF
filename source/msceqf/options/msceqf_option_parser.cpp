@@ -144,11 +144,19 @@ void OptionParser::parseCameraParameters(SE3& extrinsics,
                                          Vector2& resolution)
 {
   Matrix4 extrinsics_mat;
-  if (!read(extrinsics_mat, "T_cam_imu"))
+  if (!read(extrinsics_mat, "T_imu_cam"))
   {
-    throw std::runtime_error(
-        "Wrong or missing camera extrinsics. Please provide camera extriniscs (T_cam_imu) in the configuration file "
-        "according to Kalibr convention.");
+    if (!read(extrinsics_mat, "T_cam_imu"))
+    {
+      throw std::runtime_error(
+          "Wrong or missing camera extrinsics. Please provide camera extriniscs (T_imu_cam or T_cam_imu) in the "
+          "configuration file according to Kalibr convention.");
+    }
+    else
+    {
+      extrinsics = extrinsics_mat;
+      extrinsics = extrinsics.inv();
+    }
   }
   else
   {
@@ -307,7 +315,8 @@ void OptionParser::parseInitialCovariance(Matrix9& D_cov, Matrix6& delta_cov, Ma
     D_cov = Matrix9::Zero();
     D_cov(0, 0) = std::pow(pitch_roll_std(0), 2);
     D_cov(1, 1) = std::pow(pitch_roll_std(1), 2);
-    D_cov.block<7, 7>(2, 2) = 1e-12 * Matrix7::Identity();
+    // D_cov.block<7, 7>(2, 2) = 1e-12 * Matrix7::Identity();
+    D_cov.block<7, 7>(2, 2) = Matrix7::Identity();
   }
 
   // Delta covariance
@@ -317,7 +326,8 @@ void OptionParser::parseInitialCovariance(Matrix9& D_cov, Matrix6& delta_cov, Ma
   // E covariance
   // [TODO] Assign proper values
   // [TODO] proper conversion prom pitch_roll_std to normal coords std
-  E_cov = 0.1 * Matrix6::Identity();
+  // E_cov = 0.1 * Matrix6::Identity();
+  E_cov = 1e-12 * Matrix6::Identity();
 
   // L covairance
   // [TODO] Assign proper values
