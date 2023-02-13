@@ -34,15 +34,20 @@ using VectorXBlockRowRef = Eigen::Ref<VectorX::RowsBlockXpr>;  //!< Block row re
  */
 struct FeatHelper
 {
-  FeatHelper(
-      const SE3& A_E, const Vector3& A_f, const Vector2& uvn, const MSCEqFSE3StateSharedPtr& clone, const fp& timestamp)
-      : A_E_(A_E), A_f_(A_f), uvn_(uvn), clone_(clone), timetamp_(timestamp){};
+  FeatHelper(const Vector3& A_f,
+             const Vector2& uv,
+             const Vector2& uvn,
+             const MSCEqFSE3StateSharedPtr& anchor,
+             const MSCEqFSE3StateSharedPtr& clone,
+             const fp& timestamp)
+      : A_f_(A_f), uv_(uv), uvn_(uvn), anchor_(anchor), clone_(clone), timetamp_(timestamp){};
 
-  const SE3& A_E_;                        //!< Anchor E element
-  const Vector3& A_f_;                    //!< Triangulated feature in anchor frame
-  const Vector2& uvn_;                    //!< Normalized (measured) feature coordinates
-  const MSCEqFSE3StateSharedPtr& clone_;  //!< Clone of the state at the time of the feature measurement
-  const fp& timetamp_;                    //!< Timestamp of the feature measurement
+  const Vector3& A_f_;                     //!< Triangulated feature in anchor frame
+  const Vector2& uv_;                      //!< (measured) feature coordinates
+  const Vector2& uvn_;                     //!< Normalized (measured) feature coordinates
+  const MSCEqFSE3StateSharedPtr& anchor_;  //!< Anchor
+  const MSCEqFSE3StateSharedPtr& clone_;   //!< Clone of the state at the time of the feature measurement
+  const fp& timetamp_;                     //!< Timestamp of the feature measurement
 };
 
 /**

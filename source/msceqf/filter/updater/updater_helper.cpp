@@ -47,12 +47,20 @@ void ProjectionHelperZ1::innovationBlock(const MSCEqFState& X,
                                          MatrixXBlockRowRef Cf_block_row)
 {
   // feature in origin frmae and camera frame
-  Vector3 G0_f = feat.A_E_ * feat.A_f_;
+  Vector3 G0_f = feat.anchor_->E_ * feat.A_f_;
   Vector3 C_f = feat.clone_->E_.inv() * G0_f;
 
-  // precompute some terms (K0 * L * dpi(C_f) and L * pi(C_f))
-  Eigen::Matrix<fp, 2, 3> K0Ldpi = (xi0.K() * X.L()).asMatrix().block<2, 2>(0, 0) * dpi(C_f);
-  Vector3 Lpi_homogenous = X.L().asMatrix() * pi(C_f);
+  // // [DEBUG]
+  // std::cout << "feat.clone_->E_: " << feat.clone_->E_.asMatrix() << std::endl;
+  // std::cout << "feat.feat.anchor_->E_: " << feat.anchor_->E_.asMatrix() << std::endl;
+
+  // precompute D = K0 * L * dpi(C_f) if intrinsics are calibrated, D = dpi(C_f) otherwise
+  Eigen::Matrix<fp, 2, 3> D = X.opts_.enable_camera_intrinsics_calibration_ ?
+                                  (xi0.K() * X.L()).asMatrix().block<2, 2>(0, 0) * dpi(C_f) :
+                                  dpi(C_f);
+
+  // Precompute P = L * pi(C_f) if intrinsics are calibrated, P = pi(C_f) otherwise
+  Vector3 P = X.opts_.enable_camera_intrinsics_calibration_ ? X.L().asMatrix() * pi(C_f) : pi(C_f);
 
   if (X.opts_.enable_camera_extrinsics_calibration_)
   {
@@ -60,8 +68,8 @@ void ProjectionHelperZ1::innovationBlock(const MSCEqFState& X,
     A.block<3, 3>(0, 0) = SO3::wedge(G0_f);
     A.block<3, 3>(0, 3) = -Matrix3::Identity();
 
-    const uint& col_idx = X.stateElementIndex(MSCEqFStateElementName::E);
-    C_block_row.block(0, col_idx, block_rows_, 6).noalias() = K0Ldpi * X.E().inv().R() * A;
+    C_block_row.block(0, feat.clone_->getIndex(), block_rows_, 6).noalias() = D * feat.clone_->E_.inv().R() * A;
+    C_block_row.block(0, feat.anchor_->getIndex(), block_rows_, 6).noalias() = -D * feat.clone_->E_.inv().R() * A;
   }
   else
   {
@@ -70,18 +78,18 @@ void ProjectionHelperZ1::innovationBlock(const MSCEqFState& X,
 
   if (X.opts_.enable_camera_intrinsics_calibration_)
   {
-    const uint& col_idx = X.stateElementIndex(MSCEqFStateElementName::L);
-    C_block_row.block(0, col_idx, block_rows_, 4).noalias() =
-        xi0.K().asMatrix().block<2, 2>(0, 0) * UpdaterHelper::Xi(Lpi_homogenous);
+    C_block_row.block(0, X.stateElementIndex(MSCEqFStateElementName::L), block_rows_, 4).noalias() =
+        xi0.K().asMatrix().block<2, 2>(0, 0) * UpdaterHelper::Xi(P);
   }
 
   switch (feature_representation_)
   {
     case FeatureRepresentation::EUCLIDEAN:
-      Cf_block_row = K0Ldpi * X.E().inv().R();
+      Cf_block_row = D * xi0.P().R() * xi0.S().R() * feat.anchor_->E_.R();
       break;
     case FeatureRepresentation::ANCHORED_INVERSE_DEPTH:
-      Cf_block_row = K0Ldpi * (X.E().inv() * feat.A_E_).R() * UpdaterHelper::inverseDepthJacobian(feat.A_f_);
+      Cf_block_row =
+          D * xi0.P().R() * xi0.S().R() * feat.anchor_->E_.R() * UpdaterHelper::inverseDepthJacobian(feat.A_f_);
       break;
     case FeatureRepresentation::ANCHORED_POLAR:
       Cf_block_row = Eigen::Matrix<fp, 2, 4>::Zero();
@@ -92,7 +100,21 @@ void ProjectionHelperZ1::innovationBlock(const MSCEqFState& X,
   }
 
   // Residual
-  delta_block_row = feat.uvn_ - (xi0.K().asMatrix() * Lpi_homogenous).segment<2>(0);
+  if (X.opts_.enable_camera_intrinsics_calibration_)
+  {
+    delta_block_row = feat.uv_ - (xi0.K().asMatrix() * P).segment<2>(0);
+  }
+  else
+  {
+    delta_block_row = feat.uvn_ - P.segment<2>(0);
+  }
+
+  fp angle = std::acos(feat.uvn_.dot(P.segment<2>(0)) / (feat.uvn_.norm() * P.segment<2>(0).norm()));
+  if (std::isnan(angle) || std::isinf(angle))
+  {
+    std::cout << "NAN?" << std::endl;
+  }
+  std::cout << "residual angle: " << angle * 180 / 3.14 << std::endl;
 }
 
 Eigen::Matrix<fp, 2, 4> UpdaterHelper::Xi(const Vector3& f)
@@ -122,8 +144,8 @@ void UpdaterHelper::nullspaceProjection(Eigen::Ref<MatrixX> Cf, MatrixXBlockRowR
 
   MatrixX A = Q.block(0, 0, Cf.rows(), Cf.cols()).transpose();
 
-  Ct = A * Ct;
-  delta = A * delta;
+  Ct.block(0, 0, A.rows(), Ct.cols()) = A * Ct;
+  delta.segment(0, A.rows()) = A * delta;
 }
 
 void UpdaterHelper::updateQRCompression(MatrixX& C, VectorX& delta)
@@ -148,22 +170,25 @@ bool UpdaterHelper::chi2Test(const MSCEqFState& X,
 {
   const auto& dof = delta_block.rows();
 
-  // get covariance of variables involved in update
-  std::vector<MSCEqFState::MSCEqFStateKey> keys;
-  if (X.opts_.enable_camera_extrinsics_calibration_)
-  {
-    keys.push_back(MSCEqFStateElementName::E);
-  }
-  else
-  {
-    // [TODO]
-  }
-  if (X.opts_.enable_camera_intrinsics_calibration_)
-  {
-    keys.push_back(MSCEqFStateElementName::L);
-  }
+  // [TODO] For now let's use cov_.cols() and make it simple... Will work only with involved variables in a second stage
 
-  MatrixX S = Ct_block * X.subCov(keys) * Ct_block.transpose();
+  // // get covariance of variables involved in update
+  // std::vector<MSCEqFState::MSCEqFStateKey> keys;
+  // if (X.opts_.enable_camera_extrinsics_calibration_)
+  // {
+  //   keys.push_back(MSCEqFStateElementName::E);
+  // }
+  // else
+  // {
+  //   // [TODO]
+  // }
+  // if (X.opts_.enable_camera_intrinsics_calibration_)
+  // {
+  //   keys.push_back(MSCEqFStateElementName::L);
+  // }
+
+  // MatrixX S = Ct_block * X.subCov(keys) * Ct_block.transpose();
+  MatrixX S = Ct_block * X.cov() * Ct_block.transpose();
   S.diagonal() += Eigen::VectorXd::Ones(S.rows()) * pixel_std * pixel_std;
   fp chi2 = delta_block.dot(S.llt().solve(delta_block));
 
