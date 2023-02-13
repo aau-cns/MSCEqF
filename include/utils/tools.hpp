@@ -79,7 +79,8 @@ static Numeric random(Numeric from, Numeric to)
  */
 static inline void trimString(std::string& s)
 {
-  s.erase(std::remove_if(s.begin(), s.end(), [](unsigned char ch) { return std::isspace(ch); }), s.end());
+  s.erase(s.begin(), std::find_if_not(s.begin(), s.end(), [](unsigned char ch) { return std::isspace(ch); }));
+  s.erase(std::find_if_not(s.rbegin(), s.rend(), [](unsigned char ch) { return std::isspace(ch); }).base(), s.end());
 }
 
 /**
