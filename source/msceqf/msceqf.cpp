@@ -29,6 +29,22 @@ MSCEqF::MSCEqF(const std::string& params_filepath)
 {
 }
 
+MSCEqF::MSCEqF(const std::string& params_filepath, const Quaternion& q)
+    : parser_(params_filepath)
+    , opts_(parser_.parseOptions())
+    , X_(opts_.state_options_)
+    , xi0_(opts_.state_options_)
+    , track_manager_(opts_.track_manager_options_, opts_.state_options_.initial_camera_intrinsics_.k())
+    , initializer_(opts_.init_options_)
+    , propagator_(opts_.propagator_options_)
+    , updater_(opts_.updater_options_, xi0_)
+    , ids_to_update_()
+    , timestamp_(-1)
+    , is_filter_initialized_(false)
+{
+  X_.setMSCEqFStateInitialOrientation(q);
+}
+
 void MSCEqF::processImuMeasurement(const Imu& imu)
 {
   assert(imu.timestamp_ >= 0);
@@ -126,10 +142,6 @@ void MSCEqF::processCameraMeasurement(Camera& cam)
 
   // Get state estimate
   SystemState xi = stateEstimate();
-
-  // [DEBUG]
-  std::cout << "EST quaternion: " << Quaternion(xi.P().R()).coeffs().transpose() << std::endl;
-  std::cout << "EST position: " << xi.P().x().transpose() << std::endl;
 
   // Update camera intrinsics if we are doing online camera intrinsic calibration
   if (X_.opts_.enable_camera_intrinsics_calibration_)

@@ -36,6 +36,14 @@ class MSCEqF
   MSCEqF(const std::string& params_filepath);
 
   /**
+   * @brief MSCEqF Constructor with given initial orientation
+   *
+   * @param params_filepath filepath of the parameter file to be parsed
+   * @param q initial otientation
+   */
+  MSCEqF(const std::string& params_filepath, const Quaternion& q);
+
+  /**
    * @brief This function provide a simple interface for processing measurements of different kind.
    *
    * @tparam T Type of the measurement
