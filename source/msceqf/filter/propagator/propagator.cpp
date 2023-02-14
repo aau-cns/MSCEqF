@@ -209,11 +209,20 @@ void Propagator::propagateCovariance(MSCEqFState& X, const SystemState& xi0, con
 {
   MatrixX Phi_core = coreStateTransitionMatrix(X, xi0, u, dt);
 
+  // MatrixX Phi = MatrixX::Identity(X.cov_.rows(), X.cov_.cols());
+  // Phi.block(0, 0, Phi_core.rows(), Phi_core.cols()) = Phi_core;
+
+  // X.cov_ = Phi * X.cov_ * Phi.transpose();
+
   // Core covariance propagation Phi * Sigma * Phi^T
   X.cov_.block(0, 0, Phi_core.rows(), Phi_core.cols()) =
       Phi_core * X.cov_.block(0, 0, Phi_core.rows(), Phi_core.cols()) * Phi_core.transpose();
 
-  // [TODO] features covariance propagation
+  // Cross covariance propagation
+  X.cov_.block(0, Phi_core.cols(), Phi_core.rows(), X.cov_.cols() - Phi_core.cols()) =
+      Phi_core * X.cov_.block(0, Phi_core.cols(), Phi_core.rows(), X.cov_.cols() - Phi_core.cols());
+  X.cov_.block(Phi_core.rows(), 0, X.cov_.rows() - Phi_core.rows(), Phi_core.cols()) =
+      X.cov_.block(Phi_core.rows(), 0, X.cov_.rows() - Phi_core.rows(), Phi_core.cols()) * Phi_core.transpose();
 
   // Add discrete time processs noise covariance
   MatrixX M = inputMatrix(X, xi0, dt);
