@@ -9,8 +9,8 @@
 //
 // You can contact the authors at <alessandro.fornasier@ieee.org>
 
-#ifndef CSV_PARSER_HPP_
-#define CSV_PARSER_HPP_
+#ifndef DATA_PARSER_HPP_
+#define DATA_PARSER_HPP_
 
 #include <utility>
 #include <variant>
@@ -25,7 +25,6 @@
 #include <opencv2/opencv.hpp>
 
 #include "sensors/sensor_data.hpp"
-#include "utils/logger.hpp"
 #include "utils/tools.hpp"
 
 namespace msceqf
@@ -49,11 +48,12 @@ struct Groundtruth
 
 namespace utils
 {
-class csvParser
+class dataParser
 {
  public:
   /**
-   * @brief Construct the csv parser
+   * @brief Construct the data parser.
+   * The data parser reads the groundtruth data, the imu data and the image data from a csv file
    *
    * @param imu_data_filename filename of csv file containing IMU data
    * @param groundtruth_data_filename filename of csv file containing groundtruth data
@@ -70,13 +70,13 @@ class csvParser
    * @note image_header_titles has to be provided according to the following order
    * @note [t, img_filename]
    */
-  csvParser(const std::string& imu_data_filename,
-            const std::string& groundtruth_data_filename,
-            const std::string& image_data_filename,
-            const std::string& image_data_folder,
-            const std::vector<std::string>& imu_header_titles,
-            const std::vector<std::string>& groundtruth_header_titles,
-            const std::vector<std::string>& image_header_titles)
+  dataParser(const std::string& imu_data_filename,
+             const std::string& groundtruth_data_filename,
+             const std::string& image_data_filename,
+             const std::string& image_data_folder,
+             const std::vector<std::string>& imu_header_titles,
+             const std::vector<std::string>& groundtruth_header_titles,
+             const std::vector<std::string>& image_header_titles)
       : imu_filename_(imu_data_filename)
       , groundtruth_filename_(groundtruth_data_filename)
       , image_data_filename_(image_data_filename)
@@ -106,7 +106,8 @@ class csvParser
   }
 
   /**
-   * @brief Construct the csv parser
+   * @brief Construct the data parser.
+   * The data parser reads the groundtruth data, the imu data and the image data from a csv file
    *
    * @param imu_data_filename filename of csv file containing IMU data
    * @param groundtruth_data_filename filename of csv file containing groundtruth data
@@ -123,13 +124,13 @@ class csvParser
    * @note image_header_titles has to be provided according to the following order
    * @note [t, img_filename]
    */
-  csvParser(std::string&& imu_data_filename,
-            std::string&& groundtruth_data_filename,
-            std::string&& image_data_filename,
-            std::string&& image_data_folder,
-            std::vector<std::string>&& imu_header_titles,
-            std::vector<std::string>&& groundtruth_header_titles,
-            std::vector<std::string>&& image_header_titles)
+  dataParser(std::string&& imu_data_filename,
+             std::string&& groundtruth_data_filename,
+             std::string&& image_data_filename,
+             std::string&& image_data_folder,
+             std::vector<std::string>&& imu_header_titles,
+             std::vector<std::string>&& groundtruth_header_titles,
+             std::vector<std::string>&& image_header_titles)
       : imu_filename_(imu_data_filename)
       , groundtruth_filename_(groundtruth_data_filename)
       , image_data_filename_(image_data_filename)
@@ -171,33 +172,14 @@ class csvParser
     read_gt_ = groundtruth_filename_.compare("") != 0;
     read_images_ = image_data_filename_.compare("") != 0;
 
-    if (read_imu_ && !imufile)
-    {
-      throw std::runtime_error("Error opening IMU file \"" + imu_filename_ + "\". Exit programm.");
-    }
-
-    if (read_gt_ && !gtfile)
-    {
-      throw std::runtime_error("Error opening GT file \"" + groundtruth_filename_ + "\". Exit programm.");
-    }
-    if (read_images_ && !(imgfile && std::filesystem::is_directory(image_data_folder)))
-    {
-      throw std::runtime_error("Error opening IMAGE file \"" + image_data_filename_ + "\". Exit programm.");
-    }
-
-    if (read_imu_)
-    {
-      Logger::info("Opening and reading " + imu_filename_ + "...");
-      parseAndCheckImu(imufile);
-    }
-    else
-    {
-      Logger::info("Imu data file not provided. Skipping");
-    }
-
     if (read_gt_)
     {
-      Logger::info("Opening and reading " + groundtruth_filename_ + "...");
+      if (!gtfile)
+      {
+        throw std::runtime_error("Error opening GT file: \"" + groundtruth_filename_ + "\". Exit programm.");
+      }
+
+      Logger::info("Opening and reading: " + groundtruth_filename_ + "...");
       parseAndCheckGt(gtfile);
     }
     else
@@ -205,68 +187,35 @@ class csvParser
       Logger::info("Groundtruth data file not provided. Skipping");
     }
 
+    if (read_imu_)
+    {
+      if (!imufile)
+      {
+        throw std::runtime_error("Error opening IMU file: \"" + imu_filename_ + "\". Exit programm.");
+      }
+
+      Logger::info("Opening and reading: " + imu_filename_ + "...");
+      parseAndCheckImu(imufile);
+    }
+    else
+    {
+      Logger::info("Imu data file not provided. Skipping");
+    }
+
     if (read_images_)
     {
-      Logger::info("Opening and reading " + image_data_filename_ + "...");
+      if (!(imgfile && std::filesystem::is_directory(image_data_folder)))
+      {
+        throw std::runtime_error("Error opening IMAGE file: \"" + image_data_filename_ + "\". Exit programm.");
+      }
+
+      Logger::info("Opening and reading: " + image_data_filename_ + "...");
       parseAndCheckImages(imgfile);
     }
     else
     {
       Logger::info("Image data file not provided. Skipping");
     }
-  }
-
-  void parseAndCheckImu(std::ifstream& imufile)
-  {
-    std::regex regex("^[+-]?((\\d*\\.\\d+)|(\\d+\\.\\d*)|(\\d+))([eE][+-]?\\d+)?|^nan$");
-
-    std::string line;
-    std::vector<std::string> header;
-    std::vector<std::vector<msceqf::fp>> data;
-    std::vector<int> imu_indices;
-
-    int rows_cnt = 0;
-    if (imufile.good())
-    {
-      std::getline(imufile, line);
-      parseLine(line, header);
-
-      while (std::getline(imufile, line))
-      {
-        std::vector<msceqf::fp> tmp;
-        parseLine(line, tmp, regex);
-        data.emplace_back(tmp);
-        ++rows_cnt;
-      }
-
-      if (!getIndices(header, imu_header_titles_, imu_indices))
-      {
-        throw std::runtime_error("Required imu missing. Exit programm.");
-      }
-
-      imu_data_.clear();
-
-      for (const auto& it : data)
-      {
-        msceqf::Imu imu;
-        imu.timestamp_ = it.at(imu_indices.at(0)) > 10e12 ? it.at(imu_indices.at(0)) / 1e9 : it.at(imu_indices.at(0));
-        imu.ang_.x() = it.at(imu_indices.at(1));
-        imu.ang_.y() = it.at(imu_indices.at(2));
-        imu.ang_.z() = it.at(imu_indices.at(3));
-        imu.acc_.x() = it.at(imu_indices.at(4));
-        imu.acc_.y() = it.at(imu_indices.at(5));
-        imu.acc_.z() = it.at(imu_indices.at(6));
-        imu_data_.emplace_back(imu);
-      }
-    }
-    else
-    {
-      throw std::runtime_error("Corrupted file. Exit programm.");
-    }
-
-    std::sort(imu_data_.begin(), imu_data_.end());
-
-    imufile.close();
   }
 
   void parseAndCheckGt(std::ifstream& gtfile)
@@ -320,6 +269,7 @@ class csvParser
         gt.ba_.x() = it.at(groundtruth_indices.at(14));
         gt.ba_.y() = it.at(groundtruth_indices.at(15));
         gt.ba_.z() = it.at(groundtruth_indices.at(16));
+        gt.q_.normalize();
         groundtruth_data_.emplace_back(gt);
       }
     }
@@ -331,6 +281,59 @@ class csvParser
     std::sort(groundtruth_data_.begin(), groundtruth_data_.end());
 
     gtfile.close();
+  }
+
+  void parseAndCheckImu(std::ifstream& imufile)
+  {
+    std::regex regex("^[+-]?((\\d*\\.\\d+)|(\\d+\\.\\d*)|(\\d+))([eE][+-]?\\d+)?|^nan$");
+
+    std::string line;
+    std::vector<std::string> header;
+    std::vector<std::vector<msceqf::fp>> data;
+    std::vector<int> imu_indices;
+
+    int rows_cnt = 0;
+    if (imufile.good())
+    {
+      std::getline(imufile, line);
+      parseLine(line, header);
+
+      while (std::getline(imufile, line))
+      {
+        std::vector<msceqf::fp> tmp;
+        parseLine(line, tmp, regex);
+        data.emplace_back(tmp);
+        ++rows_cnt;
+      }
+
+      if (!getIndices(header, imu_header_titles_, imu_indices))
+      {
+        throw std::runtime_error("Required imu missing. Exit programm.");
+      }
+
+      imu_data_.clear();
+
+      for (const auto& it : data)
+      {
+        msceqf::Imu imu;
+        imu.timestamp_ = it.at(imu_indices.at(0)) > 10e12 ? it.at(imu_indices.at(0)) / 1e9 : it.at(imu_indices.at(0));
+        imu.ang_.x() = it.at(imu_indices.at(1));
+        imu.ang_.y() = it.at(imu_indices.at(2));
+        imu.ang_.z() = it.at(imu_indices.at(3));
+        imu.acc_.x() = it.at(imu_indices.at(4));
+        imu.acc_.y() = it.at(imu_indices.at(5));
+        imu.acc_.z() = it.at(imu_indices.at(6));
+        imu_data_.emplace_back(imu);
+      }
+    }
+    else
+    {
+      throw std::runtime_error("Corrupted file. Exit programm.");
+    }
+
+    std::sort(imu_data_.begin(), imu_data_.end());
+
+    imufile.close();
   }
 
   void parseAndCheckImages(std::ifstream& imgsfile)
@@ -587,9 +590,9 @@ class csvParser
     return true;
   }
 
-  std::string imu_filename_;          //!< Filename of csv file containing IMU data
-  std::string groundtruth_filename_;  //!< Filename of csv file containing GT data
-  std::string image_data_filename_;   //!< Filename of csv file containing IMAGE data
+  std::string imu_filename_;          //!< Name of csv file containing IMU data
+  std::string groundtruth_filename_;  //!< Name of csv file containing GT data
+  std::string image_data_filename_;   //!< Name of csv file containing IMAGE data
   std::string image_data_folder;      //!< Folder containing IMAGE data
 
   std::vector<std::string> imu_header_titles_;          //!< Titles for IMU entries
@@ -606,4 +609,4 @@ class csvParser
 };
 }  // namespace utils
 
-#endif  // CSV_PARSER_HPP_
+#endif  // DATA_PARSER_HPP_
