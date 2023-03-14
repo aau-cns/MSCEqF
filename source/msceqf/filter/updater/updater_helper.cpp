@@ -46,7 +46,10 @@ void ProjectionHelperZ1::innovationBlock(const MSCEqFState& X,
                                          VectorXBlockRowRef delta_block_row,
                                          MatrixXBlockRowRef Cf_block_row)
 {
-  Vector3 G0_f = feat.anchor_->E_ * feat.A_f_;
+  // Here feat.A_f_ is the feature in the global frame (groundturth)
+  Vector3 G0_f = (xi0.P() * xi0.S()).inv() * feat.A_f_;
+
+  // Vector3 G0_f = feat.anchor_->E_ * feat.A_f_;
 
   // feature in origin frmae and camera frame
   Vector3 C_f = feat.clone_->E_.inv() * G0_f;

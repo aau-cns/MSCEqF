@@ -95,20 +95,23 @@ void Updater::update(MSCEqFState& X, const Tracks& tracks, std::unordered_set<ui
       continue;
     }
 
-    Vector3 A_f = Vector3::Zero();
+    Vector3 A_f = track.Gf_;
     const auto& anchor = X.clones_.at(track.timestamps_.front());
 
-    if (!linearTriangulation(X, track, anchor->E_, A_f))
-    {
-      utils::Logger::debug("Linear triangulation failed for track id: " + std::to_string(id));
-      continue;
-    }
+    // Vector3 A_f = Vector3::Zero();
+    // const auto& anchor = X.clones_.at(track.timestamps_.front());
 
-    if (opts_.refine_traingulation_)
-    {
-      utils::Logger::debug("Nonlinear triangulation for track id: " + std::to_string(id) + "...");
-      nonlinearTriangulation(X, track, anchor->E_, A_f);
-    }
+    // if (!linearTriangulation(X, track, anchor->E_, A_f))
+    // {
+    //   utils::Logger::debug("Linear triangulation failed for track id: " + std::to_string(id));
+    //   continue;
+    // }
+
+    // if (opts_.refine_traingulation_)
+    // {
+    //   utils::Logger::debug("Nonlinear triangulation for track id: " + std::to_string(id) + "...");
+    //   nonlinearTriangulation(X, track, anchor->E_, A_f);
+    // }
 
     const auto& track_size = track.size();
 

@@ -51,6 +51,7 @@ class MSCEqF
    */
   void processMeasurement(const Imu& meas) { processImuMeasurement(meas); }
   void processMeasurement(Camera& meas) { processCameraMeasurement(meas); }
+  void processMeasurement(const TriangulatedFeatures& meas) { processFeaturesMeasurement(meas); }
 
   /**
    * @brief Get a constant reference to the MSCEqF options
@@ -95,6 +96,13 @@ class MSCEqF
    * @param cam
    */
   void processCameraMeasurement(Camera& cam);
+
+  /**
+   * @brief Process triangulated features measurement.
+   *
+   * @param features
+   */
+  void processFeaturesMeasurement(const TriangulatedFeatures& features);
 
   OptionParser parser_;  //!< The parser to parse all the configuration from a yaml file
   MSCEqFOptions opts_;   //!< All the MSCEqF options

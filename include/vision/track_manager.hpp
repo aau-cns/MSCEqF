@@ -44,6 +44,13 @@ class TrackManager
   void processCamera(Camera& cam);
 
   /**
+   * @brief Process a single features measurement. update tracks
+   *
+   * @param imu
+   */
+  void processFeatures(const TriangulatedFeatures& features);
+
+  /**
    * @brief get all the tracks
    *
    * @return const Tracks&

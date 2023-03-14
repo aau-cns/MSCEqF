@@ -58,7 +58,7 @@ class dataParser
    * @param imu_data_filename filename of csv file containing IMU data
    * @param groundtruth_data_filename filename of csv file containing groundtruth data
    * @param image_data_filename filename of csv file containing image data (timestamp and image filename)
-   * @param image_data_folder folder containing the images
+   * @param image_data_folder_ folder containing the images
    * @param imu_header_titles header titles of the imu data file
    * @param groundtruth_header_titles header titles of the groundtruth data file
    * @param image_header_titles  header titles of the image data file
@@ -73,77 +73,29 @@ class dataParser
   dataParser(const std::string& imu_data_filename,
              const std::string& groundtruth_data_filename,
              const std::string& image_data_filename,
-             const std::string& image_data_folder,
+             const std::string& image_data_folder_,
+             const std::string& features_data_filename,
              const std::vector<std::string>& imu_header_titles,
              const std::vector<std::string>& groundtruth_header_titles,
-             const std::vector<std::string>& image_header_titles)
+             const std::vector<std::string>& image_header_titles,
+             const std::vector<std::string>& features_header_titles)
       : imu_filename_(imu_data_filename)
       , groundtruth_filename_(groundtruth_data_filename)
       , image_data_filename_(image_data_filename)
-      , image_data_folder(image_data_folder)
+      , image_data_folder_(image_data_folder_)
+      , features_data_filename_(features_data_filename)
       , imu_header_titles_(imu_header_titles)
       , groundtruth_header_titles_(groundtruth_header_titles)
       , image_header_titles_(image_header_titles)
+      , features_header_titles_(features_header_titles)
       , imu_data_()
       , groundtruth_data_()
       , image_data_()
+      , features_data_()
       , read_imu_(false)
       , read_gt_(false)
       , read_images_(false)
-  {
-    for (auto& s : imu_header_titles_)
-    {
-      std::transform(s.begin(), s.end(), s.begin(), ::tolower);
-    }
-    for (auto& s : groundtruth_header_titles_)
-    {
-      std::transform(s.begin(), s.end(), s.begin(), ::tolower);
-    }
-    for (auto& s : image_header_titles_)
-    {
-      std::transform(s.begin(), s.end(), s.begin(), ::tolower);
-    }
-  }
-
-  /**
-   * @brief Construct the data parser.
-   * The data parser reads the groundtruth data, the imu data and the image data from a csv file
-   *
-   * @param imu_data_filename filename of csv file containing IMU data
-   * @param groundtruth_data_filename filename of csv file containing groundtruth data
-   * @param image_data_filename filename of csv file containing image data (timestamp and image filename)
-   * @param image_data_folder folder containing the images
-   * @param imu_header_titles header titles of the imu data file
-   * @param groundtruth_header_titles header titles of the groundtruth data file
-   * @param image_header_titles  header titles of the image data file
-   *
-   * @note imu_header_titles has to be provided according to the following order
-   * @note [t, ang_x, ang_y, ang_z, acc_x, acc_y, acc_z]
-   * @note groundtruth_header_titles has to be provided according to the following order
-   * @note [t, q_x, q_y, q_z, q_w, p_x, p_y, p_z, v_x, v_y, v_z, bw_x, bw_y, bw_z, ba_x, ba_y, ba_z]
-   * @note image_header_titles has to be provided according to the following order
-   * @note [t, img_filename]
-   */
-  dataParser(std::string&& imu_data_filename,
-             std::string&& groundtruth_data_filename,
-             std::string&& image_data_filename,
-             std::string&& image_data_folder,
-             std::vector<std::string>&& imu_header_titles,
-             std::vector<std::string>&& groundtruth_header_titles,
-             std::vector<std::string>&& image_header_titles)
-      : imu_filename_(imu_data_filename)
-      , groundtruth_filename_(groundtruth_data_filename)
-      , image_data_filename_(image_data_filename)
-      , image_data_folder(image_data_folder)
-      , imu_header_titles_(imu_header_titles)
-      , groundtruth_header_titles_(groundtruth_header_titles)
-      , image_header_titles_(image_header_titles)
-      , imu_data_()
-      , groundtruth_data_()
-      , image_data_()
-      , read_imu_(false)
-      , read_gt_(false)
-      , read_images_(false)
+      , read_features_(false)
   {
     for (auto& s : imu_header_titles_)
     {
@@ -167,10 +119,12 @@ class dataParser
     std::ifstream imufile(imu_filename_);
     std::ifstream gtfile(groundtruth_filename_);
     std::ifstream imgfile(image_data_filename_);
+    std::ifstream featfile(features_data_filename_);
 
     read_imu_ = imu_filename_.compare("") != 0;
     read_gt_ = groundtruth_filename_.compare("") != 0;
     read_images_ = image_data_filename_.compare("") != 0;
+    read_features_ = features_data_filename_.compare("") != 0;
 
     if (read_gt_)
     {
@@ -204,7 +158,7 @@ class dataParser
 
     if (read_images_)
     {
-      if (!(imgfile && std::filesystem::is_directory(image_data_folder)))
+      if (!(imgfile && std::filesystem::is_directory(image_data_folder_)))
       {
         throw std::runtime_error("Error opening IMAGE file: \"" + image_data_filename_ + "\". Exit programm.");
       }
@@ -216,6 +170,21 @@ class dataParser
     {
       Logger::info("Image data file not provided. Skipping");
     }
+
+    if (read_features_)
+    {
+      if (!featfile)
+      {
+        throw std::runtime_error("Error opening FEATURES file: \"" + features_data_filename_ + "\". Exit programm.");
+      }
+
+      Logger::info("Opening and reading: " + features_data_filename_ + "...");
+      parseAndCheckFeatures(featfile);
+    }
+    else
+    {
+      Logger::info("Features data file not provided. Skipping");
+    }
   }
 
   void parseAndCheckGt(std::ifstream& gtfile)
@@ -226,6 +195,8 @@ class dataParser
     std::vector<std::string> header;
     std::vector<std::vector<msceqf::fp>> data;
     std::vector<int> groundtruth_indices;
+
+    bool have_bias = groundtruth_header_titles_.size() == 17 ? true : false;
 
     int rows_cnt = 0;
     if (gtfile.good())
@@ -257,19 +228,27 @@ class dataParser
         gt.q_.y() = it.at(groundtruth_indices.at(2));
         gt.q_.z() = it.at(groundtruth_indices.at(3));
         gt.q_.w() = it.at(groundtruth_indices.at(4));
+        gt.q_.normalize();
+
         gt.p_.x() = it.at(groundtruth_indices.at(5));
         gt.p_.y() = it.at(groundtruth_indices.at(6));
         gt.p_.z() = it.at(groundtruth_indices.at(7));
+
         gt.v_.x() = it.at(groundtruth_indices.at(8));
         gt.v_.y() = it.at(groundtruth_indices.at(9));
         gt.v_.z() = it.at(groundtruth_indices.at(10));
-        gt.bw_.x() = it.at(groundtruth_indices.at(11));
-        gt.bw_.y() = it.at(groundtruth_indices.at(12));
-        gt.bw_.z() = it.at(groundtruth_indices.at(13));
-        gt.ba_.x() = it.at(groundtruth_indices.at(14));
-        gt.ba_.y() = it.at(groundtruth_indices.at(15));
-        gt.ba_.z() = it.at(groundtruth_indices.at(16));
-        gt.q_.normalize();
+
+        if (have_bias)
+        {
+          gt.bw_.x() = it.at(groundtruth_indices.at(11));
+          gt.bw_.y() = it.at(groundtruth_indices.at(12));
+          gt.bw_.z() = it.at(groundtruth_indices.at(13));
+
+          gt.ba_.x() = it.at(groundtruth_indices.at(14));
+          gt.ba_.y() = it.at(groundtruth_indices.at(15));
+          gt.ba_.z() = it.at(groundtruth_indices.at(16));
+        }
+
         groundtruth_data_.emplace_back(gt);
       }
     }
@@ -316,13 +295,17 @@ class dataParser
       for (const auto& it : data)
       {
         msceqf::Imu imu;
+
         imu.timestamp_ = it.at(imu_indices.at(0)) > 10e12 ? it.at(imu_indices.at(0)) / 1e9 : it.at(imu_indices.at(0));
+
         imu.ang_.x() = it.at(imu_indices.at(1));
         imu.ang_.y() = it.at(imu_indices.at(2));
         imu.ang_.z() = it.at(imu_indices.at(3));
+
         imu.acc_.x() = it.at(imu_indices.at(4));
         imu.acc_.y() = it.at(imu_indices.at(5));
         imu.acc_.z() = it.at(imu_indices.at(6));
+
         imu_data_.emplace_back(imu);
       }
     }
@@ -336,7 +319,7 @@ class dataParser
     imufile.close();
   }
 
-  void parseAndCheckImages(std::ifstream& imgsfile)
+  void parseAndCheckImages(std::ifstream& imgfile)
   {
     std::string line;
     std::vector<std::string> header;
@@ -344,12 +327,12 @@ class dataParser
     std::vector<int> image_indices;
 
     int rows_cnt = 0;
-    if (imgsfile.good())
+    if (imgfile.good())
     {
-      std::getline(imgsfile, line);
+      std::getline(imgfile, line);
       parseLine(line, header);
 
-      while (std::getline(imgsfile, line))
+      while (std::getline(imgfile, line))
       {
         std::vector<std::string> tmp;
         parseLine(line, tmp);
@@ -367,10 +350,14 @@ class dataParser
       for (const auto& it : data)
       {
         msceqf::Camera cam;
+
         cam.timestamp_ = std::stod(it.at(image_indices.at(0))) > 10e12 ? std::stod(it.at(image_indices.at(0))) / 1e9 :
                                                                          std::stod(it.at(image_indices.at(0)));
-        cam.image_ = cv::imread(image_data_folder + it.at(image_indices.at(1)));
+
+        cam.image_ = cv::imread(image_data_folder_ + it.at(image_indices.at(1)));
+
         cam.mask_ = cv::Mat::ones(cam.image_.rows, cam.image_.cols, CV_8UC1);
+
         image_data_.emplace_back(cam);
       }
     }
@@ -381,7 +368,76 @@ class dataParser
 
     std::sort(image_data_.begin(), image_data_.end());
 
-    imgsfile.close();
+    imgfile.close();
+  }
+
+  void parseAndCheckFeatures(std::ifstream& featfile)
+  {
+    std::regex regex("^[+-]?((\\d*\\.\\d+)|(\\d+\\.\\d*)|(\\d+))([eE][+-]?\\d+)?|^nan$");
+
+    std::string line;
+    std::vector<std::string> header;
+    std::vector<std::vector<msceqf::fp>> data;
+    std::vector<int> feats_indices;
+
+    int rows_cnt = 0;
+    if (featfile.good())
+    {
+      std::getline(featfile, line);
+      parseLine(line, header);
+
+      while (std::getline(featfile, line))
+      {
+        std::vector<msceqf::fp> tmp;
+        parseLine(line, tmp, regex);
+        data.emplace_back(tmp);
+        ++rows_cnt;
+      }
+
+      if (!getIndices(header, features_header_titles_, feats_indices))
+      {
+        throw std::runtime_error("Required imu missing. Exit programm.");
+      }
+
+      int num_features = (feats_indices.size() - 1) / 5;
+
+      features_data_.clear();
+
+      int cnt = 1;
+      for (const auto& it : data)
+      {
+        if (std::isnan(it.at(feats_indices.at(1))))
+        {
+          ++cnt;
+          continue;
+        }
+
+        msceqf::TriangulatedFeatures feat;
+
+        feat.timestamp_ =
+            it.at(feats_indices.at(0)) > 10e12 ? it.at(feats_indices.at(0)) / 1e9 : it.at(feats_indices.at(0));
+
+        for (int i = 1; i < (5 * num_features); i += 5)
+        {
+          feat.points_.emplace_back(it.at(feats_indices.at(i)), it.at(feats_indices.at(i + 1)),
+                                    it.at(feats_indices.at(i + 2)));
+
+          feat.features_.uvs_.emplace_back(-1, -1);
+          feat.features_.normalized_uvs_.emplace_back(it.at(feats_indices.at(i + 3)), it.at(feats_indices.at(i + 4)));
+          feat.features_.ids_.emplace_back(cnt++);
+        }
+
+        features_data_.emplace_back(feat);
+      }
+    }
+    else
+    {
+      throw std::runtime_error("Corrupted file. Exit programm.");
+    }
+
+    std::sort(features_data_.begin(), features_data_.end());
+
+    featfile.close();
   }
 
   /**
@@ -406,7 +462,8 @@ class dataParser
   const std::vector<msceqf::Camera>& getImageData() const { return image_data_; }
 
   /**
-   * @brief Get a vector containing the timestamps of the sensors measurements (imu and camera)
+   * @brief Get a vector containing the timestamps of the sensors measurements (imu and camera).
+   * The returned vector is sorted in ascending order and without duplicates.
    *
    * @return const std::vector<msceqf::fp>
    */
@@ -421,7 +478,12 @@ class dataParser
     {
       timestamps.emplace_back(cam.timestamp_);
     }
+    for (const auto& feat : features_data_)
+    {
+      timestamps.emplace_back(feat.timestamp_);
+    }
     std::sort(timestamps.begin(), timestamps.end());
+    timestamps.erase(std::unique(timestamps.begin(), timestamps.end()), timestamps.end());
     return timestamps;
   }
 
@@ -480,6 +542,31 @@ class dataParser
     }
 
     return *gt;
+  }
+
+  /**
+   * @brief Get the feature data that is closer to a given timestamp
+   *
+   * @param timestamp
+   * @return msceqf::Feature
+   */
+  const msceqf::TriangulatedFeatures getCloserFeatureDataAt(const msceqf::fp& timestamp) const
+  {
+    auto feat = std::find_if(features_data_.begin(), features_data_.end(),
+                             [&](const auto& feat) { return feat.timestamp_ > timestamp; });
+
+    if (feat == features_data_.end())
+    {
+      throw std::runtime_error("No feature data found at timestamp " + std::to_string(timestamp));
+    }
+
+    if (feat != features_data_.begin() &&
+        (std::abs(feat->timestamp_ - timestamp) > std::abs((feat - 1)->timestamp_ - timestamp)))
+    {
+      return *(feat - 1);
+    }
+
+    return *feat;
   }
 
  private:
@@ -593,19 +680,27 @@ class dataParser
   std::string imu_filename_;          //!< Name of csv file containing IMU data
   std::string groundtruth_filename_;  //!< Name of csv file containing GT data
   std::string image_data_filename_;   //!< Name of csv file containing IMAGE data
-  std::string image_data_folder;      //!< Folder containing IMAGE data
+  std::string image_data_folder_;     //!< Folder containing IMAGE data
+
+  std::string features_data_filename_;
 
   std::vector<std::string> imu_header_titles_;          //!< Titles for IMU entries
   std::vector<std::string> groundtruth_header_titles_;  //!< Titles for GT entries
   std::vector<std::string> image_header_titles_;        //!< Titles for IMAGE entries
 
+  std::vector<std::string> features_header_titles_;
+
   std::vector<msceqf::Imu> imu_data_;                  //!< Raw IMU data read from the .csv file
   std::vector<msceqf::Groundtruth> groundtruth_data_;  //!< Raw GT data read from the .csv file
   std::vector<msceqf::Camera> image_data_;             //!< Raw IMAGE data read from the .csv file
 
+  std::vector<msceqf::TriangulatedFeatures> features_data_;
+
   bool read_imu_;     //!< Flag to read IMU data
-  bool read_gt_;      //!< Flag to read IMU data
-  bool read_images_;  //!< Flag to read IMU data
+  bool read_gt_;      //!< Flag to read GT data
+  bool read_images_;  //!< Flag to read IMAGE data
+
+  bool read_features_;
 };
 }  // namespace utils
 

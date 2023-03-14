@@ -155,6 +155,10 @@ if(${BUILD_TESTS})
 endif()
 
 ## Declare C++ examples
-add_executable(msceqf_euroc examples/euroc/euroc.cpp)
-target_include_directories(msceqf_euroc PRIVATE ${include_dirs})
-target_link_libraries(msceqf_euroc ${PROJECT_NAME} pthread)
+# add_executable(msceqf_euroc examples/euroc/euroc.cpp)
+# target_include_directories(msceqf_euroc PRIVATE ${include_dirs})
+# target_link_libraries(msceqf_euroc ${PROJECT_NAME} pthread)
+
+add_executable(msceqf_syntetic examples/syntetic/syntetic.cpp)
+target_include_directories(msceqf_syntetic PRIVATE ${include_dirs})
+target_link_libraries(msceqf_syntetic ${PROJECT_NAME} pthread)
