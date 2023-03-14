@@ -270,9 +270,14 @@ void MSCEqFState::stochasticCloning(const fp& timestamp)
     cov_.conservativeResizeLike(MatrixX::Zero(old_size + size_increment, old_size + size_increment));
 
     cov_.block(old_size, old_size, size_increment, size_increment) =
-        cov_.block(E_idx, E_idx, size_increment, size_increment);
-    cov_.block(0, old_size, old_size, size_increment) = cov_.block(0, E_idx, old_size, size_increment);
-    cov_.block(old_size, 0, size_increment, old_size) = cov_.block(E_idx, 0, size_increment, old_size);
+        cov_.block(E_idx, E_idx, size_increment, size_increment).eval();
+    cov_.block(0, old_size, old_size, size_increment) = cov_.block(0, E_idx, old_size, size_increment).eval();
+    cov_.block(old_size, 0, size_increment, old_size) = cov_.block(E_idx, 0, size_increment, old_size).eval();
+
+    assert((cov_.middleCols(E_idx, 6) - cov_.middleCols(old_size, 6)).norm() < 1e-9);
+    assert((cov_.middleRows(E_idx, 6) - cov_.middleRows(old_size, 6)).norm() < 1e-9);
+    assert((cov_.block(E_idx, E_idx, 6, 6) - cov_.block(old_size, old_size, 6, 6)).norm() < 1e-9);
+    assert((cov_ - cov_.transpose()).norm() < 1e-9);
   }
   else
   {
@@ -286,16 +291,18 @@ void MSCEqFState::marginalizeCloneAt(const fp& timestamp)
   const uint& idx = clone_to_remove->getIndex();
   const uint& size = clone_to_remove->getDof();
 
-  // Create a binary mask to slice the covariance
-  Eigen::MatrixXd mask = Eigen::MatrixXd::Ones(cov_.rows(), cov_.cols());
-  mask.block(idx, 0, size, cov_.cols()) = Eigen::MatrixXd::Zero(size, cov_.cols());
-  mask.block(0, idx, cov_.rows(), size) = Eigen::MatrixXd::Zero(cov_.rows(), size);
+  const Eigen::Index rows = cov_.rows();
+  const Eigen::Index cols = cov_.cols();
 
-  // Slice the covariance
-  cov_ = (mask.array() == 1).select(cov_, 0);
-  cov_.conservativeResize(cov_.rows() - size, cov_.cols() - size);
+  cov_.block(idx, 0, rows - idx - size, cols) = cov_.block(idx + size, 0, rows - idx - size, cols).eval();
+  cov_.block(0, idx, rows, cols - idx - size) = cov_.block(0, idx + size, rows, cols - idx - size).eval();
+  cov_.conservativeResize(rows - size, cols - size);
 
-  // Remove clone
+  for (auto& [timestamp, clone] : clones_)
+  {
+    clone->updateIndex(clone->getIndex() - size);
+  }
+
   clones_.erase(timestamp);
 
   utils::Logger::debug("Marginalized MSCEqF Clone element at time: " + std::to_string(timestamp));
@@ -363,8 +370,6 @@ const MSCEqFState MSCEqFState::Random() const
 void MSCEqFState::setMSCEqFStateInitialOrientation(const Quaternion& q)
 {
   auto& Dd = std::static_pointer_cast<MSCEqFSDBState>(getPtr(MSCEqFStateElementName::Dd))->Dd_;
-
-  // [DEBUG] remove bias
   Dd.multiplyRight(SDB(SE23(q.normalized(), {Vector3::Zero(), Vector3::Zero()}), Vector6::Zero()));
 
   utils::Logger::debug("Set initial MSCEqF core state to:");
@@ -375,7 +380,7 @@ void MSCEqFState::setMSCEqFStateInitialOrientation(const Quaternion& q)
                        static_cast<std::ostringstream&>(std::ostringstream() << Dd.D().v().transpose()).str());
   utils::Logger::debug("Position: " +
                        static_cast<std::ostringstream&>(std::ostringstream() << Dd.D().p().transpose()).str());
-  utils::Logger::debug("Biases: " +
+  utils::Logger::debug("Biases (gamma): " +
                        static_cast<std::ostringstream&>(std::ostringstream() << Dd.delta().transpose()).str());
 }
 
