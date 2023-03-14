@@ -46,13 +46,10 @@ void ProjectionHelperZ1::innovationBlock(const MSCEqFState& X,
                                          VectorXBlockRowRef delta_block_row,
                                          MatrixXBlockRowRef Cf_block_row)
 {
-  // feature in origin frmae and camera frame
   Vector3 G0_f = feat.anchor_->E_ * feat.A_f_;
-  Vector3 C_f = feat.clone_->E_.inv() * G0_f;
 
-  // // [DEBUG]
-  // std::cout << "feat.clone_->E_: " << feat.clone_->E_.asMatrix() << std::endl;
-  // std::cout << "feat.feat.anchor_->E_: " << feat.anchor_->E_.asMatrix() << std::endl;
+  // feature in origin frmae and camera frame
+  Vector3 C_f = feat.clone_->E_.inv() * G0_f;
 
   // precompute D = K0 * L * dpi(C_f) if intrinsics are calibrated, D = dpi(C_f) otherwise
   Eigen::Matrix<fp, 2, 3> D = X.opts_.enable_camera_intrinsics_calibration_ ?
@@ -68,8 +65,12 @@ void ProjectionHelperZ1::innovationBlock(const MSCEqFState& X,
     A.block<3, 3>(0, 0) = SO3::wedge(G0_f);
     A.block<3, 3>(0, 3) = -Matrix3::Identity();
 
-    C_block_row.block(0, feat.clone_->getIndex(), block_rows_, 6).noalias() = D * feat.clone_->E_.inv().R() * A;
-    C_block_row.block(0, feat.anchor_->getIndex(), block_rows_, 6).noalias() = -D * feat.clone_->E_.inv().R() * A;
+    C_block_row.block(0, feat.clone_->getIndex(), block_rows_, 6).noalias() = D * feat.clone_->E_.R().transpose() * A;
+
+    // if (feat.clone_->getIndex() != feat.anchor_->getIndex())
+    // {
+    //   C_block_row.block(0, feat.anchor_->getIndex(), block_rows_, 6).noalias() = -D * feat.clone_->E_.inv().R() * A;
+    // }
   }
   else
   {
@@ -85,14 +86,15 @@ void ProjectionHelperZ1::innovationBlock(const MSCEqFState& X,
   switch (feature_representation_)
   {
     case FeatureRepresentation::EUCLIDEAN:
-      Cf_block_row = D * xi0.P().R() * xi0.S().R() * feat.anchor_->E_.R();
+      Cf_block_row = D * (xi0.P().R() * xi0.S().R() * feat.clone_->E_.R()).transpose();
       break;
     case FeatureRepresentation::ANCHORED_INVERSE_DEPTH:
-      Cf_block_row =
-          D * xi0.P().R() * xi0.S().R() * feat.anchor_->E_.R() * UpdaterHelper::inverseDepthJacobian(feat.A_f_);
+      // Cf_block_row = D * (xi0.P().R() * xi0.S().R() * feat.clone_->E_.R()).transpose() *
+      //                UpdaterHelper::inverseDepthJacobian(feat.A_f_);
+      throw std::runtime_error("Anchored inverse depth representation update not implemented");
       break;
     case FeatureRepresentation::ANCHORED_POLAR:
-      Cf_block_row = Eigen::Matrix<fp, 2, 4>::Zero();
+      // Cf_block_row = Eigen::Matrix<fp, 2, 4>::Zero();
       throw std::runtime_error("Anchored polar representation update not implemented");
       break;
     default:
@@ -108,13 +110,6 @@ void ProjectionHelperZ1::innovationBlock(const MSCEqFState& X,
   {
     delta_block_row = feat.uvn_ - P.segment<2>(0);
   }
-
-  fp angle = std::acos(feat.uvn_.dot(P.segment<2>(0)) / (feat.uvn_.norm() * P.segment<2>(0).norm()));
-  if (std::isnan(angle) || std::isinf(angle))
-  {
-    std::cout << "NAN?" << std::endl;
-  }
-  std::cout << "residual angle: " << angle * 180 / 3.14 << std::endl;
 }
 
 Eigen::Matrix<fp, 2, 4> UpdaterHelper::Xi(const Vector3& f)
@@ -139,27 +134,28 @@ void UpdaterHelper::nullspaceProjection(Eigen::Ref<MatrixX> Cf, MatrixXBlockRowR
 {
   Eigen::HouseholderQR<Eigen::Ref<MatrixX>> QR(Cf);
 
-  MatrixX Q = MatrixX::Identity(Cf.rows(), Cf.rows());
+  MatrixX Q = MatrixX::Zero(Cf.rows(), Cf.rows() - Cf.cols());
+  Q.block(Cf.cols(), 0, Cf.rows() - Cf.cols(), Cf.rows() - Cf.cols()) =
+      MatrixX::Identity(Cf.rows() - Cf.cols(), Cf.rows() - Cf.cols());
   Q.applyOnTheLeft(QR.householderQ());
+  Q.transposeInPlace();
 
-  MatrixX A = Q.block(0, 0, Cf.rows(), Cf.cols()).transpose();
-
-  Ct.block(0, 0, A.rows(), Ct.cols()) = A * Ct;
-  delta.segment(0, A.rows()) = A * delta;
+  Ct.block(0, 0, Q.rows(), Ct.cols()) = Q * Ct;
+  delta.segment(0, Q.rows()) = Q * delta;
 }
 
-void UpdaterHelper::updateQRCompression(MatrixX& C, VectorX& delta)
+void UpdaterHelper::updateQRCompression(MatrixX& C, VectorX& delta, MatrixX& R)
 {
   Eigen::HouseholderQR<MatrixX> QR(C.rows(), C.cols());
   QR.compute(C);
 
-  MatrixX Q = MatrixX::Identity(C.rows(), C.rows());
+  MatrixX Q = MatrixX::Zero(C.rows(), C.cols());
+  Q.block(0, 0, C.cols(), C.cols()) = MatrixX::Identity(C.cols(), C.cols());
   Q.applyOnTheLeft(QR.householderQ());
 
-  MatrixX A = Q.block(0, 0, C.rows(), C.cols()).transpose();
-
-  C = A * C;
-  delta = A * delta;
+  C = QR.matrixQR().topRows(Q.cols()).triangularView<Eigen::Upper>();
+  delta = Q.transpose() * delta;
+  R = Q.transpose() * R * Q;
 }
 
 bool UpdaterHelper::chi2Test(const MSCEqFState& X,
