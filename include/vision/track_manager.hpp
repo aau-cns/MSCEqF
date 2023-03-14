@@ -89,8 +89,8 @@ class TrackManager
   void removeTracksId(const std::unordered_set<uint>& ids);
 
   /**
-   * @brief Remove the tail of tracks. This method remove from each track all the coordinates as well as the timestamps
-   * that are older or equal to the given timestamp.
+   * @brief Remove the tail of tracks. This method remove from each track all the coordinates as well as the
+   * timestamps that are older or equal to the given timestamp.
    *
    * @param timestamp
    */

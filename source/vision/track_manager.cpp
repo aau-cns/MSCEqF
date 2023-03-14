@@ -90,9 +90,17 @@ void TrackManager::removeTracksId(const std::unordered_set<uint>& ids)
 
 void TrackManager::removeTracksTail(const fp& timestamp)
 {
-  for (auto& [id, track] : tracks_)
+  for (auto it = tracks_.begin(); it != tracks_.end();)
   {
-    track.removeTail(timestamp);
+    if (it->second.size() == 1 && it->second.timestamps_.front() == timestamp)
+    {
+      it = tracks_.erase(it);
+    }
+    else
+    {
+      it->second.removeTail(timestamp);
+      ++it;
+    }
   }
 }
 
@@ -122,7 +130,7 @@ void TrackManager::updateTracks()
     // Remove tracks that are too long (Keep memory bounded)
     if (track_ref.size() > max_track_length_)
     {
-      utils::Logger::warn("Max track (id: " + std::to_string(id) + ") length reached, removing track tail");
+      // utils::Logger::warn("Max track (id: " + std::to_string(id) + ") length reached, removing track tail");
       track_ref.uvs_.erase(track_ref.uvs_.begin());
       track_ref.normalized_uvs_.erase(track_ref.normalized_uvs_.begin());
       track_ref.timestamps_.erase(track_ref.timestamps_.begin());
