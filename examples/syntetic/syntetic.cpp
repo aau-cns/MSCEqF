@@ -17,7 +17,7 @@
 int main()
 {
   // const std::string dataset_name = argv[1];
-  const std::string dataset_path = "/home/alfornasier/PhD/MSCEqF_dev/MSCEqF/examples/syntetic/trajectory.csv";
+  const std::string dataset_path = "/home/alfornasier/PhD/MSCEqF_dev/MSCEqF/examples/syntetic/trajectory";
   const std::string results_path = "/home/alfornasier/PhD/MSCEqF_dev/MSCEqF/examples/syntetic/results.csv";
 
   const std::vector<std::string> imu_header = {"t", "w_x", "w_y", "w_z", "a_x", "a_y", "a_z"};
@@ -25,18 +25,18 @@ int main()
   const std::vector<std::string> groundtruth_header = {"t",   "q_x", "q_y", "q_z", "q_w", "p_x",
                                                        "p_y", "p_z", "v_x", "v_y", "v_z"};
 
-  std::vector<std::string> feats_header;
+  std::vector<std::string> feats_header = {"t"};
   for (int i = 1; i <= 500; ++i)
   {
-    feats_header.push_back("Gf_x_" + std::to_string(i));
-    feats_header.push_back("Gf_y_" + std::to_string(i));
-    feats_header.push_back("Gf_z_" + std::to_string(i));
+    feats_header.push_back("gf_x_" + std::to_string(i));
+    feats_header.push_back("gf_y_" + std::to_string(i));
+    feats_header.push_back("gf_z_" + std::to_string(i));
     feats_header.push_back("un_" + std::to_string(i));
     feats_header.push_back("vn_" + std::to_string(i));
   }
 
-  utils::dataParser dataset_parser(dataset_path, dataset_path, "", "", dataset_path, imu_header, groundtruth_header, {},
-                                   feats_header);
+  utils::dataParser dataset_parser(dataset_path + "_imu.csv", dataset_path + "_gt.csv", "", "",
+                                   dataset_path + "_feats.csv", imu_header, groundtruth_header, {}, feats_header);
   dataset_parser.parseAndCheck();
 
   const std::vector<std::string> results_titles = {
@@ -45,16 +45,20 @@ int main()
 
   utils::dataWriter result_writer(results_path, results_titles, ",");
 
-  msceqf::MSCEqF sys("/home/alfornasier/PhD/MSCEqF_dev/MSCEqF/examples/euroc/config.yaml");
+  msceqf::MSCEqF sys("/home/alfornasier/PhD/MSCEqF_dev/MSCEqF/examples/syntetic/config.yaml");
 
   const auto timestamps = dataset_parser.getSensorsTimestamps();
+  const auto feats = dataset_parser.getFeaturesData();
   for (const auto& timestamp : timestamps)
   {
     auto data = dataset_parser.consumeSensorReadingAt(timestamp);
     std::visit([&sys](auto&& arg) { sys.processMeasurement(arg); }, data);
 
-    if (std::holds_alternative<msceqf::Camera>(data))
+    auto feat =
+        std::find_if(feats.begin(), feats.end(), [&](const auto& feat) { return feat.timestamp_ == timestamp; });
+    if (feat != feats.end())
     {
+      sys.processMeasurement(*feat);
       auto est = sys.stateEstimate();
       result_writer << timestamp << est << std::endl;
     }
