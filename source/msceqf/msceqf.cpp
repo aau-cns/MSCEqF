@@ -66,11 +66,11 @@ void MSCEqF::processImuMeasurement(const Imu& imu)
 {
   assert(imu.timestamp_ >= 0);
 
-  if (!is_filter_initialized_)
-  {
-    initializer_.insertImu(imu);
-    return;
-  }
+  // if (!is_filter_initialized_)
+  // {
+  //   initializer_.insertImu(imu);
+  //   return;
+  // }
 
   if (imu.timestamp_ < timestamp_)
   {
@@ -188,11 +188,6 @@ void MSCEqF::processCameraMeasurement(Camera& cam)
 void MSCEqF::processFeaturesMeasurement(const TriangulatedFeatures& features)
 {
   assert(features.timestamp_ >= 0);
-
-  if (!is_filter_initialized_)
-  {
-    is_filter_initialized_ = true;
-  }
 
   if (features.timestamp_ < timestamp_)
   {

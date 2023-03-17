@@ -22,6 +22,11 @@ StaticInitializer::StaticInitializer(const InitializerOptions& opts) : opts_(opt
 
 void StaticInitializer::insertImu(const Imu& imu)
 {
+  if (imu_buffer_.empty())
+  {
+    utils::Logger::info("Collecting IMU measurements for static initialization");
+  }
+
   if (imu_buffer_.empty() || imu.timestamp_ > imu_buffer_.back().timestamp_)
   {
     imu_buffer_.push_back(imu);

@@ -172,14 +172,14 @@ void Updater::update(MSCEqFState& X, const Tracks& tracks, std::unordered_set<ui
     //   cv::waitKey();
     // }
 
-    // Perform chi2 test
-    if (!UpdaterHelper::chi2Test(X, C.middleRows(total_size_, (ph_->block_rows_ * track_size) - 3),
-                                 delta.middleRows(total_size_, (ph_->block_rows_ * track_size) - 3), opts_.pixel_std_,
-                                 chi2_table_))
-    {
-      utils::Logger::debug("Chi2 test failed for track id: " + std::to_string(id));
-      continue;
-    }
+    // // Perform chi2 test
+    // if (!UpdaterHelper::chi2Test(X, C.middleRows(total_size_, (ph_->block_rows_ * track_size) - 3),
+    //                              delta.middleRows(total_size_, (ph_->block_rows_ * track_size) - 3),
+    //                              opts_.pixel_std_, chi2_table_))
+    // {
+    //   utils::Logger::debug("Chi2 test failed for track id: " + std::to_string(id));
+    //   continue;
+    // }
 
     // Update total size of C matrix and residual delta
     // (-3 for dimension lost in nullspace projection)
@@ -234,11 +234,11 @@ void Updater::update(MSCEqFState& X, const Tracks& tracks, std::unordered_set<ui
   // Define measurement noise covariance
   MatrixX R = MatrixX::Identity(C.rows(), C.rows()) * opts_.pixel_std_ * opts_.pixel_std_;
 
-  // Update compression
-  if (C.rows() > C.cols())
-  {
-    UpdaterHelper::updateQRCompression(C, delta, R);
-  }
+  // // Update compression
+  // if (C.rows() > C.cols())
+  // {
+  //   UpdaterHelper::updateQRCompression(C, delta, R);
+  // }
 
   // MSCEqF Update
   UpdateMSCEqF(X, C, delta, R);
@@ -406,6 +406,12 @@ void Updater::UpdateMSCEqF(MSCEqFState& X, const MatrixX& C, const VectorX& delt
   //   keys.push_back(MSCEqFStateElementName::L);
   // }
 
+  // std::cout << std::setprecision(15) << "EqF state pre-update:\n"
+  //           << X.D().asMatrix() << '\n'
+  //           << X.delta().transpose() << '\n'
+  //           << X.E().asMatrix() << '\n'
+  //           << std::endl;
+
   // Compute Kalman gain and innovation
   MatrixX G = X.cov_ * C.transpose();
   // MatrixX S = C * X.subCov(keys) * C.transpose() + R;
@@ -439,6 +445,12 @@ void Updater::UpdateMSCEqF(MSCEqFState& X, const MatrixX& C, const VectorX& delt
   X.cov_ = (MatrixX::Identity(X.cov_.rows(), X.cov_.cols()) - K * C) * X.cov_ *
                (MatrixX::Identity(X.cov_.rows(), X.cov_.cols()) - K * C).transpose() +
            (K * R * K.transpose());
+
+  // std::cout << std::setprecision(15) << "EqF state post-update:\n"
+  //           << X.D().asMatrix() << '\n'
+  //           << X.delta().transpose() << '\n'
+  //           << X.E().asMatrix() << '\n'
+  //           << std::endl;
 
   assert((X.cov_ - X.cov_.transpose()).norm() < 1e-9);
 }

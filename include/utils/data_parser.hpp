@@ -109,6 +109,10 @@ class dataParser
     {
       std::transform(s.begin(), s.end(), s.begin(), ::tolower);
     }
+    for (auto& s : features_header_titles_)
+    {
+      std::transform(s.begin(), s.end(), s.begin(), ::tolower);
+    }
   }
 
   /**
@@ -210,6 +214,11 @@ class dataParser
         parseLine(line, tmp, regex);
         data.emplace_back(tmp);
         ++rows_cnt;
+        // // [TODO] Remove
+        // if (rows_cnt > 500)
+        // {
+        //   break;
+        // }
       }
 
       if (!getIndices(header, groundtruth_header_titles_, groundtruth_indices))
@@ -283,6 +292,11 @@ class dataParser
         parseLine(line, tmp, regex);
         data.emplace_back(tmp);
         ++rows_cnt;
+        // // [TODO] Remove
+        // if (rows_cnt > 500)
+        // {
+        //   break;
+        // }
       }
 
       if (!getIndices(header, imu_header_titles_, imu_indices))
@@ -392,6 +406,11 @@ class dataParser
         parseLine(line, tmp, regex);
         data.emplace_back(tmp);
         ++rows_cnt;
+        // // [TODO] Remove
+        // if (rows_cnt > 500)
+        // {
+        //   break;
+        // }
       }
 
       if (!getIndices(header, features_header_titles_, feats_indices))
@@ -403,31 +422,35 @@ class dataParser
 
       features_data_.clear();
 
-      int cnt = 1;
       for (const auto& it : data)
       {
-        if (std::isnan(it.at(feats_indices.at(1))))
-        {
-          ++cnt;
-          continue;
-        }
-
         msceqf::TriangulatedFeatures feat;
-
-        feat.timestamp_ =
-            it.at(feats_indices.at(0)) > 10e12 ? it.at(feats_indices.at(0)) / 1e9 : it.at(feats_indices.at(0));
+        int cnt = 1;
+        bool found = false;
 
         for (int i = 1; i < (5 * num_features); i += 5)
         {
-          feat.points_.emplace_back(it.at(feats_indices.at(i)), it.at(feats_indices.at(i + 1)),
-                                    it.at(feats_indices.at(i + 2)));
+          if (!std::isnan(it.at(feats_indices.at(i))))
+          {
+            found = true;
 
-          feat.features_.uvs_.emplace_back(-1, -1);
-          feat.features_.normalized_uvs_.emplace_back(it.at(feats_indices.at(i + 3)), it.at(feats_indices.at(i + 4)));
-          feat.features_.ids_.emplace_back(cnt++);
+            feat.timestamp_ =
+                it.at(feats_indices.at(0)) > 10e12 ? it.at(feats_indices.at(0)) / 1e9 : it.at(feats_indices.at(0));
+
+            feat.points_.emplace_back(it.at(feats_indices.at(i)), it.at(feats_indices.at(i + 1)),
+                                      it.at(feats_indices.at(i + 2)));
+
+            feat.features_.uvs_.emplace_back(-1, -1);
+            feat.features_.normalized_uvs_.emplace_back(it.at(feats_indices.at(i + 3)), it.at(feats_indices.at(i + 4)));
+            feat.features_.ids_.emplace_back(cnt);
+          }
+          ++cnt;
         }
 
-        features_data_.emplace_back(feat);
+        if (found)
+        {
+          features_data_.emplace_back(feat);
+        }
       }
     }
     else
@@ -460,6 +483,13 @@ class dataParser
    * @return const std::vector<msceqf::Camera>&
    */
   const std::vector<msceqf::Camera>& getImageData() const { return image_data_; }
+
+  /**
+   * @brief Get a constant reference to the features data vector
+   *
+   * @return const std::vector<msceqf::TriangulatedFeatures>&
+   */
+  const std::vector<msceqf::TriangulatedFeatures>& getFeaturesData() const { return features_data_; }
 
   /**
    * @brief Get a vector containing the timestamps of the sensors measurements (imu and camera).
@@ -542,31 +572,6 @@ class dataParser
     }
 
     return *gt;
-  }
-
-  /**
-   * @brief Get the feature data that is closer to a given timestamp
-   *
-   * @param timestamp
-   * @return msceqf::Feature
-   */
-  const msceqf::TriangulatedFeatures getCloserFeatureDataAt(const msceqf::fp& timestamp) const
-  {
-    auto feat = std::find_if(features_data_.begin(), features_data_.end(),
-                             [&](const auto& feat) { return feat.timestamp_ > timestamp; });
-
-    if (feat == features_data_.end())
-    {
-      throw std::runtime_error("No feature data found at timestamp " + std::to_string(timestamp));
-    }
-
-    if (feat != features_data_.begin() &&
-        (std::abs(feat->timestamp_ - timestamp) > std::abs((feat - 1)->timestamp_ - timestamp)))
-    {
-      return *(feat - 1);
-    }
-
-    return *feat;
   }
 
  private:

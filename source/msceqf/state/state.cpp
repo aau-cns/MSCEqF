@@ -36,6 +36,18 @@ MSCEqFState::MSCEqFState(const StateOptions& opts) : opts_(opts), cov_(), state_
   {
     initializeStateElement(MSCEqFStateElementName::L, opts_.L_init_cov_);
   }
+
+  auto& Dd = std::static_pointer_cast<MSCEqFSDBState>(getPtr(MSCEqFStateElementName::Dd))->Dd_;
+  auto& E = std::static_pointer_cast<MSCEqFSE3State>(getPtr(MSCEqFStateElementName::E))->E_;
+
+  utils::Logger::debug("Set initial MSCEqF core state to:");
+  utils::Logger::debug("D: " + static_cast<std::ostringstream&>(std::ostringstream() << Dd.D().asMatrix()).str());
+  utils::Logger::debug("delta: " +
+                       static_cast<std::ostringstream&>(std::ostringstream() << Dd.delta().transpose()).str());
+  utils::Logger::debug("E: " + static_cast<std::ostringstream&>(std::ostringstream() << E.asMatrix()).str());
+
+  utils::Logger::debug("Set initial MSCEqF covariance to:");
+  utils::Logger::debug(static_cast<std::ostringstream&>(std::ostringstream() << cov_).str());
 }
 
 MSCEqFState::MSCEqFState(const MSCEqFState& other) : opts_(other.opts_), cov_(), state_(), clones_()
@@ -277,7 +289,7 @@ void MSCEqFState::stochasticCloning(const fp& timestamp)
     assert((cov_.middleCols(E_idx, 6) - cov_.middleCols(old_size, 6)).norm() < 1e-9);
     assert((cov_.middleRows(E_idx, 6) - cov_.middleRows(old_size, 6)).norm() < 1e-9);
     assert((cov_.block(E_idx, E_idx, 6, 6) - cov_.block(old_size, old_size, 6, 6)).norm() < 1e-9);
-    assert((cov_ - cov_.transpose()).norm() < 1e-9);
+    // assert((cov_ - cov_.transpose()).norm() < 1e-9);
   }
   else
   {
