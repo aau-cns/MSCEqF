@@ -140,6 +140,8 @@ Imu Propagator::lerp(const Imu& pre, const Imu& post, const fp& alpha)
 
 bool Propagator::propagate(MSCEqFState& X, const SystemState& xi0, fp& timestamp, const fp& new_timestamp)
 {
+  assert(new_timestamp > timestamp);
+
   if (imu_buffer_.size() < 1)
   {
     utils::Logger::err("not enough IMU measurements in buffer to propagate with");
@@ -166,8 +168,11 @@ bool Propagator::propagate(MSCEqFState& X, const SystemState& xi0, fp& timestamp
       continue;
     }
 
+    // utils::Logger::debug("Propagating with dt = " + std::to_string(dt) + "s");
+
     // Propagate covariance
     propagateCovariance(X, xi0, *it, dt);
+    // assert((X.cov_ - X.cov_.transpose()).norm() < 1e-9);
 
     // Propagate mean
     propagateMean(X, xi0, *it, dt);
@@ -183,8 +188,6 @@ void Propagator::propagateMean(MSCEqFState& X, const SystemState& xi0, const Imu
 {
   // Compute the Lift lambda
   SystemState::SystemStateAlgebraMap lambda = Symmetry::lift(Symmetry::phi(X, xi0), u);
-
-  // [TODO] MSCEqF needs to keep a vector of feature ids
 
   // Propagate mean
   X.state_.at(MSCEqFStateElementName::Dd)
@@ -211,7 +214,6 @@ void Propagator::propagateCovariance(MSCEqFState& X, const SystemState& xi0, con
 
   // MatrixX Phi = MatrixX::Identity(X.cov_.rows(), X.cov_.cols());
   // Phi.block(0, 0, Phi_core.rows(), Phi_core.cols()) = Phi_core;
-
   // X.cov_ = Phi * X.cov_ * Phi.transpose();
 
   // Core covariance propagation Phi * Sigma * Phi^T
@@ -261,7 +263,7 @@ MatrixX Propagator::coreStateTransitionMatrix(MSCEqFState& X, const SystemState&
     // Compute the Psi matrix (needed to compute A4)
     Eigen::Matrix<fp, 6, 9> Psi = Eigen::Matrix<fp, 6, 9>::Zero();
     Psi.block<3, 3>(0, 0) = -SO3::wedge(psi.block<3, 1>(0, 0));
-    Psi.block<3, 3>(0, 3) = -SO3::wedge(psi.block<3, 1>(3, 0));
+    Psi.block<3, 3>(3, 0) = -SO3::wedge(psi.block<3, 1>(3, 0));
     Psi.block<3, 3>(3, 3) = Matrix3::Identity();
     Psi.block<3, 3>(3, 6) = Psi.block<3, 3>(0, 0);
 

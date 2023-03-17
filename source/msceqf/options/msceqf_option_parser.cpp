@@ -315,19 +315,17 @@ void OptionParser::parseInitialCovariance(Matrix9& D_cov, Matrix6& delta_cov, Ma
     D_cov = Matrix9::Zero();
     D_cov(0, 0) = std::pow(pitch_roll_std(0), 2);
     D_cov(1, 1) = std::pow(pitch_roll_std(1), 2);
-    // D_cov.block<7, 7>(2, 2) = 1e-12 * Matrix7::Identity();
-    D_cov.block<7, 7>(2, 2) = Matrix7::Identity();
+    D_cov.block<7, 7>(2, 2) = 1e-4 * Matrix7::Identity();
   }
 
   // Delta covariance
   // [TODO] proper conversion prom pitch_roll_std to normal coords std
-  delta_cov = 1e-6 * Matrix6::Identity();
+  delta_cov = 1e-4 * Matrix6::Identity();
 
   // E covariance
   // [TODO] Assign proper values
   // [TODO] proper conversion prom pitch_roll_std to normal coords std
-  // E_cov = 0.1 * Matrix6::Identity();
-  E_cov = 1e-12 * Matrix6::Identity();
+  E_cov = 1e-6 * Matrix6::Identity();
 
   // L covairance
   // [TODO] Assign proper values

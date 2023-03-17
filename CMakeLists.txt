@@ -113,7 +113,7 @@ endif()
 message(STATUS "CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE}.")
 
 # Set CMAKE compile flags
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -O3 -fsee -fomit-frame-pointer -fno-signed-zeros -fno-math-errno -funroll-loops")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -O3 -fsee -fomit-frame-pointer -fno-signed-zeros -fno-math-errno -funroll-loops -fno-unsafe-math-optimizations")
 # set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g3 -Wall -Wextra -Werror -Wuninitialized -Wmaybe-uninitialized -pedantic -fno-omit-frame-pointer -fsanitize=thread")
 # set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -O0 -g3 -Wall -Wextra -Werror -Wuninitialized -Wmaybe-uninitialized -pedantic -fno-omit-frame-pointer -fsanitize=address -fsanitize-recover=address")
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g3 -Wall -Wextra -Werror -Wuninitialized -Wmaybe-uninitialized -pedantic -fno-omit-frame-pointer -fsanitize=undefined")
@@ -155,6 +155,10 @@ if(${BUILD_TESTS})
 endif()
 
 ## Declare C++ examples
-add_executable(msceqf_euroc examples/euroc/euroc.cpp)
-target_include_directories(msceqf_euroc PRIVATE ${include_dirs})
-target_link_libraries(msceqf_euroc ${PROJECT_NAME} pthread)
+# add_executable(msceqf_euroc examples/euroc/euroc.cpp)
+# target_include_directories(msceqf_euroc PRIVATE ${include_dirs})
+# target_link_libraries(msceqf_euroc ${PROJECT_NAME} pthread)
+
+add_executable(msceqf_syntetic examples/syntetic/syntetic.cpp)
+target_include_directories(msceqf_syntetic PRIVATE ${include_dirs})
+target_link_libraries(msceqf_syntetic ${PROJECT_NAME} pthread)

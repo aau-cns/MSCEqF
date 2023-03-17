@@ -1,0 +1,67 @@
+# Euroc Config
+
+# Initial standard deviations
+pitch_roll_std: [1.0e-2, 1.0e-2]
+
+# IMU noise statistics
+accelerometer_noise_density: 0.5e-2  
+accelerometer_random_walk:   1.0e-3
+gyroscope_noise_density: 1.745e-4
+gyroscope_random_walk:   1.0e-04
+
+# Camera calibration
+distortion_coeffs: [0.0, 0.0, 0.0, 0.0]
+distortion_model: radtan
+resolution: [0, 0]
+intrinsics: [1.0, 1.0, 0.0, 0.0]
+T_imu_cam:
+ - [0.0, 0.0, 1.0, 0.2]
+ - [0.0, 1.0, 0.0, 0.2]
+ - [-1.0, 0.0, 0.0, 0.05]
+ - [0.0, 0.0, 0.0, 1.0]
+
+# Initializer
+static_initializer_imu_window: 0.5
+static_initializer_disparity_window: 0.5
+static_initializer_acc_threshold: 0.0
+static_initializer_disparity_threshold: 4.0
+
+# Propagator
+state_transition_order: 1
+imu_buffer_max_size: 1000
+
+# Updater
+refine_traingulation: false
+feature_min_depth: 0.1
+feature_max_depth: 20
+feature_refinement_max_iterations: 20
+feature_refinement_tollerance: 1e-10
+measurement_projection_method: unit_plane
+feature_representation: euclidean
+pixel_standerd_deviation: 2.0e-3
+curveture_correction: false
+
+# State options
+enable_camera_extrinsic_calibration: true
+enable_camera_intrinsic_calibration: false
+gravity: 9.81
+num_clones: 10
+num_persistent_features: 0
+
+# Tracker
+equalization_method: histogram
+optical_flow_pyramid_levels: 4
+feature_detector: fast
+grid_x_size: 6
+grid_y_size: 8
+min_feature_pixel_distance: 5
+min_features: 50
+max_features: 200
+fast_threshold: 10
+shi_tomasi_quality_level: 0.01
+
+# Track Manager
+max_track_length: 50
+
+# Logger level [0: Full, 1: INFO, 2: WARN, 3: ERR, 4: INACTIVE]
+logger_level: 0

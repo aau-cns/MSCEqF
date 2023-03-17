@@ -20,7 +20,7 @@
 namespace msceqf
 {
 /**
- * @brief (Cache friendly) Track struct. Define a feature (labelled via a feature id) detected/tracked at different
+ * @brief (Cache friendly) Track struct. Define a feature (labeled via a feature id) detected/tracked at different
  * points in time.
  *
  * @note Note that feature cordinates are of cv::Point2f type for compatibility with OpenCV.
@@ -121,6 +121,7 @@ struct Track
   FeaturesCoordinates uvs_;             //!< (u, v) coordinates of the same feature at different time steps
   FeaturesCoordinates normalized_uvs_;  //!< Normalized (u, v) coordinates of the same feature at different time steps
   Times timestamps_;                    //!< Timestamps of the camera measurement containing the feature
+  Vector3 Gf_ = Vector3::Zero();        //!< Global feature position
 };
 
 using Tracks = std::unordered_map<uint, Track>;  //!< Tracks defined as a a vector of tracks mapped by ids
