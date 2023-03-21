@@ -30,8 +30,10 @@ class MSCEqFState
 {
  public:
   using MSCEqFStateKey = std::variant<MSCEqFStateElementName, uint>;  //!< Key to access the msceqf state map
+  using MSCEqFKey = std::variant<MSCEqFStateKey, fp>;                 //!< Key to access the msceqf state and clones map
+
   using MSCEqFStateMap = std::unordered_map<MSCEqFStateKey, MSCEqFStateElementSharedPtr>;  //!< MSCEqF state map
-  using MSCEqFClonesMap = std::map<fp, MSCEqFSE3StateSharedPtr>;                           //!< MSCEqF clones map
+  using MSCEqFClonesMap = std::map<fp, MSCEqFStateElementSharedPtr>;                       //!< MSCEqF clones map
 
   /**
    * @brief Deleted default constructor
@@ -122,20 +124,30 @@ class MSCEqFState
   [[nodiscard]] const SOT3& Q(const uint& feat_id) const;
 
   /**
-   * @brief Get a reference to the index of the state element corresponding to the given key
+   * @brief Get a reference to the SE3 element of the MSCEqF clones that correspond to the given timestamp
    *
-   * @param key
-   * @return const uint&
+   * @param timestamp
+   * @return const SE3&
+   *
+   * @note This function does not introduce any runtime overhead due to casting, because it uses static_pointer_cast
    */
-  [[nodiscard]] const uint& stateElementIndex(const MSCEqFStateKey& key) const;
+  [[nodiscard]] const SE3& clone(const fp& timestamp) const;
 
   /**
-   * @brief Get a reference to the dof of the state element corresponding to the given key
+   * @brief Get a reference to the index of the state element or the clone element corresponding to the given key
    *
    * @param key
    * @return const uint&
    */
-  [[nodiscard]] const uint& stateElementDof(const MSCEqFStateKey& key) const;
+  [[nodiscard]] const uint& index(const MSCEqFKey& key) const;
+
+  /**
+   * @brief Get a reference to the dof of the state element or the clone element corresponding to the given key
+   *
+   * @param key
+   * @return const uint&
+   */
+  [[nodiscard]] const uint& dof(const MSCEqFKey& key) const;
 
   /**
    * @brief Get the amount of clones
@@ -160,21 +172,33 @@ class MSCEqFState
   [[nodiscard]] const MatrixX& cov() const;
 
   /**
-   * @brief get a constant copy of the covariance block relative to the element corresponding to the given key
+   * @brief get a constant copy of the covariance block relative to the elements (states or clones) corresponding to the
+   * given keys.
    *
    * @param key state element name or feature id
    * @return const MatrixX
    */
-  [[nodiscard]] const MatrixX covBlock(const MSCEqFStateKey& key) const;
+  [[nodiscard]] const MatrixX covBlock(const MSCEqFKey& key) const;
 
   /**
-   * @brief get a constant copy of the the covariance submatrix constructed with covariance blocks relative to the
-   * elements corresponding to the given keys. *Keys need to be ordered*
+   * @brief Get a constant copy of the the covariance submatrix (including cross-correlations) constructed with
+   * covariance blocks relative to the elements (states or clones) corresponding to the given keys.
+   * *The ordering of the covariance returned follows the ordering of the given keys.*
    *
    * @param keys
    * @return const MatrixX
    */
-  [[nodiscard]] const MatrixX subCov(const std::vector<MSCEqFStateKey>& keys) const;
+  [[nodiscard]] const MatrixX subCov(const std::vector<MSCEqFKey>& keys) const;
+
+  /**
+   * @brief Get a constant copy of the the covariance submatrix (including cross-correlations) constructed with
+   * covariance columns relative to the elements (states or clones) corresponding to the given keys.
+   * *The ordering of the covariance returned follows the ordering of the given keys.*
+   *
+   * @param keys
+   * @return const MatrixX
+   */
+  [[nodiscard]] const MatrixX subCovCols(const std::vector<MSCEqFKey>& keys) const;
 
   /**
    * @brief Initialize MSCEqF state element into the state map, and the relative covariance block.
@@ -260,12 +284,21 @@ class MSCEqFState
   [[nodiscard]] bool insertStateElement(const MSCEqFStateKey& key, MSCEqFStateElementUniquePtr ptr);
 
   /**
-   * @brief Get the MSCEqF element pointer (base) given the key
+   * @brief Insert given pointer into the MSCEqF clones map and check that the pointer is not null.
+   *
+   * @param timestamp clone timestamp
+   * @param ptr pointer to MSCEqF clone element
+   * @return true if the element has been succesfully inserted, false if a corresponding key existed already
+   */
+  [[nodiscard]] bool insertCloneElement(const fp& timestamp, MSCEqFStateElementUniquePtr ptr);
+
+  /**
+   * @brief Get the MSCEqF element (state or clone) pointer (base) given the key
    *
    * @param key
    * @return const MSCEqFStateElementSharedPtr&
    */
-  [[nodiscard]] const MSCEqFStateElementSharedPtr& getPtr(const MSCEqFStateKey& key) const;
+  [[nodiscard]] const MSCEqFStateElementSharedPtr& getPtr(const MSCEqFKey& key) const;
 
   friend class Symmetry;    //!< Symmetry can access private members of MSCEqFState
   friend class Propagator;  //!< Propagator can access private members of MSCEqFState

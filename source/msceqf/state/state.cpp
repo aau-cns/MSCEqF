@@ -58,7 +58,7 @@ MSCEqFState::MSCEqFState(const MSCEqFState& other) : opts_(other.opts_), cov_(),
   }
   for (const auto& [key, element] : other.clones_)
   {
-    clones_[key] = std::make_unique<MSCEqFSE3State>(*element);
+    clones_[key] = element->clone();
   }
   cov_ = other.cov_;
 }
@@ -81,7 +81,7 @@ MSCEqFState& MSCEqFState::operator=(const MSCEqFState& other)
   clones_.clear();
   for (const auto& [key, element] : other.clones_)
   {
-    clones_[key] = std::make_unique<MSCEqFSE3State>(*element);
+    clones_[key] = element->clone();
   }
   cov_.resize(other.cov_.rows(), other.cov_.cols());
   cov_ = other.cov_;
@@ -141,18 +141,23 @@ const SOT3& MSCEqFState::Q(const uint& feat_id) const
   return std::static_pointer_cast<MSCEqFSOT3State>(state_.at(feat_id))->Q_;
 }
 
-const uint& MSCEqFState::stateElementIndex(const MSCEqFStateKey& key) const { return getPtr(key)->getIndex(); }
+const SE3& MSCEqFState::clone(const fp& timestamp) const
+{
+  return std::static_pointer_cast<MSCEqFSE3State>(clones_.at(timestamp))->E_;
+}
 
-const uint& MSCEqFState::stateElementDof(const MSCEqFStateKey& key) const { return getPtr(key)->getDof(); }
+const uint& MSCEqFState::index(const MSCEqFKey& key) const { return getPtr(key)->getIndex(); }
+
+const uint& MSCEqFState::dof(const MSCEqFKey& key) const { return getPtr(key)->getDof(); }
 
 const MatrixX& MSCEqFState::cov() const { return cov_; }
 
-const MatrixX MSCEqFState::covBlock(const MSCEqFStateKey& key) const
+const MatrixX MSCEqFState::covBlock(const MSCEqFKey& key) const
 {
   return cov_.block(getPtr(key)->getIndex(), getPtr(key)->getIndex(), getPtr(key)->getDof(), getPtr(key)->getDof());
 }
 
-const MatrixX MSCEqFState::subCov(const std::vector<MSCEqFStateKey>& keys) const
+const MatrixX MSCEqFState::subCov(const std::vector<MSCEqFKey>& keys) const
 {
   assert(!keys.empty());
 
@@ -193,6 +198,30 @@ const MatrixX MSCEqFState::subCov(const std::vector<MSCEqFStateKey>& keys) const
       cur_row = 0;
       cur_col += column_major_blocks[i].cols();
     }
+  }
+
+  return sub_cov;
+}
+
+const MatrixX MSCEqFState::subCovCols(const std::vector<MSCEqFKey>& keys) const
+{
+  assert(!keys.empty());
+
+  uint columns_size = 0;
+  for (const auto& key : keys)
+  {
+    columns_size += getPtr(key)->getDof();
+  }
+
+  const auto& rows = cov_.rows();
+  MatrixX sub_cov = MatrixX::Zero(rows, columns_size);
+
+  uint cur_col = 0;
+  for (size_t c = 0; c < keys.size(); ++c)
+  {
+    const auto& size = getPtr(keys[c])->getDof();
+    sub_cov.middleCols(cur_col, size) = cov_.middleCols(getPtr(keys[c])->getIndex(), size);
+    cur_col += size;
   }
 
   return sub_cov;
@@ -266,18 +295,18 @@ void MSCEqFState::stochasticCloning(const fp& timestamp)
 {
   const uint old_size = cov_.rows();
 
-  auto ptr = std::static_pointer_cast<MSCEqFSE3State>(state_.at(MSCEqFStateElementName::E));
+  auto ptr = state_.at(MSCEqFStateElementName::E);
   assert(ptr != nullptr);
 
-  MSCEqFSE3StateSharedPtr clone = std::make_shared<MSCEqFSE3State>(*ptr);
+  MSCEqFStateElementUniquePtr clone = ptr->clone();
   clone->updateIndex(old_size);
 
-  if (clones_.try_emplace(timestamp, clone).second)
+  if (insertCloneElement(timestamp, std::move(clone)))
   {
     utils::Logger::debug("Created MSCEqF Clone element at time: " + std::to_string(timestamp));
 
     const uint& E_idx = ptr->getIndex();
-    const uint& size_increment = clone->getDof();
+    const uint& size_increment = ptr->getDof();
 
     cov_.conservativeResizeLike(MatrixX::Zero(old_size + size_increment, old_size + size_increment));
 
@@ -289,7 +318,6 @@ void MSCEqFState::stochasticCloning(const fp& timestamp)
     assert((cov_.middleCols(E_idx, 6) - cov_.middleCols(old_size, 6)).norm() < 1e-9);
     assert((cov_.middleRows(E_idx, 6) - cov_.middleRows(old_size, 6)).norm() < 1e-9);
     assert((cov_.block(E_idx, E_idx, 6, 6) - cov_.block(old_size, old_size, 6, 6)).norm() < 1e-9);
-    // assert((cov_ - cov_.transpose()).norm() < 1e-9);
   }
   else
   {
@@ -299,7 +327,7 @@ void MSCEqFState::stochasticCloning(const fp& timestamp)
 
 void MSCEqFState::marginalizeCloneAt(const fp& timestamp)
 {
-  MSCEqFSE3StateSharedPtr clone_to_remove = clones_.at(timestamp);
+  const auto& clone_to_remove = clones_.at(timestamp);
   const uint& idx = clone_to_remove->getIndex();
   const uint& size = clone_to_remove->getDof();
 
@@ -333,16 +361,35 @@ bool MSCEqFState::insertStateElement(const MSCEqFStateKey& key, MSCEqFStateEleme
   return false;
 }
 
-const MSCEqFStateElementSharedPtr& MSCEqFState::getPtr(const MSCEqFStateKey& key) const
+bool MSCEqFState::insertCloneElement(const fp& timestamp, MSCEqFStateElementUniquePtr ptr)
+{
+  assert(ptr != nullptr);
+  if (clones_.try_emplace(timestamp, std::move(ptr)).second)
+  {
+    utils::Logger::info("Created MSCEqF Clone element at time: " + std::to_string(timestamp));
+    return true;
+  }
+  return false;
+}
+
+const MSCEqFStateElementSharedPtr& MSCEqFState::getPtr(const MSCEqFKey& key) const
 {
   assert(key.valueless_by_exception() == false);
-  if (std::holds_alternative<MSCEqFStateElementName>(key))
+  if (std::holds_alternative<MSCEqFStateKey>(key))
   {
-    return state_.at(std::get<MSCEqFStateElementName>(key));
+    const auto& state_key = std::get<MSCEqFStateKey>(key);
+    if (std::holds_alternative<MSCEqFStateElementName>(state_key))
+    {
+      return state_.at(std::get<MSCEqFStateElementName>(state_key));
+    }
+    else
+    {
+      return state_.at(std::get<uint>(state_key));
+    }
   }
   else
   {
-    return state_.at(std::get<uint>(key));
+    return clones_.at(std::get<fp>(key));
   }
 }
 

@@ -33,7 +33,7 @@ class Updater
   Updater(const UpdaterOptions& opts, const SystemState& xi0);
 
   /**
-   * @brief Update the MSCEqF state
+   * @brief Perform a Multi State Constraint update
    *
    * @param X MSCEqF state
    * @param tracks tracks to update
@@ -43,7 +43,7 @@ class Updater
    * least two views, tracks for which the triangulation fails, and tracks that fail the chi2 test are discarded. The
    * set ids will change accordingly.
    */
-  void update(MSCEqFState& X, const Tracks& tracks, std::unordered_set<uint>& ids);
+  void mscUpdate(MSCEqFState& X, const Tracks& tracks, std::unordered_set<uint>& ids);
 
  private:
   /**
@@ -104,6 +104,8 @@ class Updater
   ProjectionHelperUniquePtr ph_;  //!< Projection helper
 
   std::map<uint, fp> chi2_table_;  //!< Chi squared table for outlier rejection
+
+  ColsMap cols_map_;  //!< Map of the columns of the C matrix and residual delta
 
   std::vector<uint> update_ids_;  //!< Ids of the tracks used in the update
   size_t total_size_;             //!< Total size of C matrix and residual for update

@@ -41,7 +41,7 @@ Updater::Updater(const UpdaterOptions& opts, const SystemState& xi0)
   }
 }
 
-void Updater::update(MSCEqFState& X, const Tracks& tracks, std::unordered_set<uint>& ids)
+void Updater::mscUpdate(MSCEqFState& X, const Tracks& tracks, std::unordered_set<uint>& ids)
 {
   if (ids.empty())
   {
@@ -49,35 +49,39 @@ void Updater::update(MSCEqFState& X, const Tracks& tracks, std::unordered_set<ui
     return;
   }
 
-  // [TODO] For now let's use cov_.cols() and make it simple... Will work only with involved variables in a second stage
-  // // Compute columns of C matrix and index map for each variable involved
-  // std::unordered_map<std::variant<MSCEqFState::MSCEqFStateKey, fp>, size_t> index_map;
-  // size_t index = 0;
-  // if (X.opts_.enable_camera_extrinsics_calibration_)
-  // {
-  //   for (const auto& [timestamp, clone] : X.clones_)
-  //   {
-  //     index_map[timestamp] = index;
-  //     index += clone->getDof();
-  //   }
-  // }
-  // if (X.opts_.enable_camera_intrinsics_calibration_)
-  // {
-  //   index_map[MSCEqFStateElementName::L] = index;
-  //   index += X.getPtr(MSCEqFStateElementName::L)->getDof();
-  // }
-  // // [TODO] Case of no extrinsic calibration, what variables are involved in the C matrix?
-
-  // Compute the maximum number of rows of C matrix and residual
+  // Precompute the total number of rows of the C matrix and the residual delta with a "safe" margin of 3 rows
   size_t rows = 0;
+  size_t long_tracks = 0;
   for (const auto& id : ids)
   {
+    if (tracks.at(id).size() < 2)
+    {
+      continue;
+    }
     rows += tracks.at(id).size();
+    ++long_tracks;
   }
-  rows *= ph_->block_rows_;
+  rows = rows * ph_->block_rows_ - 3 * (long_tracks - 1);
+
+  // Reset the map of columns of the C matrix for each variable involved in the update
+  cols_map_.clear();
+
+  // Fill the map of the indices of the columns of the C matrix for the variable involved in it, with insertion order.
+  // This is needed for block operations. On doing so, we precompute the total number of columns of the C matrix.
+  size_t cols = 0;
+  if (X.opts_.enable_camera_intrinsics_calibration_)
+  {
+    cols_map_.insert(MSCEqFStateElementName::L, cols);
+    cols += X.dof(MSCEqFStateElementName::L);
+  }
+  for (const auto& [timestamp, clone] : X.clones_)
+  {
+    cols_map_.insert(timestamp, cols);
+    cols += clone->getDof();
+  }
 
   // Preallocate C matrix and residual delta
-  MatrixX C = MatrixX::Zero(rows, X.cov_.cols());
+  MatrixX C = MatrixX::Zero(rows, cols);
   VectorX delta = VectorX::Zero(rows);
 
   // Reset vector of ids that will be actually used in the update, and the effective size of C and residual delta
@@ -95,8 +99,11 @@ void Updater::update(MSCEqFState& X, const Tracks& tracks, std::unordered_set<ui
       continue;
     }
 
+    // [TODO] Remove, we should remove also Gf from the track
     Vector3 A_f = track.Gf_;
-    const auto& anchor = X.clones_.at(track.timestamps_.front());
+
+    // Anchor (first observation of the feature)
+    const fp& anchor_timestamp = track.timestamps_.front();
 
     // Vector3 A_f = Vector3::Zero();
     // const auto& anchor = X.clones_.at(track.timestamps_.front());
@@ -113,79 +120,47 @@ void Updater::update(MSCEqFState& X, const Tracks& tracks, std::unordered_set<ui
     //   nonlinearTriangulation(X, track, anchor->E_, A_f);
     // }
 
-    const auto& track_size = track.size();
+    // Define ordered keys involved in C and delta blocks (needed for block operations)
 
-    // For each feature measurement in track compute the innovation block
+    // For each feature measurement in track compute the Jacobian and residual block
     // (C matrix block, Cf matrix block and delta block)
+    const auto& track_size = track.size();
     MatrixX Cf = MatrixX::Zero(ph_->block_rows_ * track_size, 3);
     for (size_t i = 0; i < track_size; ++i)
     {
       Vector2 uv(track.uvs_[i].x, track.uvs_[i].y);
       Vector2 uvn(track.normalized_uvs_[i].x, track.normalized_uvs_[i].y);
-      FeatHelper feat(A_f, uv, uvn, anchor, X.clones_.at(track.timestamps_[i]), track.timestamps_[i]);
+      FeatHelper feat(A_f, uv, uvn, anchor_timestamp, track.timestamps_[i]);
 
       const auto& row_idx = total_size_ + (ph_->block_rows_ * i);
-
       C.middleRows(row_idx, ph_->block_rows_).setZero();
       delta.middleRows(row_idx, ph_->block_rows_).setZero();
 
-      ph_->innovationBlock(X, xi0_, feat, C.middleRows(row_idx, ph_->block_rows_),
-                           delta.middleRows(row_idx, ph_->block_rows_),
-                           Cf.middleRows(ph_->block_rows_ * i, ph_->block_rows_));
+      ph_->residualJacobianBlock(X, xi0_, feat, C.middleRows(row_idx, ph_->block_rows_),
+                                 delta.middleRows(row_idx, ph_->block_rows_),
+                                 Cf.middleRows(ph_->block_rows_ * i, ph_->block_rows_), cols_map_);
     }
 
-    // {
-    //   double scale = 12;
-    //   Eigen::MatrixXd etmp = C.middleRows(total_size_, ph_->block_rows_ * track_size);
-    //   Eigen::VectorXd rtemp = delta.middleRows(total_size_, ph_->block_rows_ * track_size);
-    //   std::cout << "C_block:\n" << etmp.block(0, 21, etmp.rows(), etmp.cols() - 21) << std::endl;
-    //   std::cout << "delta_block: " << rtemp.transpose() << std::endl;
-    //   etmp = etmp.cwiseAbs();
-    //   rtemp = rtemp.cwiseAbs();
-    //   cv::Mat cvtmp, cvrtmp, cvtmpres, cvrtmpres;
-    //   cv::eigen2cv(etmp, cvtmp);
-    //   cv::eigen2cv(rtemp, cvrtmp);
-    //   cv::resize(cvtmp, cvtmpres, cv::Size(), scale, scale, cv::INTER_NEAREST);
-    //   cv::resize(cvrtmp, cvrtmpres, cv::Size(), scale, scale, cv::INTER_NEAREST);
-    //   cv::imshow("C block", cvtmpres);
-    //   cv::imshow("delta block", cvrtmpres);
-    //   cv::waitKey();
-    // }
-
-    // Perform nullspace projection of Cf
     UpdaterHelper::nullspaceProjection(Cf, C.middleRows(total_size_, ph_->block_rows_ * track_size),
                                        delta.middleRows(total_size_, ph_->block_rows_ * track_size));
 
-    // {
-    //   double scale = 12;
-    //   Eigen::MatrixXd etmp = C.middleRows(total_size_, (ph_->block_rows_ * track_size) - 3);
-    //   Eigen::VectorXd rtemp = delta.middleRows(total_size_, (ph_->block_rows_ * track_size) - 3);
-    //   etmp = etmp.cwiseAbs();
-    //   rtemp = rtemp.cwiseAbs();
-    //   cv::Mat cvtmp, cvrtmp, cvtmpres, cvrtmpres;
-    //   cv::eigen2cv(etmp, cvtmp);
-    //   cv::eigen2cv(rtemp, cvrtmp);
-    //   cv::resize(cvtmp, cvtmpres, cv::Size(), scale, scale, cv::INTER_NEAREST);
-    //   cv::resize(cvrtmp, cvrtmpres, cv::Size(), scale, scale, cv::INTER_NEAREST);
-    //   cv::imshow("C block", cvtmpres);
-    //   cv::imshow("delta block", cvrtmpres);
-    //   cv::waitKey();
-    // }
+    const auto& C_block = C.middleRows(total_size_, (ph_->block_rows_ * track_size) - 3);
+    const auto& delta_block = delta.middleRows(total_size_, (ph_->block_rows_ * track_size) - 3);
 
-    // // Perform chi2 test
-    // if (!UpdaterHelper::chi2Test(X, C.middleRows(total_size_, (ph_->block_rows_ * track_size) - 3),
-    //                              delta.middleRows(total_size_, (ph_->block_rows_ * track_size) - 3),
-    //                              opts_.pixel_std_, chi2_table_))
-    // {
-    //   utils::Logger::debug("Chi2 test failed for track id: " + std::to_string(id));
-    //   continue;
-    // }
+    MatrixX S = C_block * X.subCov(cols_map_.keys()) * C_block.transpose();
+    S.diagonal() += Eigen::VectorXd::Ones(S.rows()) * opts_.pixel_std_ * opts_.pixel_std_;
+    fp chi2 = delta_block.dot(S.llt().solve(delta_block));
 
-    // Update total size of C matrix and residual delta
-    // (-3 for dimension lost in nullspace projection)
+    if (!UpdaterHelper::chi2Test(chi2, (ph_->block_rows_ * track_size) - 3, chi2_table_))
+    {
+      utils::Logger::debug("Chi2 test failed for track id: " + std::to_string(id));
+      continue;
+    }
+
+    // Update total size of C matrix and residual delta (-3 for dimension lost in nullspace projection)
     total_size_ += (ph_->block_rows_ * track_size) - 3;
 
-    // Add id to update ids
+    // Add id to vector of ids that will be used in the update
     update_ids_.emplace_back(id);
   }
 
@@ -215,30 +190,14 @@ void Updater::update(MSCEqFState& X, const Tracks& tracks, std::unordered_set<ui
   delta.conservativeResize(total_size_);
   C.conservativeResize(total_size_, C.cols());
 
-  // {
-  //   double scale = 12;
-  //   Eigen::MatrixXd etmp = C;
-  //   Eigen::VectorXd rtemp = delta;
-  //   etmp = etmp.cwiseAbs();
-  //   rtemp = rtemp.cwiseAbs();
-  //   cv::Mat cvtmp, cvrtmp, cvtmpres, cvrtmpres;
-  //   cv::eigen2cv(etmp, cvtmp);
-  //   cv::eigen2cv(rtemp, cvrtmp);
-  //   cv::resize(cvtmp, cvtmpres, cv::Size(), scale, scale, cv::INTER_NEAREST);
-  //   cv::resize(cvrtmp, cvrtmpres, cv::Size(), scale, scale, cv::INTER_NEAREST);
-  //   cv::imshow("C block", cvtmpres);
-  //   cv::imshow("delta block", cvrtmpres);
-  //   cv::waitKey();
-  // }
-
   // Define measurement noise covariance
   MatrixX R = MatrixX::Identity(C.rows(), C.rows()) * opts_.pixel_std_ * opts_.pixel_std_;
 
-  // // Update compression
-  // if (C.rows() > C.cols())
-  // {
-  //   UpdaterHelper::updateQRCompression(C, delta, R);
-  // }
+  // Update compression
+  if (C.rows() > C.cols())
+  {
+    UpdaterHelper::updateQRCompression(C, delta, R);
+  }
 
   // MSCEqF Update
   UpdateMSCEqF(X, C, delta, R);
@@ -257,7 +216,7 @@ bool Updater::linearTriangulation(const MSCEqFState& X, const Track& track, cons
 
   for (size_t i = 0; i < track.size(); ++i)
   {
-    SE3 E = A_E.inv() * X.clones_.at(track.timestamps_[i])->E_;
+    SE3 E = A_E.inv() * X.clone(track.timestamps_[i]);
 
     A_bf(0) = track.normalized_uvs_[i].x;
     A_bf(1) = track.normalized_uvs_[i].y;
@@ -373,7 +332,9 @@ void Updater::nonlinearTriangulationResidualJacobian(
 
   for (size_t i = 0; i < track.size(); ++i)
   {
-    Vector3 Ci_f = X.clones_.at(track.timestamps_[i])->E_.inv() * Gf0;
+    const auto& clone_E = X.clone(track.timestamps_[i]);
+
+    Vector3 Ci_f = clone_E.inv() * Gf0;
     Vector3 Ci_f_invdepth(Ci_f(0) / Ci_f(2), Ci_f(1) / Ci_f(2), 1 / Ci_f(2));
 
     Vector2 uvn(track.normalized_uvs_[i].x, track.normalized_uvs_[i].y);
@@ -381,59 +342,30 @@ void Updater::nonlinearTriangulationResidualJacobian(
 
     J.block(2 * i, 0, 2, 2) = Matrix2::Identity();
     J.block(2 * i, 2, 2, 1) = -Ci_f_invdepth.block<2, 1>(0, 0);
-    J.block(2 * i, 0, 2, 3) = Ci_f_invdepth(2) * J.block(2 * i, 0, 2, 3) *
-                              X.clones_.at(track.timestamps_[i])->E_.R().transpose() * A_E.R() * J_rep;
+    J.block(2 * i, 0, 2, 3) = Ci_f_invdepth(2) * J.block(2 * i, 0, 2, 3) * clone_E.R().transpose() * A_E.R() * J_rep;
   }
 }
 
 void Updater::UpdateMSCEqF(MSCEqFState& X, const MatrixX& C, const VectorX& delta, const MatrixX& R) const
 {
-  // [TODO] For now let's use cov_.cols() and make it simple... Will work only with involved variables in a second
-  // stage
-
-  // // get covariance of variables involved in update
-  // std::vector<MSCEqFState::MSCEqFStateKey> keys;
-  // if (X.opts_.enable_camera_extrinsics_calibration_)
-  // {
-  //   keys.push_back(MSCEqFStateElementName::E);
-  // }
-  // else
-  // {
-  //   // [TODO]
-  // }
-  // if (X.opts_.enable_camera_intrinsics_calibration_)
-  // {
-  //   keys.push_back(MSCEqFStateElementName::L);
-  // }
-
-  // std::cout << std::setprecision(15) << "EqF state pre-update:\n"
-  //           << X.D().asMatrix() << '\n'
-  //           << X.delta().transpose() << '\n'
-  //           << X.E().asMatrix() << '\n'
-  //           << std::endl;
-
   // Compute Kalman gain and innovation
-  MatrixX G = X.cov_ * C.transpose();
-  // MatrixX S = C * X.subCov(keys) * C.transpose() + R;
-  MatrixX S = C * X.cov() * C.transpose() + R;
+  MatrixX G = X.subCovCols(cols_map_.keys()) * C.transpose();
+  MatrixX S = C * X.subCov(cols_map_.keys()) * C.transpose() + R;
   MatrixX K = G * S.inverse();
   VectorX inn = K * delta;
 
   // Update state
   X.state_.at(MSCEqFStateElementName::Dd)
-      ->updateLeft(
-          inn.segment(X.stateElementIndex(MSCEqFStateElementName::Dd), X.stateElementDof(MSCEqFStateElementName::Dd)));
+      ->updateLeft(inn.segment(X.index(MSCEqFStateElementName::Dd), X.dof(MSCEqFStateElementName::Dd)));
   if (X.opts_.enable_camera_extrinsics_calibration_)
   {
     X.state_.at(MSCEqFStateElementName::E)
-        ->updateLeft(
-            inn.segment(X.stateElementIndex(MSCEqFStateElementName::E), X.stateElementDof(MSCEqFStateElementName::E)));
+        ->updateLeft(inn.segment(X.index(MSCEqFStateElementName::E), X.dof(MSCEqFStateElementName::E)));
   }
   if (X.opts_.enable_camera_intrinsics_calibration_)
   {
     X.state_.at(MSCEqFStateElementName::L)
-        ->updateLeft(
-            inn.segment(X.stateElementIndex(MSCEqFStateElementName::L), X.stateElementDof(MSCEqFStateElementName::L)));
+        ->updateLeft(inn.segment(X.index(MSCEqFStateElementName::L), X.dof(MSCEqFStateElementName::L)));
   }
   for (auto& [timestamp, clone] : X.clones_)
   {
@@ -441,18 +373,7 @@ void Updater::UpdateMSCEqF(MSCEqFState& X, const MatrixX& C, const VectorX& delt
   }
 
   // Update covariance
-  // X.cov_ -= K * G.transpose();
-  X.cov_ = (MatrixX::Identity(X.cov_.rows(), X.cov_.cols()) - K * C) * X.cov_ *
-               (MatrixX::Identity(X.cov_.rows(), X.cov_.cols()) - K * C).transpose() +
-           (K * R * K.transpose());
-
-  // std::cout << std::setprecision(15) << "EqF state post-update:\n"
-  //           << X.D().asMatrix() << '\n'
-  //           << X.delta().transpose() << '\n'
-  //           << X.E().asMatrix() << '\n'
-  //           << std::endl;
-
-  assert((X.cov_ - X.cov_.transpose()).norm() < 1e-9);
+  X.cov_ -= K * G.transpose();
 }
 
 }  // namespace msceqf

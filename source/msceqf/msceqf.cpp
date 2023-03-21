@@ -156,7 +156,7 @@ void MSCEqF::processCameraMeasurement(Camera& cam)
   }
 
   // Update
-  updater_.update(X_, track_manager_.tracks(), ids_to_update_);
+  updater_.mscUpdate(X_, track_manager_.tracks(), ids_to_update_);
   if (!ids_to_update_.empty())
   {
     utils::Logger::info("Successful update with " + std::to_string(ids_to_update_.size()) + " tracks");
@@ -212,7 +212,7 @@ void MSCEqF::processFeaturesMeasurement(const TriangulatedFeatures& features)
     marginalize = true;
   }
 
-  updater_.update(X_, track_manager_.tracks(), ids_to_update_);
+  updater_.mscUpdate(X_, track_manager_.tracks(), ids_to_update_);
   if (!ids_to_update_.empty())
   {
     utils::Logger::info("Successful update with " + std::to_string(ids_to_update_.size()) + " tracks");

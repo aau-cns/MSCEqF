@@ -29,30 +29,34 @@ MatrixX ProjectionHelperZ1::dpi(const Vector3& f)
       .finished();
 }
 
-void ProjectionHelperS2::innovationBlock([[maybe_unused]] const MSCEqFState& X,
-                                         [[maybe_unused]] const SystemState& xi0,
-                                         [[maybe_unused]] const FeatHelper& feat,
-                                         [[maybe_unused]] MatrixXBlockRowRef C_block_row,
-                                         [[maybe_unused]] VectorXBlockRowRef delta_block_row,
-                                         [[maybe_unused]] MatrixXBlockRowRef Cf_block_row)
+void ProjectionHelperS2::residualJacobianBlock([[maybe_unused]] const MSCEqFState& X,
+                                               [[maybe_unused]] const SystemState& xi0,
+                                               [[maybe_unused]] const FeatHelper& feat,
+                                               [[maybe_unused]] MatrixXBlockRowRef C_block_row,
+                                               [[maybe_unused]] VectorXBlockRowRef delta_block_row,
+                                               [[maybe_unused]] MatrixXBlockRowRef Cf_block_row,
+                                               [[maybe_unused]] const ColsMap& cols_map)
 {
   throw std::runtime_error("Update with S2 projection not implemented yet");
 }
 
-void ProjectionHelperZ1::innovationBlock(const MSCEqFState& X,
-                                         const SystemState& xi0,
-                                         const FeatHelper& feat,
-                                         MatrixXBlockRowRef C_block_row,
-                                         VectorXBlockRowRef delta_block_row,
-                                         MatrixXBlockRowRef Cf_block_row)
+void ProjectionHelperZ1::residualJacobianBlock(const MSCEqFState& X,
+                                               const SystemState& xi0,
+                                               const FeatHelper& feat,
+                                               MatrixXBlockRowRef C_block_row,
+                                               VectorXBlockRowRef delta_block_row,
+                                               MatrixXBlockRowRef Cf_block_row,
+                                               const ColsMap& cols_map)
 {
-  // Here feat.A_f_ is the feature in the global frame (groundturth)
-  Vector3 G0_f = (xi0.P() * xi0.S()).inv() * feat.A_f_;
+  // const auto& anchor_E = X.clone(feat.anchor_timestmap_);
+  const auto& clone_E = X.clone(feat.clone_timestamp_);
 
+  // [TODO] Change! Here feat.A_f_ is the feature in the global frame (groundturth)
+  Vector3 G0_f = (xi0.P() * xi0.S()).inv() * feat.A_f_;
   // Vector3 G0_f = feat.anchor_->E_ * feat.A_f_;
 
   // feature in origin frmae and camera frame
-  Vector3 C_f = feat.clone_->E_.inv() * G0_f;
+  Vector3 C_f = clone_E.inv() * G0_f;
 
   // precompute D = K0 * L * dpi(C_f) if intrinsics are calibrated, D = dpi(C_f) otherwise
   Eigen::Matrix<fp, 2, 3> D = X.opts_.enable_camera_intrinsics_calibration_ ?
@@ -62,17 +66,25 @@ void ProjectionHelperZ1::innovationBlock(const MSCEqFState& X,
   // Precompute P = L * pi(C_f) if intrinsics are calibrated, P = pi(C_f) otherwise
   Vector3 P = X.opts_.enable_camera_intrinsics_calibration_ ? X.L().asMatrix() * pi(C_f) : pi(C_f);
 
+  if (X.opts_.enable_camera_intrinsics_calibration_)
+  {
+    C_block_row.block(0, cols_map.at(MSCEqFStateElementName::L), block_rows_, X.dof(MSCEqFStateElementName::L))
+        .noalias() = xi0.K().asMatrix().block<2, 2>(0, 0) * UpdaterHelper::Xi(P);
+  }
+
   if (X.opts_.enable_camera_extrinsics_calibration_)
   {
     Eigen::Matrix<fp, 3, 6> A = Eigen::Matrix<fp, 3, 6>::Zero();
     A.block<3, 3>(0, 0) = SO3::wedge(G0_f);
     A.block<3, 3>(0, 3) = -Matrix3::Identity();
 
-    C_block_row.block(0, feat.clone_->getIndex(), block_rows_, 6).noalias() = D * feat.clone_->E_.R().transpose() * A;
+    C_block_row.block(0, cols_map.at(feat.clone_timestamp_), block_rows_, X.dof(feat.clone_timestamp_)).noalias() =
+        D * clone_E.R().transpose() * A;
 
     // if (feat.clone_->getIndex() != feat.anchor_->getIndex())
     // {
-    //   C_block_row.block(0, feat.anchor_->getIndex(), block_rows_, 6).noalias() = -D * feat.clone_->E_.inv().R() * A;
+    //   C_block_row.block(0, cols_map.at(feat.anchor_timestamp_), block_rows_, X.dof(feat.anchor_timestamp_)).noalias()
+    //   = -D * clone_E.inv().R() * A;
     // }
   }
   else
@@ -80,19 +92,13 @@ void ProjectionHelperZ1::innovationBlock(const MSCEqFState& X,
     // [TODO] Ct if extrinsics are not calibrated
   }
 
-  if (X.opts_.enable_camera_intrinsics_calibration_)
-  {
-    C_block_row.block(0, X.stateElementIndex(MSCEqFStateElementName::L), block_rows_, 4).noalias() =
-        xi0.K().asMatrix().block<2, 2>(0, 0) * UpdaterHelper::Xi(P);
-  }
-
   switch (feature_representation_)
   {
     case FeatureRepresentation::EUCLIDEAN:
-      Cf_block_row = D * (xi0.P().R() * xi0.S().R() * feat.clone_->E_.R()).transpose();
+      Cf_block_row = D * (xi0.P().R() * xi0.S().R() * clone_E.R()).transpose();
       break;
     case FeatureRepresentation::ANCHORED_INVERSE_DEPTH:
-      // Cf_block_row = D * (xi0.P().R() * xi0.S().R() * feat.clone_->E_.R()).transpose() *
+      // Cf_block_row = D * (xi0.P().R() * xi0.S().R() * clone_E.R()).transpose() *
       //                UpdaterHelper::inverseDepthJacobian(feat.A_f_);
       throw std::runtime_error("Anchored inverse depth representation update not implemented");
       break;
@@ -161,37 +167,8 @@ void UpdaterHelper::updateQRCompression(MatrixX& C, VectorX& delta, MatrixX& R)
   R = Q.transpose() * R * Q;
 }
 
-bool UpdaterHelper::chi2Test(const MSCEqFState& X,
-                             const MatrixXBlockRowRef Ct_block,
-                             const VectorXBlockRowRef delta_block,
-                             const fp& pixel_std,
-                             const std::map<uint, fp>& chi2_table)
+bool UpdaterHelper::chi2Test(const fp& chi2, const size_t& dof, const std::map<uint, fp>& chi2_table)
 {
-  const auto& dof = delta_block.rows();
-
-  // [TODO] For now let's use cov_.cols() and make it simple... Will work only with involved variables in a second stage
-
-  // // get covariance of variables involved in update
-  // std::vector<MSCEqFState::MSCEqFStateKey> keys;
-  // if (X.opts_.enable_camera_extrinsics_calibration_)
-  // {
-  //   keys.push_back(MSCEqFStateElementName::E);
-  // }
-  // else
-  // {
-  //   // [TODO]
-  // }
-  // if (X.opts_.enable_camera_intrinsics_calibration_)
-  // {
-  //   keys.push_back(MSCEqFStateElementName::L);
-  // }
-
-  // MatrixX S = Ct_block * X.subCov(keys) * Ct_block.transpose();
-  MatrixX S = Ct_block * X.cov() * Ct_block.transpose();
-  S.diagonal() += Eigen::VectorXd::Ones(S.rows()) * pixel_std * pixel_std;
-  fp chi2 = delta_block.dot(S.llt().solve(delta_block));
-
-  // Compute chi2 threshold
   fp chi2_threshold;
   if (dof < 1000)
   {
@@ -210,4 +187,5 @@ bool UpdaterHelper::chi2Test(const MSCEqFState& X,
 
   return true;
 }
+
 }  // namespace msceqf

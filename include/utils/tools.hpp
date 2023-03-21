@@ -23,6 +23,101 @@
 
 namespace utils
 {
+
+/**
+ * @brief This calss define a map that keeps the insertion order.
+ *
+ * @tparam Key
+ * @tparam Value
+ */
+template <typename Key, typename Value>
+class InsertionOrderedMap
+{
+ public:
+  /**
+   * @brief Insert a key-value pair into the map if the key does not exists.
+   *
+   * @param key key
+   * @param value value
+   */
+  void insert(const Key& key, const Value& value)
+  {
+    if (map_.find(key) == map_.end())
+    {
+      map_[key] = vector_.size();
+      vector_.emplace_back(std::make_pair(key, value));
+    }
+  }
+
+  /**
+   * @brief Return the value associated with the key.
+   *
+   * @param key
+   * @return const Value&
+   */
+  const Value& at(const Key& key) const
+  {
+    auto index = map_.at(key);
+    return vector_.at(index).second;
+  }
+
+  /**
+   * @brief Return the value associated with the key.
+   *
+   * @param key
+   * @return Value&
+   */
+  Value& at(const Key& key)
+  {
+    auto index = map_.at(key);
+    return vector_.at(index).second;
+  }
+
+  /**
+   * @brief Return a vector containing the keys
+   *
+   * @return const std::vector<Key>
+   */
+  const std::vector<Key> keys() const
+  {
+    std::vector<Key> result;
+    for (const auto& pair : vector_)
+    {
+      result.push_back(pair.first);
+    }
+    return result;
+  }
+
+  /**
+   * @brief Return a vector containing the values
+   *
+   * @return const std::vector<Value>
+   */
+  const std::vector<Value> values() const
+  {
+    std::vector<Value> result;
+    for (const auto& pair : vector_)
+    {
+      result.push_back(pair.second);
+    }
+    return result;
+  }
+
+  /**
+   * @brief Clear the map and the vector
+   *
+   */
+  void clear()
+  {
+    map_.clear();
+    vector_.clear();
+  }
+
+ private:
+  std::unordered_map<Key, size_t> map_;
+  std::vector<std::pair<Key, Value>> vector_;
+};
+
 /**
  * @brief Very simple Eigen compatible central difference numerical differentiation function.
  *
