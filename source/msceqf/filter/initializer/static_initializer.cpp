@@ -37,7 +37,7 @@ void StaticInitializer::insertImu(const Imu& imu)
   }
 
   if (imu_buffer_.size() > 1 &&
-      (imu_buffer_.back().timestamp_ - imu_buffer_.front().timestamp_) > opts_.imu_init_window_)
+      (imu_buffer_.back().timestamp_ - imu_buffer_.front().timestamp_) > (1.0 + opts_.imu_init_window_))
   {
     imu_buffer_.pop_front();
   }
@@ -62,12 +62,14 @@ bool StaticInitializer::accelerationCheck() const
   {
     acc_mean += imu.acc_;
   }
+  acc_mean /= imu_buffer_.size();
 
   std::vector<fp> acc_diff_norm_square;
   acc_diff_norm_square.reserve(imu_buffer_.size());
   std::transform(imu_buffer_.begin(), imu_buffer_.end(), std::back_inserter(acc_diff_norm_square),
                  [&acc_mean](const Imu& imu) { return (imu.acc_ - acc_mean).dot(imu.acc_ - acc_mean); });
   fp acc_std = std::reduce(acc_diff_norm_square.begin(), acc_diff_norm_square.end());
+  acc_std = std::sqrt(acc_std / (acc_diff_norm_square.size() - 1));
 
   if (acc_std < opts_.acc_threshold_)
   {

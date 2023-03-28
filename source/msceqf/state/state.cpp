@@ -28,24 +28,29 @@ MSCEqFState::MSCEqFState(const StateOptions& opts) : opts_(opts), cov_(), state_
   // Initialize core state variables (Dd, E, L) and their covariance
   // Note that persistent features are delayed initialized
   initializeStateElement(MSCEqFStateElementName::Dd, Dd_cov);
-  if (opts.enable_camera_extrinsics_calibration_)
+  if (opts_.enable_camera_extrinsics_calibration_)
   {
     initializeStateElement(MSCEqFStateElementName::E, opts_.E_init_cov_);
   }
-  if (opts.enable_camera_intrinsics_calibration_)
+  if (opts_.enable_camera_intrinsics_calibration_)
   {
     initializeStateElement(MSCEqFStateElementName::L, opts_.L_init_cov_);
   }
 
-  auto& Dd = std::static_pointer_cast<MSCEqFSDBState>(getPtr(MSCEqFStateElementName::Dd))->Dd_;
-  auto& E = std::static_pointer_cast<MSCEqFSE3State>(getPtr(MSCEqFStateElementName::E))->E_;
-
+  const auto& Dd = std::static_pointer_cast<MSCEqFSDBState>(getPtr(MSCEqFStateElementName::Dd))->Dd_;
   utils::Logger::debug("Set initial MSCEqF core state to:");
   utils::Logger::debug("D: " + static_cast<std::ostringstream&>(std::ostringstream() << Dd.D().asMatrix()).str());
-  utils::Logger::debug("delta: " +
-                       static_cast<std::ostringstream&>(std::ostringstream() << Dd.delta().transpose()).str());
-  utils::Logger::debug("E: " + static_cast<std::ostringstream&>(std::ostringstream() << E.asMatrix()).str());
-
+  utils::Logger::debug("d: " + static_cast<std::ostringstream&>(std::ostringstream() << Dd.delta().transpose()).str());
+  if (opts_.enable_camera_extrinsics_calibration_)
+  {
+    const auto& E = std::static_pointer_cast<MSCEqFSE3State>(getPtr(MSCEqFStateElementName::E))->E_;
+    utils::Logger::debug("E: " + static_cast<std::ostringstream&>(std::ostringstream() << E.asMatrix()).str());
+  }
+  if (opts_.enable_camera_intrinsics_calibration_)
+  {
+    const auto& L = std::static_pointer_cast<MSCEqFInState>(getPtr(MSCEqFStateElementName::L))->L_;
+    utils::Logger::debug("L: " + static_cast<std::ostringstream&>(std::ostringstream() << L.asMatrix()).str());
+  }
   utils::Logger::debug("Set initial MSCEqF covariance to:");
   utils::Logger::debug(static_cast<std::ostringstream&>(std::ostringstream() << cov_).str());
 }
@@ -295,7 +300,11 @@ void MSCEqFState::stochasticCloning(const fp& timestamp)
 {
   const uint old_size = cov_.rows();
 
-  auto ptr = state_.at(MSCEqFStateElementName::E);
+  MSCEqFStateElementSharedPtr ptr = nullptr;
+  if (opts_.enable_camera_extrinsics_calibration_)
+  {
+    ptr = state_.at(MSCEqFStateElementName::E);
+  }
   assert(ptr != nullptr);
 
   MSCEqFStateElementUniquePtr clone = ptr->clone();
@@ -393,6 +402,31 @@ const MSCEqFStateElementSharedPtr& MSCEqFState::getPtr(const MSCEqFKey& key) con
   }
 }
 
+std::string MSCEqFState::toString(const MSCEqFStateKey& key)
+{
+  std::string name;
+  if (std::holds_alternative<MSCEqFStateElementName>(key))
+  {
+    switch (std::get<MSCEqFStateElementName>(key))
+    {
+      case MSCEqFStateElementName::Dd:
+        name = "Semi Direct Bias (D, delta)";
+        break;
+      case MSCEqFStateElementName::E:
+        name = "Special Euclidean (E)";
+        break;
+      case MSCEqFStateElementName::L:
+        name = "Intrinsic (L)";
+        break;
+    }
+  }
+  else
+  {
+    name = "Scaled Orthogonal Transforms (SOT3) associated with feature id: " + std::to_string(std::get<uint>(key));
+  }
+  return name;
+}
+
 const MSCEqFState MSCEqFState::Random() const
 {
   MSCEqFState result(*this);
@@ -431,16 +465,8 @@ void MSCEqFState::setMSCEqFStateInitialOrientation(const Quaternion& q)
   auto& Dd = std::static_pointer_cast<MSCEqFSDBState>(getPtr(MSCEqFStateElementName::Dd))->Dd_;
   Dd.multiplyRight(SDB(SE23(q.normalized(), {Vector3::Zero(), Vector3::Zero()}), Vector6::Zero()));
 
-  utils::Logger::debug("Set initial MSCEqF core state to:");
-
-  utils::Logger::debug("Quaternion: " +
-                       static_cast<std::ostringstream&>(std::ostringstream() << Dd.D().q().coeffs().transpose()).str());
-  utils::Logger::debug("velocity: " +
-                       static_cast<std::ostringstream&>(std::ostringstream() << Dd.D().v().transpose()).str());
-  utils::Logger::debug("Position: " +
-                       static_cast<std::ostringstream&>(std::ostringstream() << Dd.D().p().transpose()).str());
-  utils::Logger::debug("Biases (gamma): " +
-                       static_cast<std::ostringstream&>(std::ostringstream() << Dd.delta().transpose()).str());
+  utils::Logger::debug("Set initial MSCEqF core state attitude to:");
+  utils::Logger::debug("A: " + static_cast<std::ostringstream&>(std::ostringstream() << Dd.D().R()).str());
 }
 
 const MSCEqFState MSCEqFState::operator*(const MSCEqFState& other) const
@@ -476,31 +502,6 @@ const MSCEqFState MSCEqFState::operator*(const MSCEqFState& other) const
     }
   }
   return result;
-}
-
-std::string MSCEqFState::toString(const MSCEqFStateKey& key)
-{
-  std::string name;
-  if (std::holds_alternative<MSCEqFStateElementName>(key))
-  {
-    switch (std::get<MSCEqFStateElementName>(key))
-    {
-      case MSCEqFStateElementName::Dd:
-        name = "Semi Direct Bias (D, delta)";
-        break;
-      case MSCEqFStateElementName::E:
-        name = "Special Euclidean (E)";
-        break;
-      case MSCEqFStateElementName::L:
-        name = "Intrinsic (L)";
-        break;
-    }
-  }
-  else
-  {
-    name = "Scaled Orthogonal Transforms (SOT3) associated with feature id: " + std::to_string(std::get<uint>(key));
-  }
-  return name;
 }
 
 }  // namespace msceqf

@@ -25,6 +25,8 @@
 namespace msceqf
 {
 
+const std::string parameters_path = "../tests/config/parameters.yaml";
+
 constexpr fp EPS = 1e-6;
 constexpr int N_TESTS = 100;
 
@@ -51,14 +53,14 @@ void SystemStateEquality(const msceqf::SystemState& xi1,
   MatrixEquality(xi1.T().asMatrix(), xi2.T().asMatrix(), tol);
   MatrixEquality(xi1.b(), xi2.b(), tol);
 
-  assert(xi1.opts_.enable_camera_extrinsics_calibration_ == xi2.opts_.enable_camera_extrinsics_calibration_);
-  if (xi1.opts_.enable_camera_extrinsics_calibration_)
+  assert(xi1.opts().enable_camera_extrinsics_calibration_ == xi2.opts().enable_camera_extrinsics_calibration_);
+  if (xi1.opts().enable_camera_extrinsics_calibration_)
   {
     MatrixEquality(xi1.S().asMatrix(), xi2.S().asMatrix(), tol);
   }
 
-  assert(xi1.opts_.enable_camera_intrinsics_calibration_ == xi2.opts_.enable_camera_intrinsics_calibration_);
-  if (xi1.opts_.enable_camera_intrinsics_calibration_)
+  assert(xi1.opts().enable_camera_intrinsics_calibration_ == xi2.opts().enable_camera_intrinsics_calibration_);
+  if (xi1.opts().enable_camera_intrinsics_calibration_)
   {
     MatrixEquality(xi1.K().asMatrix(), xi2.K().asMatrix(), tol);
   }
@@ -78,14 +80,14 @@ void MSCEqFStateEquality(const msceqf::MSCEqFState& X1,
   MatrixEquality(X1.delta(), X2.delta(), tol);
   MatrixEquality(X1.covBlock(msceqf::MSCEqFStateElementName::Dd), X2.covBlock(msceqf::MSCEqFStateElementName::Dd), tol);
 
-  assert(X1.opts_.enable_camera_extrinsics_calibration_ == X2.opts_.enable_camera_extrinsics_calibration_);
-  if (X1.opts_.enable_camera_extrinsics_calibration_)
+  assert(X1.opts().enable_camera_extrinsics_calibration_ == X2.opts().enable_camera_extrinsics_calibration_);
+  if (X1.opts().enable_camera_extrinsics_calibration_)
   {
     MatrixEquality(X1.E().asMatrix(), X2.E().asMatrix(), tol);
     MatrixEquality(X1.covBlock(msceqf::MSCEqFStateElementName::E), X2.covBlock(msceqf::MSCEqFStateElementName::E), tol);
   }
-  assert(X1.opts_.enable_camera_intrinsics_calibration_ == X2.opts_.enable_camera_intrinsics_calibration_);
-  if (X1.opts_.enable_camera_intrinsics_calibration_)
+  assert(X1.opts().enable_camera_intrinsics_calibration_ == X2.opts().enable_camera_intrinsics_calibration_);
+  if (X1.opts().enable_camera_intrinsics_calibration_)
   {
     MatrixEquality(X1.L().asMatrix(), X2.L().asMatrix(), tol);
     MatrixEquality(X1.covBlock(msceqf::MSCEqFStateElementName::L), X2.covBlock(msceqf::MSCEqFStateElementName::L), tol);

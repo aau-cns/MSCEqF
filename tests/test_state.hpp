@@ -17,15 +17,15 @@
 #include "msceqf/state/state.hpp"
 #include "msceqf/symmetry/symmetry.hpp"
 #include "msceqf/system/system.hpp"
+#include "msceqf/options/msceqf_option_parser.hpp"
 
 namespace msceqf
 {
 
 TEST(SystemStateTest, SystemStateConstructionTest)
 {
-  // Param arser
-  std::string filepath_base = "/home/alfornasier/PhD/MSCEqF_dev/MSCEqF/config/";
-  OptionParser parser(filepath_base + "parameters.yaml");
+  // Param parser
+  OptionParser parser(parameters_path);
 
   // Options
   MSCEqFOptions opts = parser.parseOptions();
@@ -280,9 +280,8 @@ TEST(SystemStateTest, SystemStateConstructionTest)
 
 TEST(MSCEqFStateTest, MSCEqFStateConstructionTest)
 {
-  // Param arser
-  std::string filepath_base = "/home/alfornasier/PhD/MSCEqF_dev/MSCEqF/config/";
-  OptionParser parser(filepath_base + "parameters.yaml");
+  // Param parser
+  OptionParser parser(parameters_path);
 
   // Options
   MSCEqFOptions opts = parser.parseOptions();

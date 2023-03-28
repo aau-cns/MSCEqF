@@ -110,11 +110,11 @@ class TrackManager
   inline void clear() { tracks_.clear(); }
 
   /**
-   * @brief Update camera intrinsics with latest estimated values
+   * @brief Get the camera pointer
    *
-   * @param intrinsics
+   * @return const PinholeCameraUniquePtr&
    */
-  inline void updateCameraIntrinsics(const Vector4& intrinsics) { tracker_.updateCameraIntrinsics(intrinsics); }
+  const PinholeCameraUniquePtr& cam() const;
 
  private:
   /**

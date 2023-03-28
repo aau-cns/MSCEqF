@@ -31,19 +31,17 @@ using ColsMap = utils::InsertionOrderedMap<MSCEqFState::MSCEqFKey, size_t>;  //!
  * @brief FeatHelper struct.
  * This struct implements a helper structure holding all the information related to a single feature measurement to
  * be used in the computation of the C matrix, Cf matrix and residual delta, for the MSCEqF update.
- *
- * @note The clone pointer is passed by reference because there is no need to share ownership of the clone.
  */
 struct FeatHelper
 {
   FeatHelper(
       const Vector3& A_f, const Vector2& uv, const Vector2& uvn, const fp& anchor_timestamp, const fp& clone_timestamp)
-      : A_f_(A_f), uv_(uv), uvn_(uvn), anchor_timestmap_(anchor_timestamp), clone_timestamp_(clone_timestamp){};
+      : A_f_(A_f), uv_(uv), uvn_(uvn), anchor_timestamp_(anchor_timestamp), clone_timestamp_(clone_timestamp){};
 
   const Vector3& A_f_;          //!< Triangulated feature in anchor frame
   const Vector2& uv_;           //!< (measured) feature coordinates
   const Vector2& uvn_;          //!< Normalized (measured) feature coordinates
-  const fp& anchor_timestmap_;  //!< Timestamp of the anchor
+  const fp& anchor_timestamp_;  //!< Timestamp of the anchor
   const fp& clone_timestamp_;   //!< Timestamp of the feature measurement
 };
 
@@ -92,20 +90,32 @@ class ProjectionHelper
                                      MatrixXBlockRowRef Cf_block_row,
                                      const ColsMap& cols_map) = 0;
 
-  size_t block_rows_;  //!< Number of rows of a C matrix block and a residual block
+  /**
+   * @brief Get the number of rows of a C matrix block and a residual block
+   *
+   * @return const size_t&
+   */
+  [[nodiscard]] const size_t& block_rows() const { return block_rows_; }
+
+  /**
+   * @brief Get the dimension lost due to nullspace projection
+   *
+   * @return const size_t&
+   */
+  [[nodiscard]] const size_t& dim_loss() const { return dim_loss_; }
 
  protected:
   /// Rule of 5
-  ProjectionHelper(const FeatureRepresentation& feature_representation)
-      : feature_representation_(feature_representation)
-  {
-  }
+  ProjectionHelper(const FeatureRepresentation& feature_representation);
   ProjectionHelper(const ProjectionHelper&) = default;
   ProjectionHelper(ProjectionHelper&&) = default;
   ProjectionHelper& operator=(const ProjectionHelper&) = default;
   ProjectionHelper& operator=(ProjectionHelper&&) = default;
 
   FeatureRepresentation feature_representation_;  //!< Feature representation
+
+  size_t block_rows_;  //!< Number of rows of a C matrix block and a residual block
+  size_t dim_loss_;    //!< Dimension lost due to nullspace projection
 };
 
 /**

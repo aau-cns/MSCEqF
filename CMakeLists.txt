@@ -154,11 +154,15 @@ if(${BUILD_TESTS})
     gtest_discover_tests(msceqf_tests)
 endif()
 
-## Declare C++ examples
-# add_executable(msceqf_euroc examples/euroc/euroc.cpp)
-# target_include_directories(msceqf_euroc PRIVATE ${include_dirs})
-# target_link_libraries(msceqf_euroc ${PROJECT_NAME} pthread)
+# Declare C++ examples
+add_executable(msceqf_euroc examples/euroc/euroc.cpp)
+target_include_directories(msceqf_euroc PRIVATE ${include_dirs})
+target_link_libraries(msceqf_euroc ${PROJECT_NAME} pthread)
 
-add_executable(msceqf_syntetic examples/syntetic/syntetic.cpp)
-target_include_directories(msceqf_syntetic PRIVATE ${include_dirs})
-target_link_libraries(msceqf_syntetic ${PROJECT_NAME} pthread)
+add_executable(msceqf_uzhfpv examples/uzhfpv/uzhfpv.cpp)
+target_include_directories(msceqf_uzhfpv PRIVATE ${include_dirs})
+target_link_libraries(msceqf_uzhfpv ${PROJECT_NAME} pthread)
+
+add_executable(msceqf_synthetic examples/synthetic/synthetic.cpp)
+target_include_directories(msceqf_synthetic PRIVATE ${include_dirs})
+target_link_libraries(msceqf_synthetic ${PROJECT_NAME} pthread)

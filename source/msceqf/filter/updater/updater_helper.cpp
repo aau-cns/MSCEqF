@@ -14,6 +14,23 @@
 namespace msceqf
 {
 
+ProjectionHelper::ProjectionHelper(const FeatureRepresentation& feature_representation)
+    : feature_representation_(feature_representation)
+{
+  switch (feature_representation_)
+  {
+    case FeatureRepresentation::ANCHORED_EUCLIDEAN:
+      dim_loss_ = 3;
+      break;
+    case FeatureRepresentation::ANCHORED_INVERSE_DEPTH:
+      dim_loss_ = 3;
+      break;
+    case FeatureRepresentation::ANCHORED_POLAR:
+      dim_loss_ = 4;
+      break;
+  }
+}
+
 Vector3 ProjectionHelperS2::pi(const Vector3& f) { return f / f.norm(); }
 
 Vector3 ProjectionHelperZ1::pi(const Vector3& f) { return (Vector3() << f(0) / f(2), f(1) / f(2), 1.0).finished(); }
@@ -48,44 +65,40 @@ void ProjectionHelperZ1::residualJacobianBlock(const MSCEqFState& X,
                                                MatrixXBlockRowRef Cf_block_row,
                                                const ColsMap& cols_map)
 {
-  // const auto& anchor_E = X.clone(feat.anchor_timestmap_);
+  const auto& anchor_E = X.clone(feat.anchor_timestamp_);
   const auto& clone_E = X.clone(feat.clone_timestamp_);
 
-  // [TODO] Change! Here feat.A_f_ is the feature in the global frame (groundturth)
-  Vector3 G0_f = (xi0.P() * xi0.S()).inv() * feat.A_f_;
-  // Vector3 G0_f = feat.anchor_->E_ * feat.A_f_;
-
-  // feature in origin frmae and camera frame
+  // feature in origin frame and camera frame
+  Vector3 G0_f = anchor_E * feat.A_f_;
   Vector3 C_f = clone_E.inv() * G0_f;
 
   // precompute D = K0 * L * dpi(C_f) if intrinsics are calibrated, D = dpi(C_f) otherwise
-  Eigen::Matrix<fp, 2, 3> D = X.opts_.enable_camera_intrinsics_calibration_ ?
+  Eigen::Matrix<fp, 2, 3> D = X.opts().enable_camera_intrinsics_calibration_ ?
                                   (xi0.K() * X.L()).asMatrix().block<2, 2>(0, 0) * dpi(C_f) :
                                   dpi(C_f);
 
   // Precompute P = L * pi(C_f) if intrinsics are calibrated, P = pi(C_f) otherwise
-  Vector3 P = X.opts_.enable_camera_intrinsics_calibration_ ? X.L().asMatrix() * pi(C_f) : pi(C_f);
+  Vector3 P = X.opts().enable_camera_intrinsics_calibration_ ? X.L().asMatrix() * pi(C_f) : pi(C_f);
 
-  if (X.opts_.enable_camera_intrinsics_calibration_)
+  if (X.opts().enable_camera_intrinsics_calibration_)
   {
     C_block_row.block(0, cols_map.at(MSCEqFStateElementName::L), block_rows_, X.dof(MSCEqFStateElementName::L))
         .noalias() = xi0.K().asMatrix().block<2, 2>(0, 0) * UpdaterHelper::Xi(P);
   }
 
-  if (X.opts_.enable_camera_extrinsics_calibration_)
+  if (X.opts().enable_camera_extrinsics_calibration_)
   {
     Eigen::Matrix<fp, 3, 6> A = Eigen::Matrix<fp, 3, 6>::Zero();
     A.block<3, 3>(0, 0) = SO3::wedge(G0_f);
     A.block<3, 3>(0, 3) = -Matrix3::Identity();
 
-    C_block_row.block(0, cols_map.at(feat.clone_timestamp_), block_rows_, X.dof(feat.clone_timestamp_)).noalias() =
-        D * clone_E.R().transpose() * A;
-
-    // if (feat.clone_->getIndex() != feat.anchor_->getIndex())
-    // {
-    //   C_block_row.block(0, cols_map.at(feat.anchor_timestamp_), block_rows_, X.dof(feat.anchor_timestamp_)).noalias()
-    //   = -D * clone_E.inv().R() * A;
-    // }
+    if (feat.clone_timestamp_ != feat.anchor_timestamp_)
+    {
+      C_block_row.block(0, cols_map.at(feat.clone_timestamp_), block_rows_, X.dof(feat.clone_timestamp_)).noalias() =
+          D * clone_E.R().transpose() * A;
+      C_block_row.block(0, cols_map.at(feat.anchor_timestamp_), block_rows_, X.dof(feat.anchor_timestamp_)) =
+          -C_block_row.block(0, cols_map.at(feat.clone_timestamp_), block_rows_, X.dof(feat.clone_timestamp_));
+    }
   }
   else
   {
@@ -94,24 +107,25 @@ void ProjectionHelperZ1::residualJacobianBlock(const MSCEqFState& X,
 
   switch (feature_representation_)
   {
-    case FeatureRepresentation::EUCLIDEAN:
-      Cf_block_row = D * (xi0.P().R() * xi0.S().R() * clone_E.R()).transpose();
+    case FeatureRepresentation::ANCHORED_EUCLIDEAN:
+      Cf_block_row = D * clone_E.R().transpose() * anchor_E.R();
       break;
     case FeatureRepresentation::ANCHORED_INVERSE_DEPTH:
-      // Cf_block_row = D * (xi0.P().R() * xi0.S().R() * clone_E.R()).transpose() *
-      //                UpdaterHelper::inverseDepthJacobian(feat.A_f_);
-      throw std::runtime_error("Anchored inverse depth representation update not implemented");
+      Cf_block_row = D * clone_E.R().transpose() * anchor_E.R() * UpdaterHelper::inverseDepthJacobian(feat.A_f_);
       break;
     case FeatureRepresentation::ANCHORED_POLAR:
-      // Cf_block_row = Eigen::Matrix<fp, 2, 4>::Zero();
-      throw std::runtime_error("Anchored polar representation update not implemented");
-      break;
-    default:
+      // [TODO] Check Cf for polar representation with anchoring
+      Vector3 C_f0 = (Vector3() << 0.0, 0.0, 1.0).finished();
+      Vector3 thetak = std::acos((C_f0.normalized().transpose() * C_f.normalized())) * C_f0.cross(C_f).normalized();
+      Eigen::Matrix<fp, 3, 4> J = Eigen::Matrix<fp, 3, 4>::Zero();
+      J.block<3, 3>(0, 0) = SO3::wedge(C_f) * SO3::leftJacobian(thetak);
+      J.block<3, 1>(0, 3) = -C_f;
+      Cf_block_row = D * J;
       break;
   }
 
   // Residual
-  if (X.opts_.enable_camera_intrinsics_calibration_)
+  if (X.opts().enable_camera_intrinsics_calibration_)
   {
     delta_block_row = feat.uv_ - (xi0.K().asMatrix() * P).segment<2>(0);
   }

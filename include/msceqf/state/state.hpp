@@ -201,6 +201,13 @@ class MSCEqFState
   [[nodiscard]] const MatrixX subCovCols(const std::vector<MSCEqFKey>& keys) const;
 
   /**
+   * @brief Get the state options
+   *
+   * @return const StateOptions&
+   */
+  [[nodiscard]] inline const StateOptions& opts() const { return opts_; }
+
+  /**
    * @brief Initialize MSCEqF state element into the state map, and the relative covariance block.
    *
    * @param key state element name or feature id
@@ -227,10 +234,18 @@ class MSCEqFState
   void marginalizeCloneAt(const fp& timestamp);
 
   /**
-   * @brief Get a random MSCEqF state
-   * This method *WILL NOT* change the actual values of the state, just return a random state.
-   * This method *WILL NOT* initialize the covariance or the clones map.
-   * This method will only initialize the state map with random values.
+   * @brief Get a string describing the given MSCEqFStateKey
+   *
+   * @param key
+   * @return std::string
+   */
+  static std::string toString(const MSCEqFStateKey& key);
+
+  /**
+   * @brief Return a random MSCEqF state without changing *this.
+   * This method *WILL NOT* change the actual values of the state.
+   * This method *WILL NOT* initialize the covariance or the clones map for the returned state.
+   * This method will only initialize the state map with random values for the returned state.
    *
    * *THIS IS MEANT TO BE AN HELPER FUNCTION FOR DEBUG/TESTING*
    *
@@ -256,16 +271,6 @@ class MSCEqFState
    * @return const MSCEqFState
    */
   [[nodiscard]] const MSCEqFState operator*(const MSCEqFState& other) const;
-
-  /**
-   * @brief Get a string describing the given MSCEqFStateKey
-   *
-   * @param key
-   * @return std::string
-   */
-  static std::string toString(const MSCEqFStateKey& key);
-
-  StateOptions opts_;  //!< State Options
 
  private:
   /**
@@ -304,16 +309,12 @@ class MSCEqFState
   friend class Propagator;  //!< Propagator can access private members of MSCEqFState
   friend class Updater;     //!< Updater can access private members of MSCEqFState
 
+  StateOptions opts_;  //!< State Options
+
   MatrixX cov_;             //!< MSCEqF State covariance (Sigma matrix)
   MSCEqFStateMap state_;    //!< MSCEqF State elements mapped by their names
   MSCEqFClonesMap clones_;  //!< MSCEqF Stochastic clones mapped by their timestamps
 };
-
-// [TODO] Insert clone method
-
-// [TODO] Marginalize method
-
-// [TODO] Delayed feature init
 
 }  // namespace msceqf
 

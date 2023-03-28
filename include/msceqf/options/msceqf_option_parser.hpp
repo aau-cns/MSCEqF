@@ -223,10 +223,6 @@ class OptionParser
    * @param E_cov Covariance of the E element of the MSCEqF state (Identity by default)
    * @param L_cov Covariance of the L element of the MSCEqF state (Identity by default)
    *
-   * @note The YAML file should contain the following parameters:
-   * @note pitch_roll_std a two vector indicating the standard deviation of the pitch and the roll angle in radiants
-   *
-   * @todo Include transformation based on actual xi0 value
    */
   void parseInitialCovariance(Matrix9& D_cov, Matrix6& delta_cov, Matrix6& E_cov, Matrix4& L_cov);
 

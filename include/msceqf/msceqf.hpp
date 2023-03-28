@@ -21,6 +21,7 @@
 #include "msceqf/state/state.hpp"
 #include "msceqf/system/system.hpp"
 #include "vision/track_manager.hpp"
+#include "utils/visualizer.hpp"
 
 namespace msceqf
 {
@@ -114,6 +115,7 @@ class MSCEqF
   StaticInitializer initializer_;  //!< The MSCEqF static initializer
   Propagator propagator_;          //!< The MSCEqF propagator
   Updater updater_;                //!< The MSCEqF updater
+  Visualizer visualizer_;          //<! The MSCEqF visualizer
 
   std::unordered_set<uint> ids_to_update_;  //!< Ids of track to update
 

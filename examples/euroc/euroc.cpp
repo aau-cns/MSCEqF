@@ -10,20 +10,21 @@
 // You can contact the authors at <alessandro.fornasier@ieee.org>
 
 #include "msceqf/msceqf.hpp"
-#include "utils/csv_parser.hpp"
+#include "utils/data_parser.hpp"
+#include "utils/data_writer.hpp"
 
-// int main(int argc, char** argv)
-int main()
+int main(int argc, char** argv)
 {
-  // if (argc != 2)
-  // {
-  //   std::cout << "Usage: ./euroc <dataset_name>" << std::endl;
-  //   return 1;
-  // }
+  if (argc != 4)
+  {
+    std::cout << "Usage: ./msceqf_euroc <dataset_name> <dataset_folder> <euroc_folder> Each without / at the end."
+              << std::endl;
+    return 1;
+  }
 
-  // const std::string dataset_name = argv[1];
-  const std::string dataset_name = "V1_01_easy";
-  const std::string dataset_path = "/media/alfornasier/PortableSSD/alfornasier/Datasets/Euroc/" + dataset_name;
+  const std::string dataset_name = argv[1];
+  const std::string dataset_path = std::string(argv[2]) + "/" + dataset_name;
+  const std::string results_path = std::string(argv[3]) + "/results/" + dataset_name + ".csv";
   const std::string imu_path = dataset_path + "/mav0/imu0/data.csv";
   const std::string cam_path = dataset_path + "/mav0/cam0/data.csv";
   const std::string cam_image_path = dataset_path + "/mav0/cam0/data/";
@@ -32,11 +33,12 @@ int main()
   const std::vector<std::string> imu_header = {"#timestamp [ns]",     "w_RS_S_x [rad s^-1]", "w_RS_S_y [rad s^-1]",
                                                "w_RS_S_z [rad s^-1]", "a_RS_S_x [m s^-2]",   "a_RS_S_y [m s^-2]",
                                                "a_RS_S_z [m s^-2]"};
+
   const std::vector<std::string> groundtruth_header = {"#timestamp",
-                                                       "q_RS_w []",
                                                        "q_RS_x []",
                                                        "q_RS_y []",
                                                        "q_RS_z []",
+                                                       "q_RS_w []",
                                                        "p_RS_R_x [m]",
                                                        "p_RS_R_y [m]",
                                                        "p_RS_R_z [m]",
@@ -49,29 +51,32 @@ int main()
                                                        "b_a_RS_S_x [m s^-2]",
                                                        "b_a_RS_S_y [m s^-2]",
                                                        "b_a_RS_S_z [m s^-2]"};
+
   const std::vector<std::string> cam_header = {"#timestamp [ns]", "filename"};
 
-  utils::csvParser dataset_parser(imu_path, groundtruth_path, cam_path, cam_image_path, imu_header, groundtruth_header,
-                                  cam_header);
+  const std::vector<std::string> results_titles = {
+      "t",     "q_x",   "q_y",   "q_z",   "q_w",   "p_x",   "p_y",   "p_z",   "v_x",   "v_y",   "v_z",   "b_w_x",
+      "b_w_y", "b_w_z", "b_a_x", "b_a_y", "b_a_z", "s_q_x", "s_q_y", "s_q_z", "s_q_w", "s_p_x", "s_p_y", "s_p_z"};
 
+  utils::dataParser dataset_parser(imu_path, groundtruth_path, cam_path, cam_image_path, imu_header, groundtruth_header,
+                                   cam_header);
   dataset_parser.parseAndCheck();
 
-  msceqf::MSCEqF sys("/home/alfornasier/PhD/MSCEqF_dev/MSCEqF/examples/euroc/config.yaml");
+  utils::dataWriter result_writer(results_path, results_titles, ",");
 
-  const auto& gt = dataset_parser.getGroundtruthData();
+  msceqf::MSCEqF sys(std::string(argv[3]) + "/config/config.yaml", dataset_parser.getGroundtruthData().front().q_);
 
   const auto timestamps = dataset_parser.getSensorsTimestamps();
   for (const auto& timestamp : timestamps)
   {
-    const auto it =
-        std::find_if(gt.begin(), gt.end(), [&timestamp](const auto& d) { return d.timestamp_ >= timestamp; });
-    if (it != gt.end())
-    {
-      std::cout << "GT quaternion: " << it->q_.coeffs().transpose() << std::endl;
-    }
-
     auto data = dataset_parser.consumeSensorReadingAt(timestamp);
     std::visit([&sys](auto&& arg) { sys.processMeasurement(arg); }, data);
+
+    if (std::holds_alternative<msceqf::Camera>(data))
+    {
+      auto est = sys.stateEstimate();
+      result_writer << timestamp << est << std::endl;
+    }
   }
 
   return 0;

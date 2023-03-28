@@ -91,7 +91,7 @@ struct Camera
   friend bool operator<(const fp& timestamp, const Camera& rhs) { return timestamp < rhs.timestamp_; }
 
   cv::Mat image_;      //!< The image taken from the camera
-  cv::Mat mask_;       //!< The mask for the given image, 1 in valid reagions, 0 in regions to be masked out
+  cv::Mat mask_;       //!< The mask for the given image, 255 in valid reagions, 0 in regions to be masked out
   fp timestamp_ = -1;  //!< Timestamp of the Camera reading
 };
 

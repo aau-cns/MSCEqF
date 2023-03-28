@@ -69,8 +69,7 @@ Propagator::ImuBuffer Propagator::getImuReadings(const fp& t0, const fp& t1)
   {
     fp alpha = (t0 - first->timestamp_) / ((first - 1)->timestamp_ - first->timestamp_);
 
-    // utils::Logger::debug("First IMU reading interpolation between (" + std::to_string((first - 1)->timestamp_) + ",
-    // "
+    // utils::Logger::debug("First IMU reading interpolation between (" + std::to_string((first - 1)->timestamp_) + ", "
     // +
     //                      std::to_string(first->timestamp_) + "), at (" + std::to_string(t0) +
     //                      "), with alpha = " + std::to_string(alpha));
@@ -95,8 +94,7 @@ Propagator::ImuBuffer Propagator::getImuReadings(const fp& t0, const fp& t1)
     {
       fp alpha = (t1 - (last - 1)->timestamp_) / (last->timestamp_ - (last - 1)->timestamp_);
 
-      // utils::Logger::debug("Last IMU reading interpolation between (" + std::to_string((last - 1)->timestamp_) + ",
-      // "
+      // utils::Logger::debug("Last IMU reading interpolation between (" + std::to_string((last - 1)->timestamp_) + ", "
       // +
       //                      std::to_string(last->timestamp_) + "), at (" + std::to_string(t1) +
       //                      "), with alpha = " + std::to_string(alpha));
@@ -172,7 +170,6 @@ bool Propagator::propagate(MSCEqFState& X, const SystemState& xi0, fp& timestamp
 
     // Propagate covariance
     propagateCovariance(X, xi0, *it, dt);
-    // assert((X.cov_ - X.cov_.transpose()).norm() < 1e-9);
 
     // Propagate mean
     propagateMean(X, xi0, *it, dt);
@@ -194,11 +191,11 @@ void Propagator::propagateMean(MSCEqFState& X, const SystemState& xi0, const Imu
       ->updateRight(
           dt * (Vector15() << lambda.at(SystemStateElementName::T), lambda.at(SystemStateElementName::b)).finished());
 
-  if (X.opts_.enable_camera_extrinsics_calibration_)
+  if (X.opts().enable_camera_extrinsics_calibration_)
   {
     X.state_.at(MSCEqFStateElementName::E)->updateRight(dt * lambda.at(SystemStateElementName::S));
   }
-  if (X.opts_.enable_camera_intrinsics_calibration_)
+  if (X.opts().enable_camera_intrinsics_calibration_)
   {
     X.state_.at(MSCEqFStateElementName::L)->updateRight(dt * lambda.at(SystemStateElementName::K));
   }
@@ -211,10 +208,6 @@ void Propagator::propagateMean(MSCEqFState& X, const SystemState& xi0, const Imu
 void Propagator::propagateCovariance(MSCEqFState& X, const SystemState& xi0, const Imu& u, const fp& dt)
 {
   MatrixX Phi_core = coreStateTransitionMatrix(X, xi0, u, dt);
-
-  // MatrixX Phi = MatrixX::Identity(X.cov_.rows(), X.cov_.cols());
-  // Phi.block(0, 0, Phi_core.rows(), Phi_core.cols()) = Phi_core;
-  // X.cov_ = Phi * X.cov_ * Phi.transpose();
 
   // Core covariance propagation Phi * Sigma * Phi^T
   X.cov_.block(0, 0, Phi_core.rows(), Phi_core.cols()) =
@@ -234,7 +227,7 @@ void Propagator::propagateCovariance(MSCEqFState& X, const SystemState& xi0, con
 MatrixX Propagator::coreStateTransitionMatrix(MSCEqFState& X, const SystemState& xi0, const Imu& u, const fp& dt)
 {
   int size = 15;
-  if (X.opts_.enable_camera_extrinsics_calibration_)
+  if (X.opts().enable_camera_extrinsics_calibration_)
   {
     size += 6;
   }
@@ -253,7 +246,7 @@ MatrixX Propagator::coreStateTransitionMatrix(MSCEqFState& X, const SystemState&
   A.block(9, 9, 6, 6) =
       SE3::adjoint(X.B().Adjoint() * u.w() + X.delta() + (Vector6() << Vector3::Zero(), xi0.ge3()).finished());
 
-  if (X.opts_.enable_camera_extrinsics_calibration_)
+  if (X.opts().enable_camera_extrinsics_calibration_)
   {
     // Compute the psi vector
     Vector6 psi = Vector6::Zero();
@@ -292,7 +285,7 @@ MatrixX Propagator::coreStateTransitionMatrix(MSCEqFState& X, const SystemState&
   if (state_transition_order_ == 2)
   {
     return MatrixX::Identity(size, size) + (A * dt) +
-           coreSecondOrderPhi(A, dt, X.opts_.enable_camera_extrinsics_calibration_);
+           coreSecondOrderPhi(A, dt, X.opts().enable_camera_extrinsics_calibration_);
   }
   else
   {
@@ -338,7 +331,7 @@ MatrixX Propagator::coreSecondOrderPhi(const MatrixX& A, const fp& dt, const boo
 MatrixX Propagator::inputMatrix(MSCEqFState& X, const SystemState& xi0, const fp& dt)
 {
   int size = 15;
-  if (X.opts_.enable_camera_extrinsics_calibration_)
+  if (X.opts().enable_camera_extrinsics_calibration_)
   {
     size += 6;
   }
@@ -350,7 +343,7 @@ MatrixX Propagator::inputMatrix(MSCEqFState& X, const SystemState& xi0, const fp
   B.block(0, 0, 9, 6) = X.D().Adjoint() * B1;
   B.block(9, 6, 6, 6) = -X.B().Adjoint();
 
-  if (X.opts_.enable_camera_extrinsics_calibration_)
+  if (X.opts().enable_camera_extrinsics_calibration_)
   {
     Matrix6 B2 = Matrix6::Zero();
     B2.block<3, 3>(0, 0) = Matrix3::Identity();

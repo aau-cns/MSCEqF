@@ -48,7 +48,6 @@ void TrackManager::processFeatures(const TriangulatedFeatures& features)
     track_ref.uvs_.emplace_back(uv);
     track_ref.normalized_uvs_.emplace_back(uvn);
     track_ref.timestamps_.emplace_back(features.timestamp_);
-    track_ref.Gf_ = features.points_[i];
 
     // Remove tracks that are too long (Keep memory bounded)
     if (track_ref.size() > max_track_length_)
@@ -171,5 +170,7 @@ void TrackManager::updateTracks()
     }
   }
 }
+
+const PinholeCameraUniquePtr& TrackManager::cam() const { return tracker_.cam(); }
 
 }  // namespace msceqf

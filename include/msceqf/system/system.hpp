@@ -163,14 +163,19 @@ class SystemState
   [[nodiscard]] const Vector3 ge3() const;
 
   /**
+   * @brief Get the state options
+   *
+   * @return const StateOptions&
+   */
+  [[nodiscard]] inline const StateOptions& opts() const { return opts_; }
+
+  /**
    * @brief Get a string describing the given SystemStateKey
    *
    * @param key
    * @return std::string
    */
   static std::string toString(const SystemStateKey& key);
-
-  StateOptions opts_;  //!< State Options
 
  private:
   /**
@@ -196,6 +201,8 @@ class SystemState
   void insertSystemStateElement(std::vector<std::pair<SystemStateKey, SystemStateElementUniquePtr>>& keys_ptrs);
 
   friend class Symmetry;  //!< Symmetry can access private members of SystemState
+
+  StateOptions opts_;  //!< State Options
 
   SystemStateMap state_;  //!< MSCEqF State elements mapped by their names
 };

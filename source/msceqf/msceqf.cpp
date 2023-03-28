@@ -23,6 +23,7 @@ MSCEqF::MSCEqF(const std::string& params_filepath)
     , initializer_(opts_.init_options_)
     , propagator_(opts_.propagator_options_)
     , updater_(opts_.updater_options_, xi0_)
+    , visualizer_(track_manager_)
     , ids_to_update_()
     , timestamp_(-1)
     , is_filter_initialized_(false)
@@ -38,11 +39,13 @@ MSCEqF::MSCEqF(const std::string& params_filepath, const Quaternion& q)
     , initializer_(opts_.init_options_)
     , propagator_(opts_.propagator_options_)
     , updater_(opts_.updater_options_, xi0_)
+    , visualizer_(track_manager_)
     , ids_to_update_()
     , timestamp_(-1)
     , is_filter_initialized_(false)
 {
   X_.setMSCEqFStateInitialOrientation(q);
+
   utils::Logger::debug("Set origin to:");
   utils::Logger::debug(
       "Quaternion: " +
@@ -66,11 +69,11 @@ void MSCEqF::processImuMeasurement(const Imu& imu)
 {
   assert(imu.timestamp_ >= 0);
 
-  // if (!is_filter_initialized_)
-  // {
-  //   initializer_.insertImu(imu);
-  //   return;
-  // }
+  if (!is_filter_initialized_)
+  {
+    initializer_.insertImu(imu);
+    return;
+  }
 
   if (imu.timestamp_ < timestamp_)
   {
@@ -96,8 +99,7 @@ void MSCEqF::processCameraMeasurement(Camera& cam)
       track_manager_.clear();
       is_filter_initialized_ = true;
     }
-    // cv::imshow("Image with keypoints", cam.image_);
-    // cv::waitKey(1);
+    visualizer_.visualizeImageWithTracks(cam);
     return;
   }
 
@@ -121,28 +123,10 @@ void MSCEqF::processCameraMeasurement(Camera& cam)
   auto future_cloning = std::async([&]() { X_.stochasticCloning(cam.timestamp_); });
 
   future_image_processing.wait();
-  future_cloning.wait();
 
-  //
-  // [VISUALIZATION-DEBUG] (Temporary)
-  //
-  // {
-  //   Tracker::Keypoints active_kpts;
-  //   std::unordered_set<uint> active_ids;
-  //   track_manager_.activeTracksIds(cam.timestamp_, active_ids);
-  //   const auto& tracks = track_manager_.tracks();
-  //   for (auto& id : active_ids)
-  //   {
-  //     active_kpts.emplace_back(tracks.at(id).uvs_.back().x, tracks.at(id).uvs_.back().y, 5.0f);
-  //   }
-  //   cv::drawKeypoints(cam.image_, active_kpts, cam.image_, cv::Scalar(0, 0, 255),
-  //                     cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
-  //   cv::imshow("(distorted) Image with (undistorted) keypoints", cam.image_);
-  //   cv::waitKey(1);
-  // }
-  //
-  //
-  //
+  visualizer_.visualizeImageWithTracks(cam);
+
+  future_cloning.wait();
 
   track_manager_.lostTracksIds(cam.timestamp_, ids_to_update_);
 
@@ -167,10 +151,10 @@ void MSCEqF::processCameraMeasurement(Camera& cam)
   }
 
   // Update camera intrinsics if we are doing online camera intrinsic calibration
-  if (X_.opts_.enable_camera_intrinsics_calibration_)
+  if (X_.opts().enable_camera_intrinsics_calibration_)
   {
     SystemState xi = stateEstimate();
-    track_manager_.updateCameraIntrinsics(xi.k());
+    track_manager_.cam()->setIntrinsics(xi.k());
   }
 
   // Remove tracks used for update and clear ids_to_update_
@@ -188,6 +172,18 @@ void MSCEqF::processCameraMeasurement(Camera& cam)
 void MSCEqF::processFeaturesMeasurement(const TriangulatedFeatures& features)
 {
   assert(features.timestamp_ >= 0);
+
+  if (!is_filter_initialized_)
+  {
+    track_manager_.processFeatures(features);
+    if (initializer_.detectMotion(track_manager_.tracks()))
+    {
+      utils::Logger::info("Static initialization succeeded");
+      track_manager_.clear();
+      is_filter_initialized_ = true;
+    }
+    return;
+  }
 
   if (features.timestamp_ < timestamp_)
   {
@@ -222,10 +218,10 @@ void MSCEqF::processFeaturesMeasurement(const TriangulatedFeatures& features)
     utils::Logger::warn("Failed update.");
   }
 
-  if (X_.opts_.enable_camera_intrinsics_calibration_)
+  if (X_.opts().enable_camera_intrinsics_calibration_)
   {
     SystemState xi = stateEstimate();
-    track_manager_.updateCameraIntrinsics(xi.k());
+    track_manager_.cam()->setIntrinsics(xi.k());
   }
 
   track_manager_.removeTracksId(ids_to_update_);

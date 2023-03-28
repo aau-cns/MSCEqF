@@ -19,7 +19,7 @@ namespace msceqf
 
 enum class FeatureRepresentation
 {
-  EUCLIDEAN,
+  ANCHORED_EUCLIDEAN,
   ANCHORED_POLAR,
   ANCHORED_INVERSE_DEPTH,
 };
@@ -84,6 +84,8 @@ struct UpdaterOptions
   fp tollerance_;              //!< Tollerance for features triangulation refinement
   FeatureRepresentation msc_features_representation_;  //!< Multi State Constraint features representation
   ProjectionMethod projection_method_;                 //!< The feature projection method
+  uint min_track_lenght_;                              //!< Minimum track length for triangulation
+  fp min_angle_;                                       //!< Minimum angle (in degrees) between views for trianglulation
   fp pixel_std_;                                       //!< The pixel standard deviation
   bool curvature_correction_;                          //!< Boolean to enable the curvature correction
 };

@@ -18,22 +18,26 @@ namespace msceqf
 {
 OptionParser::OptionParser(const std::string& filepath) : node_(YAML::LoadFile(filepath)), filepath_(filepath) {}
 
-// [TODO] Check that every option is covered
 MSCEqFOptions OptionParser::parseOptions()
 {
   MSCEqFOptions opts;
+
+  // Set the logger level
+  int level;
+  readDefault(level, 0, "logger_level");
+  utils::Logger::setLevel(static_cast<utils::LoggerLevel>(level));
 
   ///
   /// Parse state options
   ///
 
-  // Parse initial covariance
-  parseInitialCovariance(opts.state_options_.D_init_cov_, opts.state_options_.delta_init_cov_,
-                         opts.state_options_.E_init_cov_, opts.state_options_.L_init_cov_);
-
   // Parse flags
   readDefault(opts.state_options_.enable_camera_extrinsics_calibration_, true, "enable_camera_extrinsic_calibration");
   readDefault(opts.state_options_.enable_camera_intrinsics_calibration_, false, "enable_camera_intrinsic_calibration");
+
+  // Parse initial covariance
+  parseInitialCovariance(opts.state_options_.D_init_cov_, opts.state_options_.delta_init_cov_,
+                         opts.state_options_.E_init_cov_, opts.state_options_.L_init_cov_);
 
   // parse other state options
   readDefault(opts.state_options_.gravity_, 9.81, "gravity");
@@ -43,8 +47,8 @@ MSCEqFOptions OptionParser::parseOptions()
   ///
   /// Parse tracker parameters
   ///
-  readDefault(opts.track_manager_options_.tracker_options_.max_features_, 100, "max_features");
   uint min_feats_default = std::min(uint(20), opts.track_manager_options_.tracker_options_.max_features_);
+  readDefault(opts.track_manager_options_.tracker_options_.max_features_, 100, "max_features");
   readDefault(opts.track_manager_options_.tracker_options_.min_features_, min_feats_default, "min_features");
   readDefault(opts.track_manager_options_.tracker_options_.grid_x_size_, 8, "grid_x_size");
   readDefault(opts.track_manager_options_.tracker_options_.grid_y_size_, 5, "grid_y_size");
@@ -109,6 +113,8 @@ MSCEqFOptions OptionParser::parseOptions()
   readDefault(opts.updater_options_.tollerance_, 1e-12, "feature_refinement_tollerance");
   parseFeatureRepresentation(opts.updater_options_.msc_features_representation_);
   parseProjectionMethod(opts.updater_options_.projection_method_);
+  readDefault(opts.updater_options_.min_track_lenght_, 3, "min_track_length");
+  readDefault(opts.updater_options_.min_angle_, 5.0, "min_angle_deg");
   readDefault(opts.updater_options_.pixel_std_, 1.0, "pixel_standerd_deviation");
   readDefault(opts.updater_options_.curvature_correction_, false, "curveture_correction");
 
@@ -128,11 +134,6 @@ MSCEqFOptions OptionParser::parseOptions()
 
   // Parse non state options
   // readDefault(opts.persistent_feature_init_delay_, 1.0, "persistent_feature_init_delay");
-
-  // Set the logger level
-  int level;
-  readDefault(level, 0, "logger_level");
-  utils::Logger::setLevel(static_cast<utils::LoggerLevel>(level));
 
   return opts;
 }
@@ -237,9 +238,9 @@ void OptionParser::parseFeatureRepresentation(FeatureRepresentation& rep)
   std::string representation;
   readDefault(representation, "anchored_inverse_depth", "feature_representation");
 
-  if (representation.compare("euclidean") == 0)
+  if (representation.compare("anchored_euclidean") == 0)
   {
-    rep = FeatureRepresentation::EUCLIDEAN;
+    rep = FeatureRepresentation::ANCHORED_EUCLIDEAN;
   }
   else if (representation.compare("anchored_inverse_depth") == 0)
   {
@@ -252,7 +253,7 @@ void OptionParser::parseFeatureRepresentation(FeatureRepresentation& rep)
   else
   {
     throw std::runtime_error(
-        "Wrong or unsupported feature representation type. Please use euclidean, anchored_inverse_depth, or "
+        "Wrong or unsupported feature representation type. Please use anchored_euclidean, anchored_inverse_depth, or "
         "anchored_polar.");
   }
 }
@@ -299,38 +300,58 @@ void OptionParser::parseDetectorType(FeatureDetector& detector)
 void OptionParser::parseInitialCovariance(Matrix9& D_cov, Matrix6& delta_cov, Matrix6& E_cov, Matrix4& L_cov)
 {
   // D covariance
-  // [TODO] proper conversion prom pitch_roll_std to normal coords std
-  Vector2 pitch_roll_std;
-  if (!read(pitch_roll_std, "pitch_roll_std"))
+  Vector9 extended_pose_std;
+  if (!read(extended_pose_std, "extended_pose_std"))
   {
     throw std::runtime_error(
-        "Wrong or missing pitch and roll standard deviation. Please provide pitch and roll standard deviation as "
-        "pitch_roll_std parameter.");
+        "Wrong or missing pitch and roll standard deviation. Please provide attitude, velocity, and position standard "
+        "deviation as extended_pose_std parameter.");
   }
   else
   {
     // Assign D covairiance
-    // near-zero covariance for yaw and position given their unobservability
-    // near-zero covariance for velocity given the static initialization
-    D_cov = Matrix9::Zero();
-    D_cov(0, 0) = std::pow(pitch_roll_std(0), 2);
-    D_cov(1, 1) = std::pow(pitch_roll_std(1), 2);
-    D_cov.block<7, 7>(2, 2) = 1e-4 * Matrix7::Identity();
+    D_cov = extended_pose_std.array().square().matrix().asDiagonal();
   }
 
   // Delta covariance
-  // [TODO] proper conversion prom pitch_roll_std to normal coords std
-  delta_cov = 1e-4 * Matrix6::Identity();
+  Vector6 bias_std;
+  if (!read(bias_std, "bias_std"))
+  {
+    throw std::runtime_error(
+        "Wrong or missing bias standard deviation. Please provide bias standard deviation as bias_std parameter.");
+  }
+  else
+  {
+    delta_cov = bias_std.array().square().matrix().asDiagonal();
+  }
 
   // E covariance
-  // [TODO] Assign proper values
-  // [TODO] proper conversion prom pitch_roll_std to normal coords std
-  E_cov = 1e-6 * Matrix6::Identity();
+  Vector6 extrinsics_std;
+  if (!read(extrinsics_std, "extrinsics_std"))
+  {
+    utils::Logger::warn(
+        "Extrinsics initial standard deviation not provided. Set to default value. Used only if online extrinsics "
+        "calibration is enabled");
+    E_cov = 1e-4 * Matrix6::Identity();
+  }
+  else
+  {
+    E_cov = extrinsics_std.array().square().matrix().asDiagonal();
+  }
 
   // L covairance
-  // [TODO] Assign proper values
-  // [TODO] proper conversion prom pitch_roll_std to normal coords std
-  L_cov = Matrix4::Identity();
+  Vector4 intrinsics_std;
+  if (!read(intrinsics_std, "intrinsics_std"))
+  {
+    utils::Logger::warn(
+        "Intrinsics initial standard deviation not provided. Set to default value. Used only if online intrinsics "
+        "calibration is enbled.");
+    L_cov = 10 * Matrix4::Identity();
+  }
+  else
+  {
+    L_cov = intrinsics_std.array().square().matrix().asDiagonal();
+  }
 }
 
 void OptionParser::parseProcessNoise(fp& w_std, fp& a_std, fp& bw_std, fp& ba_std)

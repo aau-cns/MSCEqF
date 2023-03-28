@@ -49,19 +49,19 @@ void Updater::mscUpdate(MSCEqFState& X, const Tracks& tracks, std::unordered_set
     return;
   }
 
-  // Precompute the total number of rows of the C matrix and the residual delta with a "safe" margin of 3 rows
+  // Precompute the total number of rows of the C matrix and the residual delta with a "safe" margin
   size_t rows = 0;
   size_t long_tracks = 0;
   for (const auto& id : ids)
   {
-    if (tracks.at(id).size() < 2)
+    if (tracks.at(id).size() < opts_.min_track_lenght_)
     {
       continue;
     }
     rows += tracks.at(id).size();
     ++long_tracks;
   }
-  rows = rows * ph_->block_rows_ - 3 * (long_tracks - 1);
+  rows = rows * ph_->block_rows() - ph_->dim_loss() * (long_tracks - 1);
 
   // Reset the map of columns of the C matrix for each variable involved in the update
   cols_map_.clear();
@@ -69,7 +69,7 @@ void Updater::mscUpdate(MSCEqFState& X, const Tracks& tracks, std::unordered_set
   // Fill the map of the indices of the columns of the C matrix for the variable involved in it, with insertion order.
   // This is needed for block operations. On doing so, we precompute the total number of columns of the C matrix.
   size_t cols = 0;
-  if (X.opts_.enable_camera_intrinsics_calibration_)
+  if (X.opts().enable_camera_intrinsics_calibration_)
   {
     cols_map_.insert(MSCEqFStateElementName::L, cols);
     cols += X.dof(MSCEqFStateElementName::L);
@@ -93,72 +93,66 @@ void Updater::mscUpdate(MSCEqFState& X, const Tracks& tracks, std::unordered_set
   {
     const auto& track = tracks.at(id);
 
-    if (track.size() < 2)
+    if (track.size() < opts_.min_track_lenght_)
     {
       utils::Logger::debug("Track with id: " + std::to_string(id) + " do not contain enough views for triangulation");
       continue;
     }
+    const auto& track_size = track.size();
 
-    // [TODO] Remove, we should remove also Gf from the track
-    Vector3 A_f = track.Gf_;
+    // Triangulate feature in anchor frame (frame of first observation of the feature)
+    const auto& A_E = X.clone(track.timestamps_.front());
+    Vector3 A_f = Vector3::Zero();
 
-    // Anchor (first observation of the feature)
-    const fp& anchor_timestamp = track.timestamps_.front();
+    if (!linearTriangulation(X, track, A_E, A_f))
+    {
+      utils::Logger::debug("Linear triangulation failed for track id: " + std::to_string(id));
+      continue;
+    }
 
-    // Vector3 A_f = Vector3::Zero();
-    // const auto& anchor = X.clones_.at(track.timestamps_.front());
-
-    // if (!linearTriangulation(X, track, anchor->E_, A_f))
-    // {
-    //   utils::Logger::debug("Linear triangulation failed for track id: " + std::to_string(id));
-    //   continue;
-    // }
-
-    // if (opts_.refine_traingulation_)
-    // {
-    //   utils::Logger::debug("Nonlinear triangulation for track id: " + std::to_string(id) + "...");
-    //   nonlinearTriangulation(X, track, anchor->E_, A_f);
-    // }
-
-    // Define ordered keys involved in C and delta blocks (needed for block operations)
+    if (opts_.refine_traingulation_)
+    {
+      utils::Logger::debug(
+          "Linear triangulation succeeded. Nonlinear triangulation for track id: " + std::to_string(id) + "...");
+      nonlinearTriangulation(X, track, A_E, A_f);
+    }
 
     // For each feature measurement in track compute the Jacobian and residual block
     // (C matrix block, Cf matrix block and delta block)
-    const auto& track_size = track.size();
-    MatrixX Cf = MatrixX::Zero(ph_->block_rows_ * track_size, 3);
+    MatrixX Cf = MatrixX::Zero(ph_->block_rows() * track_size, ph_->dim_loss());
     for (size_t i = 0; i < track_size; ++i)
     {
       Vector2 uv(track.uvs_[i].x, track.uvs_[i].y);
       Vector2 uvn(track.normalized_uvs_[i].x, track.normalized_uvs_[i].y);
-      FeatHelper feat(A_f, uv, uvn, anchor_timestamp, track.timestamps_[i]);
+      FeatHelper feat(A_f, uv, uvn, track.timestamps_.front(), track.timestamps_[i]);
 
-      const auto& row_idx = total_size_ + (ph_->block_rows_ * i);
-      C.middleRows(row_idx, ph_->block_rows_).setZero();
-      delta.middleRows(row_idx, ph_->block_rows_).setZero();
+      const auto& row_idx = total_size_ + (ph_->block_rows() * i);
+      C.middleRows(row_idx, ph_->block_rows()).setZero();
+      delta.middleRows(row_idx, ph_->block_rows()).setZero();
 
-      ph_->residualJacobianBlock(X, xi0_, feat, C.middleRows(row_idx, ph_->block_rows_),
-                                 delta.middleRows(row_idx, ph_->block_rows_),
-                                 Cf.middleRows(ph_->block_rows_ * i, ph_->block_rows_), cols_map_);
+      ph_->residualJacobianBlock(X, xi0_, feat, C.middleRows(row_idx, ph_->block_rows()),
+                                 delta.middleRows(row_idx, ph_->block_rows()),
+                                 Cf.middleRows(ph_->block_rows() * i, ph_->block_rows()), cols_map_);
     }
 
-    UpdaterHelper::nullspaceProjection(Cf, C.middleRows(total_size_, ph_->block_rows_ * track_size),
-                                       delta.middleRows(total_size_, ph_->block_rows_ * track_size));
+    UpdaterHelper::nullspaceProjection(Cf, C.middleRows(total_size_, ph_->block_rows() * track_size),
+                                       delta.middleRows(total_size_, ph_->block_rows() * track_size));
 
-    const auto& C_block = C.middleRows(total_size_, (ph_->block_rows_ * track_size) - 3);
-    const auto& delta_block = delta.middleRows(total_size_, (ph_->block_rows_ * track_size) - 3);
+    const auto& C_block = C.middleRows(total_size_, (ph_->block_rows() * track_size) - ph_->dim_loss());
+    const auto& delta_block = delta.middleRows(total_size_, (ph_->block_rows() * track_size) - ph_->dim_loss());
 
     MatrixX S = C_block * X.subCov(cols_map_.keys()) * C_block.transpose();
     S.diagonal() += Eigen::VectorXd::Ones(S.rows()) * opts_.pixel_std_ * opts_.pixel_std_;
     fp chi2 = delta_block.dot(S.llt().solve(delta_block));
 
-    if (!UpdaterHelper::chi2Test(chi2, (ph_->block_rows_ * track_size) - 3, chi2_table_))
+    if (!UpdaterHelper::chi2Test(chi2, (ph_->block_rows() * track_size) - ph_->dim_loss(), chi2_table_))
     {
       utils::Logger::debug("Chi2 test failed for track id: " + std::to_string(id));
       continue;
     }
 
-    // Update total size of C matrix and residual delta (-3 for dimension lost in nullspace projection)
-    total_size_ += (ph_->block_rows_ * track_size) - 3;
+    // Update total size of C matrix and residual delta
+    total_size_ += (ph_->block_rows() * track_size) - ph_->dim_loss();
 
     // Add id to vector of ids that will be used in the update
     update_ids_.emplace_back(id);
@@ -212,7 +206,6 @@ bool Updater::linearTriangulation(const MSCEqFState& X, const Track& track, cons
   Vector3 A_bf = Vector3::Zero();
 
   std::vector<Vector3> bearings;
-  fp max_angle = 0;
 
   for (size_t i = 0; i < track.size(); ++i)
   {
@@ -225,31 +218,53 @@ bool Updater::linearTriangulation(const MSCEqFState& X, const Track& track, cons
     A_bf = E.R() * A_bf;
     Ai = -SO3::wedge(A_bf) * SO3::wedge(A_bf);
 
-    // [TODO] find a better way
-    bearings.push_back(A_bf);
-
     A += Ai;
     b += Ai * E.x();
+
+    bearings.push_back(A_bf.normalized());
   }
 
   A_f = A.colPivHouseholderQr().solve(b);
 
+  fp min_cos = 1;
   for (size_t i = 0; i < bearings.size(); ++i)
   {
     for (size_t j = i + 1; j < bearings.size(); ++j)
     {
-      fp angle = std::acos(bearings[i].dot(bearings[j]) / (bearings[i].norm() * bearings[j].norm()));
-      if (angle > max_angle)
+      fp cos = bearings[i].dot(bearings[j]);
+      if (cos < min_cos)
       {
-        max_angle = angle;
+        min_cos = cos;
       }
     }
   }
+  fp max_angle = std::acos(min_cos) * 180 / M_PI;
 
-  utils::Logger::debug("Max angle: " + std::to_string(max_angle * 180 / M_PI));
+  // // Comparison with OpenCV triangulation
+  // cv::Mat uvn_first_cv = (cv::Mat_<fp>(2, 1) << track.normalized_uvs_.front().x, track.normalized_uvs_.front().y);
+  // cv::Mat uvn_last_cv = (cv::Mat_<fp>(2, 1) << track.normalized_uvs_.back().x, track.normalized_uvs_.back().y);
 
-  if (A_f(2) < opts_.min_depth_ || A_f(2) > opts_.max_depth_ || std::isnan(A_f.norm()) ||
-      max_angle < (5 * M_PI / 180.0))
+  // Eigen::Matrix<fp, 3, 4> P_first_eigen = Eigen::Matrix<fp, 3, 4>::Zero();
+  // P_first_eigen.block(0, 0, 3, 3) = Matrix3::Identity();
+
+  // Eigen::Matrix<fp, 3, 4> P_last_eigen = (X.clone(track.timestamps_.back()).inv() * A_E).asMatrix().block(0, 0, 3,
+  // 4);
+
+  // cv::Mat P_first_cv, P_last_cv;
+  // cv::eigen2cv(P_first_eigen, P_first_cv);
+  // cv::eigen2cv(P_last_eigen, P_last_cv);
+
+  // cv::Mat A_f_cv;
+  // cv::triangulatePoints(P_first_cv, P_last_cv, uvn_first_cv, uvn_last_cv, A_f_cv);
+  // Vector3 A_f_eigen = Vector3(A_f_cv.at<fp>(0, 0) / A_f_cv.at<fp>(3, 0), A_f_cv.at<fp>(1, 0) / A_f_cv.at<fp>(3, 0),
+  //                             A_f_cv.at<fp>(2, 0) / A_f_cv.at<fp>(3, 0));
+
+  // utils::Logger::debug("A_f with custom LS: " +
+  //                      static_cast<std::ostringstream&>(std::ostringstream() << A_f.transpose()).str());
+  // utils::Logger::debug("A_f with OpenCV: " +
+  //                      static_cast<std::ostringstream&>(std::ostringstream() << A_f_eigen.transpose()).str());
+
+  if (A_f(2) < opts_.min_depth_ || A_f(2) > opts_.max_depth_ || std::isnan(A_f.norm()) || max_angle < opts_.min_angle_)
   {
     return false;
   }
@@ -307,8 +322,6 @@ void Updater::nonlinearTriangulation(const MSCEqFState& X, const Track& track, c
     }
   }
 
-  utils::Logger::debug("Linear-Nonlinear distance:" + std::to_string((A_f - A_f_init).norm()));
-
   // Return given initial value if invalid
   if (A_f(2) < opts_.min_depth_ || A_f(2) > opts_.max_depth_ || std::isnan(A_f.norm()))
   {
@@ -357,12 +370,12 @@ void Updater::UpdateMSCEqF(MSCEqFState& X, const MatrixX& C, const VectorX& delt
   // Update state
   X.state_.at(MSCEqFStateElementName::Dd)
       ->updateLeft(inn.segment(X.index(MSCEqFStateElementName::Dd), X.dof(MSCEqFStateElementName::Dd)));
-  if (X.opts_.enable_camera_extrinsics_calibration_)
+  if (X.opts().enable_camera_extrinsics_calibration_)
   {
     X.state_.at(MSCEqFStateElementName::E)
         ->updateLeft(inn.segment(X.index(MSCEqFStateElementName::E), X.dof(MSCEqFStateElementName::E)));
   }
-  if (X.opts_.enable_camera_intrinsics_calibration_)
+  if (X.opts().enable_camera_intrinsics_calibration_)
   {
     X.state_.at(MSCEqFStateElementName::L)
         ->updateLeft(inn.segment(X.index(MSCEqFStateElementName::L), X.dof(MSCEqFStateElementName::L)));

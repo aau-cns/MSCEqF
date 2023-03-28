@@ -24,17 +24,17 @@ SystemState::SystemState(const StateOptions& opts) : opts_(opts), state_()
   insertSystemStateElement(
       std::make_pair(SystemStateElementName::b, createSystemStateElement<BiasState>(std::make_tuple())));
 
-  if (opts.enable_camera_extrinsics_calibration_)
+  if (opts_.enable_camera_extrinsics_calibration_)
   {
     insertSystemStateElement(std::make_pair(
         SystemStateElementName::S,
-        createSystemStateElement<CameraExtrinsicState>(std::make_tuple(opts.initial_camera_extrinsics_))));
+        createSystemStateElement<CameraExtrinsicState>(std::make_tuple(opts_.initial_camera_extrinsics_))));
   }
-  if (opts.enable_camera_intrinsics_calibration_)
+  if (opts_.enable_camera_intrinsics_calibration_)
   {
     insertSystemStateElement(std::make_pair(
         SystemStateElementName::K,
-        createSystemStateElement<CameraIntrinsicState>(std::make_tuple(opts.initial_camera_intrinsics_))));
+        createSystemStateElement<CameraIntrinsicState>(std::make_tuple(opts_.initial_camera_intrinsics_))));
   }
 }
 
