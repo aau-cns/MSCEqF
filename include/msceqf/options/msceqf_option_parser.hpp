@@ -226,7 +226,24 @@ class OptionParser
    */
   void parseInitialCovariance(Matrix9& D_cov, Matrix6& delta_cov, Matrix6& E_cov, Matrix4& L_cov);
 
+  /**
+   * @brief Parse the process noise
+   *
+   * @param w_std Standard deviation of the process noise of the angular velocity
+   * @param a_std Standard deviation of the process noise of the linear acceleration
+   * @param bw_std Standard deviation of the process noise of the gyroscope bias
+   * @param ba_std Standard deviation of the process noise of the accelerometer bias
+   */
   void parseProcessNoise(fp& w_std, fp& a_std, fp& bw_std, fp& ba_std);
+
+  /**
+   * @brief Parse the measurement noise, it transforms it in normalized pixel noise if intrinsics parameter are not
+   * refined online.
+   *
+   * @param pix_std Standard deviation of the measurement noise of the pixel coordinates
+   * @param opts State options
+   */
+  void parsePixStd(fp& pix_std, const StateOptions& opts);
 
   YAML::Node node_;       //!< YAML node
   std::string filepath_;  //!< filepath

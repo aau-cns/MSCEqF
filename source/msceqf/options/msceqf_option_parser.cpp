@@ -53,9 +53,9 @@ MSCEqFOptions OptionParser::parseOptions()
   readDefault(opts.track_manager_options_.tracker_options_.grid_x_size_, 8, "grid_x_size");
   readDefault(opts.track_manager_options_.tracker_options_.grid_y_size_, 5, "grid_y_size");
   readDefault(opts.track_manager_options_.tracker_options_.min_px_dist_, 5, "min_feature_pixel_distance");
-
   readDefault(opts.track_manager_options_.tracker_options_.pyramid_levels_, 3, "optical_flow_pyramid_levels");
   readDefault(opts.track_manager_options_.tracker_options_.optical_flow_win_size_, 21, "optical_flow_win_size");
+  readDefault(opts.track_manager_options_.tracker_options_.ransac_reprojection_, 0.5, "ransac_reprojection");
 
   // Parse camera parameters
   parseCameraParameters(opts.state_options_.initial_camera_extrinsics_, opts.state_options_.initial_camera_intrinsics_,
@@ -115,8 +115,8 @@ MSCEqFOptions OptionParser::parseOptions()
   parseProjectionMethod(opts.updater_options_.projection_method_);
   readDefault(opts.updater_options_.min_track_lenght_, 3, "min_track_length");
   readDefault(opts.updater_options_.min_angle_, 5.0, "min_angle_deg");
-  readDefault(opts.updater_options_.pixel_std_, 1.0, "pixel_standerd_deviation");
   readDefault(opts.updater_options_.curvature_correction_, false, "curveture_correction");
+  parsePixStd(opts.updater_options_.pixel_std_, opts.state_options_);
 
   ///
   /// Parse initalizer options
@@ -127,6 +127,7 @@ MSCEqFOptions OptionParser::parseOptions()
   readDefault(opts.init_options_.disparity_window_, 0.5, "static_initializer_disparity_window");
   readDefault(opts.init_options_.acc_threshold_, 0.0, "static_initializer_acc_threshold");
   readDefault(opts.init_options_.disparity_threshold_, 1.0, "static_initializer_disparity_threshold");
+  opts.init_options_.gravity_ = opts.state_options_.gravity_;
 
   ///
   /// Parse other options
@@ -294,6 +295,15 @@ void OptionParser::parseDetectorType(FeatureDetector& detector)
   else
   {
     throw std::runtime_error("Wrong or unsupported feature detector type. Please use fast or shi-tomasi.");
+  }
+}
+
+void OptionParser::parsePixStd(fp& pix_std, const StateOptions& opts)
+{
+  readDefault(pix_std, 1.0, "pixel_standerd_deviation");
+  if (!opts.enable_camera_intrinsics_calibration_)
+  {
+    pix_std /= std::max(opts.initial_camera_intrinsics_.k()(0), opts.initial_camera_intrinsics_.k()(1));
   }
 }
 
