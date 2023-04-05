@@ -64,16 +64,25 @@ int main(int argc, char** argv)
 
   utils::dataWriter result_writer(results_path, results_titles, ",");
 
-  msceqf::MSCEqF sys(std::string(argv[3]) + "/config/config.yaml", dataset_parser.getGroundtruthData().front().q_);
+  msceqf::MSCEqF sys(std::string(argv[3]) + "/config/config.yaml");
+
+  // msceqf::Vector3 bw(-0.002229, 0.020700, 0.076350);
+  // msceqf::Vector3 ba(-0.012492, 0.547666, 0.069073);
 
   const auto timestamps = dataset_parser.getSensorsTimestamps();
   for (const auto& timestamp : timestamps)
   {
     auto data = dataset_parser.consumeSensorReadingAt(timestamp);
-    std::visit([&sys](auto&& arg) { sys.processMeasurement(arg); }, data);
-
-    if (std::holds_alternative<msceqf::Camera>(data))
+    if (std::holds_alternative<msceqf::Imu>(data))
     {
+      auto imu = std::get<msceqf::Imu>(data);
+      // imu.acc_ -= ba;
+      // imu.ang_ -= bw;
+      sys.processMeasurement(imu);
+    }
+    else if (std::holds_alternative<msceqf::Camera>(data))
+    {
+      sys.processMeasurement(std::get<msceqf::Camera>(data));
       auto est = sys.stateEstimate();
       result_writer << timestamp << est << std::endl;
     }
