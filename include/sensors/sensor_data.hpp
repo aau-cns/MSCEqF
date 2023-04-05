@@ -15,6 +15,7 @@
 #include <opencv2/opencv.hpp>
 
 #include "types/fptypes.hpp"
+#include "vision/features.hpp"
 
 namespace msceqf
 {
@@ -90,8 +91,31 @@ struct Camera
   friend bool operator<(const fp& timestamp, const Camera& rhs) { return timestamp < rhs.timestamp_; }
 
   cv::Mat image_;      //!< The image taken from the camera
-  cv::Mat mask_;       //!< The mask for the given image, 1 in valid reagions, 0 in regions to be masked out
+  cv::Mat mask_;       //!< The mask for the given image, 255 in valid reagions, 0 in regions to be masked out
   fp timestamp_ = -1;  //!< Timestamp of the Camera reading
+};
+
+struct TriangulatedFeatures
+{
+  /**
+   * @brief Comparison operator with other imu
+   *
+   */
+  friend bool operator<(const TriangulatedFeatures& lhs, const TriangulatedFeatures& rhs)
+  {
+    return lhs.timestamp_ < rhs.timestamp_;
+  }
+
+  /**
+   * @brief Comparison operator with timestamp
+   *
+   */
+  friend bool operator<(const TriangulatedFeatures& lhs, const fp& timestamp) { return lhs.timestamp_ < timestamp; }
+  friend bool operator<(const fp& timestamp, const TriangulatedFeatures& rhs) { return timestamp < rhs.timestamp_; }
+
+  Features features_;            //!< The features detected in the image
+  std::vector<Vector3> points_;  //!< The 3D points corresponding to the features
+  fp timestamp_ = -1;            //!< Timestamp of the Camera reading
 };
 
 }  // namespace msceqf

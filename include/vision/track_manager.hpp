@@ -44,6 +44,13 @@ class TrackManager
   void processCamera(Camera& cam);
 
   /**
+   * @brief Process a single features measurement. update tracks
+   *
+   * @param imu
+   */
+  void processFeatures(const TriangulatedFeatures& features);
+
+  /**
    * @brief get all the tracks
    *
    * @return const Tracks&
@@ -89,12 +96,25 @@ class TrackManager
   void removeTracksId(const std::unordered_set<uint>& ids);
 
   /**
-   * @brief Remove the tail of tracks. This method remove from each track all the coordinates as well as the timestamps
-   * that are older or equal to the given timestamp.
+   * @brief Remove the tail of tracks. This method remove from each track all the coordinates as well as the
+   * timestamps that are older or equal to the given timestamp.
    *
    * @param timestamp
    */
   void removeTracksTail(const fp& timestamp);
+
+  /**
+   * @brief Clear all the tracks
+   *
+   */
+  inline void clear() { tracks_.clear(); }
+
+  /**
+   * @brief Get the camera pointer
+   *
+   * @return const PinholeCameraUniquePtr&
+   */
+  const PinholeCameraUniquePtr& cam() const;
 
  private:
   /**

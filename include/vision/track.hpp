@@ -20,7 +20,7 @@
 namespace msceqf
 {
 /**
- * @brief (Cache friendly) Track struct. Define a feature (labelled via a feature id) detected/tracked at different
+ * @brief (Cache friendly) Track struct. Define a feature (labeled via a feature id) detected/tracked at different
  * points in time.
  *
  * @note Note that feature cordinates are of cv::Point2f type for compatibility with OpenCV.

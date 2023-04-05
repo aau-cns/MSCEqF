@@ -25,7 +25,7 @@ const SystemState Symmetry::phi(const MSCEqFState& X, const SystemState& xi)
 {
   SE3 PS;
 
-  if (X.opts_.num_persistent_features_ > 0)
+  if (X.opts().num_persistent_features_ > 0)
   {
     PS = xi.P() * xi.S();
   }

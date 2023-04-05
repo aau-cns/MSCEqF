@@ -1,0 +1,71 @@
+# Euroc Config
+
+# Initial standard deviations (attitude, velocity, position, bias, extrinsics, instrinsics)
+extended_pose_std: [1.0e-1, 1.0e-1, 1.0e-9, 1.0, 1.0, 1.0, 1.0e-9, 1.0e-9, 1.0e-9]
+bias_std: [1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1]
+extrinsics_std: [1.0e-3, 1.0e-3, 1.0e-3, 1.0e-3, 1.0e-3, 1.0e-3]
+# intrinsics_std: [10, 10, 10, 10]
+
+# IMU noise statistics
+accelerometer_noise_density: 2.0000e-3  
+accelerometer_random_walk:   3.0000e-3
+gyroscope_noise_density: 1.6968e-04
+gyroscope_random_walk:   1.9393e-05
+
+# Camera calibration
+distortion_coeffs: [-0.28340811, 0.07395907, 0.00019359, 1.76187114e-05]
+distortion_model: radtan
+resolution: [752, 480]
+intrinsics: [458.654, 457.296, 367.215, 248.375]
+T_imu_cam:
+ - [0.0148655429818, -0.999880929698, 0.00414029679422, -0.0216401454975]
+ - [0.999557249008, 0.0149672133247, 0.025715529948, -0.064676986768]
+ - [-0.0257744366974, 0.00375618835797, 0.999660727178, 0.00981073058949]
+ - [0.0, 0.0, 0.0, 1.0]
+
+# Initializer
+static_initializer_imu_window: 2.0
+static_initializer_disparity_window: 0.5
+static_initializer_acc_threshold: 0.05
+static_initializer_disparity_threshold: 2.0
+
+# Propagator
+state_transition_order: 2
+imu_buffer_max_size: 1000
+
+# Updater
+refine_traingulation: true
+feature_min_depth: 0.1
+feature_max_depth: 20
+feature_refinement_max_iterations: 20
+feature_refinement_tollerance: 1e-9
+measurement_projection_method: unit_plane
+feature_representation: anchored_inverse_depth
+pixel_standerd_deviation: 1.0
+curveture_correction: false
+min_angle_deg: 1.0
+
+# State options
+enable_camera_extrinsic_calibration: true
+enable_camera_intrinsic_calibration: false
+gravity: 9.81
+num_clones: 11
+num_persistent_features: 0
+
+# Tracker
+equalization_method: histogram
+optical_flow_pyramid_levels: 3
+feature_detector: fast
+grid_x_size: 5
+grid_y_size: 5
+min_feature_pixel_distance: 10
+min_features: 180
+max_features: 200
+fast_threshold: 20
+shi_tomasi_quality_level: 0.75
+
+# Track Manager
+max_track_length: 400
+
+# Logger level [0: Full, 1: INFO, 2: WARN, 3: ERR, 4: INACTIVE]
+logger_level: 1

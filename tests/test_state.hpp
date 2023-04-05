@@ -17,15 +17,15 @@
 #include "msceqf/state/state.hpp"
 #include "msceqf/symmetry/symmetry.hpp"
 #include "msceqf/system/system.hpp"
+#include "msceqf/options/msceqf_option_parser.hpp"
 
 namespace msceqf
 {
 
 TEST(SystemStateTest, SystemStateConstructionTest)
 {
-  // Param arser
-  std::string filepath_base = "/home/alfornasier/PhD/MSCEqF_dev/MSCEqF/config/";
-  OptionParser parser(filepath_base + "parameters.yaml");
+  // Param parser
+  OptionParser parser(parameters_path);
 
   // Options
   MSCEqFOptions opts = parser.parseOptions();
@@ -280,9 +280,8 @@ TEST(SystemStateTest, SystemStateConstructionTest)
 
 TEST(MSCEqFStateTest, MSCEqFStateConstructionTest)
 {
-  // Param arser
-  std::string filepath_base = "/home/alfornasier/PhD/MSCEqF_dev/MSCEqF/config/";
-  OptionParser parser(filepath_base + "parameters.yaml");
+  // Param parser
+  OptionParser parser(parameters_path);
 
   // Options
   MSCEqFOptions opts = parser.parseOptions();
@@ -302,9 +301,9 @@ TEST(MSCEqFStateTest, MSCEqFStateConstructionTest)
       Dd_cov.block(0, 0, 9, 9) = opts.state_options_.D_init_cov_;
       Dd_cov.block(9, 9, 6, 6) = opts.state_options_.delta_init_cov_;
 
-      MatrixEquality(state.CovBlock(MSCEqFStateElementName::Dd), Dd_cov);
-      MatrixEquality(state.CovBlock(MSCEqFStateElementName::E), opts.state_options_.E_init_cov_);
-      MatrixEquality(state.CovBlock(MSCEqFStateElementName::L), opts.state_options_.L_init_cov_);
+      MatrixEquality(state.covBlock(MSCEqFStateElementName::Dd), Dd_cov);
+      MatrixEquality(state.covBlock(MSCEqFStateElementName::E), opts.state_options_.E_init_cov_);
+      MatrixEquality(state.covBlock(MSCEqFStateElementName::L), opts.state_options_.L_init_cov_);
 
       MSCEqFState state_copy(state);
       MSCEqFStateEquality(state, state_copy);

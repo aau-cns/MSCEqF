@@ -18,12 +18,9 @@
 #include "utils/logger.hpp"
 #include "utils/tools.hpp"
 #include "test_common.hpp"
-// #include "test_groups.hpp"
-// #include "test_msceqf.hpp" // Requires code changes to run
-// #include "test_params.hpp"
-// #include "test_state.hpp"
-// #include "test_symmetry.hpp"
-// #include "test_feature_tracking.hpp"
+#include "test_groups.hpp"
+#include "test_state.hpp"
+#include "test_symmetry.hpp"
 
 int main(int argc, char **argv)
 {

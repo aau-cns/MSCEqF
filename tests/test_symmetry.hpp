@@ -15,15 +15,15 @@
 #include <iostream>
 
 #include "msceqf/symmetry/symmetry.hpp"
+#include "msceqf/options/msceqf_option_parser.hpp"
 
 namespace msceqf
 {
 
 TEST(SymmetryTest, phi_without_persistent_features)
 {
-  // Param arser
-  std::string filepath_base = "/home/alfornasier/PhD/MSCEqF_dev/MSCEqF/config/";
-  OptionParser parser(filepath_base + "parameters.yaml");
+  // Param parser
+  OptionParser parser(parameters_path);
 
   // Options
   MSCEqFOptions opts = parser.parseOptions();
@@ -66,9 +66,8 @@ TEST(SymmetryTest, phi_without_persistent_features)
 
 TEST(SymmetryTest, lift)
 {
-  // Param arser
-  std::string filepath_base = "/home/alfornasier/PhD/MSCEqF_dev/MSCEqF/config/";
-  OptionParser parser(filepath_base + "parameters.yaml");
+  // Param parser
+  OptionParser parser(parameters_path);
 
   // Options
   MSCEqFOptions opts = parser.parseOptions();
@@ -106,12 +105,16 @@ TEST(SymmetryTest, lift)
       }
     }
 
+    ;
+
     // xi
-    const SystemState xi(
-        opts.state_options_,
-        std::make_pair(SystemStateElementName::T, createSystemStateElement<ExtendedPoseState>(std::make_tuple())),
-        std::make_pair(SystemStateElementName::b, createSystemStateElement<BiasState>(std::make_tuple())),
-        feat_initializer_vector);
+    const SystemState xi(opts.state_options_,
+                         std::make_pair(SystemStateElementName::T,
+                                        createSystemStateElement<ExtendedPoseState>(std::make_tuple(
+                                            SE23(Quaternion::UnitRandom(), {Vector3::Random(), Vector3::Random()})))),
+                         std::make_pair(SystemStateElementName::b,
+                                        createSystemStateElement<BiasState>(std::make_tuple(Vector6::Random()))),
+                         feat_initializer_vector);
 
     // u
     Imu u;

@@ -39,12 +39,14 @@ class SystemState
   SystemState() = delete;
 
   /**
-   * @brief Initialize a system state with identity extended pose and zero bias.
+   * @brief Initialize a system state with given extended pose and bias (Identity and zero by default).
    * Camera intrinsics and extrinsics are initialized from the given values in the options.
    *
    * @param opts State options
+   * @param T0 Initial extended pose
+   * @param b0 Initial bias
    */
-  SystemState(const StateOptions& opts);
+  SystemState(const StateOptions& opts, const SE23& T0 = SE23(), const Vector6& b0 = Vector6::Zero());
 
   /**
    * @brief Construct system state given a multiple pairs of key-pointer of states element. This methods preallocate
@@ -142,7 +144,7 @@ class SystemState
    * If the camera intrinsics are not are not estimated online then the fixed calibration value provided in the options
    * is returned
    *
-   * @return const Vector4&
+   * @return const Vector4
    */
   [[nodiscard]] const Vector4 k() const;
 
@@ -163,14 +165,19 @@ class SystemState
   [[nodiscard]] const Vector3 ge3() const;
 
   /**
+   * @brief Get the state options
+   *
+   * @return const StateOptions&
+   */
+  [[nodiscard]] inline const StateOptions& opts() const { return opts_; }
+
+  /**
    * @brief Get a string describing the given SystemStateKey
    *
    * @param key
    * @return std::string
    */
   static std::string toString(const SystemStateKey& key);
-
-  StateOptions opts_;  //!< State Options
 
  private:
   /**
@@ -196,6 +203,8 @@ class SystemState
   void insertSystemStateElement(std::vector<std::pair<SystemStateKey, SystemStateElementUniquePtr>>& keys_ptrs);
 
   friend class Symmetry;  //!< Symmetry can access private members of SystemState
+
+  StateOptions opts_;  //!< State Options
 
   SystemStateMap state_;  //!< MSCEqF State elements mapped by their names
 };

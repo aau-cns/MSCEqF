@@ -27,6 +27,39 @@ void TrackManager::processCamera(Camera& cam)
   updateTracks();
 }
 
+void TrackManager::processFeatures(const TriangulatedFeatures& features)
+{
+  if (features.features_.empty())
+  {
+    utils::Logger::warn("Impossible to update tracks. No features has been given");
+    return;
+  }
+
+  // for each feature/id either initialize a new track or update the existing track associated to the id
+  assert(features.features_.size() == features.points_.size());
+  for (size_t i = 0; i < features.features_.size(); ++i)
+  {
+    auto& uv = features.features_.uvs_[i];
+    auto& uvn = features.features_.normalized_uvs_[i];
+    auto& id = features.features_.ids_[i];
+
+    // Initialize new element into tracks or extend existing track
+    auto& track_ref = tracks_.try_emplace(id, Track()).first->second;
+    track_ref.uvs_.emplace_back(uv);
+    track_ref.normalized_uvs_.emplace_back(uvn);
+    track_ref.timestamps_.emplace_back(features.timestamp_);
+
+    // Remove tracks that are too long (Keep memory bounded)
+    if (track_ref.size() > max_track_length_)
+    {
+      // utils::Logger::warn("Max track (id: " + std::to_string(id) + ") length reached, removing track tail");
+      track_ref.uvs_.erase(track_ref.uvs_.begin());
+      track_ref.normalized_uvs_.erase(track_ref.normalized_uvs_.begin());
+      track_ref.timestamps_.erase(track_ref.timestamps_.begin());
+    }
+  }
+}
+
 const Tracks& TrackManager::tracks() const { return tracks_; }
 
 void TrackManager::tracksIds(const fp& timestamp,
@@ -70,6 +103,11 @@ void TrackManager::lostTracksIds(const fp& timestamp, std::unordered_set<uint>& 
 
 void TrackManager::removeTracksId(const std::unordered_set<uint>& ids)
 {
+  if (ids.empty())
+  {
+    return;
+  }
+
   for (auto it = tracks_.begin(); it != tracks_.end();)
   {
     if (ids.count(it->first))
@@ -85,9 +123,17 @@ void TrackManager::removeTracksId(const std::unordered_set<uint>& ids)
 
 void TrackManager::removeTracksTail(const fp& timestamp)
 {
-  for (auto& [id, track] : tracks_)
+  for (auto it = tracks_.begin(); it != tracks_.end();)
   {
-    track.removeTail(timestamp);
+    if (it->second.size() == 1 && it->second.timestamps_.front() == timestamp)
+    {
+      it = tracks_.erase(it);
+    }
+    else
+    {
+      it->second.removeTail(timestamp);
+      ++it;
+    }
   }
 }
 
@@ -117,12 +163,14 @@ void TrackManager::updateTracks()
     // Remove tracks that are too long (Keep memory bounded)
     if (track_ref.size() > max_track_length_)
     {
-      utils::Logger::warn("Max track (id: " + std::to_string(id) + ") length reached, removing track tail");
+      // utils::Logger::warn("Max track (id: " + std::to_string(id) + ") length reached, removing track tail");
       track_ref.uvs_.erase(track_ref.uvs_.begin());
       track_ref.normalized_uvs_.erase(track_ref.normalized_uvs_.begin());
       track_ref.timestamps_.erase(track_ref.timestamps_.begin());
     }
   }
 }
+
+const PinholeCameraUniquePtr& TrackManager::cam() const { return tracker_.cam(); }
 
 }  // namespace msceqf

@@ -12,6 +12,8 @@
 #ifndef MSCEQF_HPP
 #define MSCEQF_HPP
 
+#include <future>
+
 #include "msceqf/filter/initializer/static_initializer.hpp"
 #include "msceqf/filter/propagator/propagator.hpp"
 #include "msceqf/filter/updater/updater.hpp"
@@ -19,6 +21,7 @@
 #include "msceqf/state/state.hpp"
 #include "msceqf/system/system.hpp"
 #include "vision/track_manager.hpp"
+#include "utils/visualizer.hpp"
 
 namespace msceqf
 {
@@ -41,6 +44,7 @@ class MSCEqF
    */
   void processMeasurement(const Imu& meas) { processImuMeasurement(meas); }
   void processMeasurement(Camera& meas) { processCameraMeasurement(meas); }
+  void processMeasurement(const TriangulatedFeatures& meas) { processFeaturesMeasurement(meas); }
 
   /**
    * @brief Get a constant reference to the MSCEqF options
@@ -86,16 +90,30 @@ class MSCEqF
    */
   void processCameraMeasurement(Camera& cam);
 
-  OptionParser parser_;  //!< The parser to parse all the configuration from a yaml file
-  MSCEqFOptions opts_;   //!< All the MSCEqF options
+  /**
+   * @brief Process triangulated features measurement.
+   *
+   * @param features
+   */
+  void processFeaturesMeasurement(const TriangulatedFeatures& features);
 
-  MSCEqFState X_;          //!< The state of the MSCEqF
-  const SystemState xi0_;  //!< The origin state of the System
+  /**
+   * @brief Log initial condition of the filter
+   *
+   */
+  void logInit() const;
+
+      OptionParser parser_;  //!< The parser to parse all the configuration from a yaml file
+  MSCEqFOptions opts_;       //!< All the MSCEqF options
+
+  MSCEqFState X_;    //!< The state of the MSCEqF
+  SystemState xi0_;  //!< The origin state of the System
 
   TrackManager track_manager_;     //!< The MSCEqF track manager
   StaticInitializer initializer_;  //!< The MSCEqF static initializer
   Propagator propagator_;          //!< The MSCEqF propagator
   Updater updater_;                //!< The MSCEqF updater
+  Visualizer visualizer_;          //<! The MSCEqF visualizer
 
   std::unordered_set<uint> ids_to_update_;  //!< Ids of track to update
 

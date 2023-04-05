@@ -108,14 +108,14 @@ void Tracker::track(Camera& cam)
 
   if (previous_features_.second.empty())
   {
-    detectAndUndistort(current_pyramids_, cam.mask_, current_features_.second);
+    detect(current_pyramids_, cam.mask_, current_features_.second);
   }
   else
   {
     std::vector<uchar> klt_mask;
     std::vector<uchar> ransac_mask;
 
-    detectAndUndistort(previous_pyramids_, previous_mask_, previous_features_.second);
+    detect(previous_pyramids_, previous_mask_, previous_features_.second);
     matchKLT(klt_mask);
     ransac(ransac_mask);
 
@@ -145,13 +145,16 @@ void Tracker::track(Camera& cam)
   previous_features_ = current_features_;
 }
 
-void Tracker::detectAndUndistort(std::vector<cv::Mat>& pyramids, cv::Mat& mask, Features& features)
+void Tracker::detect(std::vector<cv::Mat>& pyramids, cv::Mat& mask, Features& features)
 {
   // Return if we have enough features
   if (features.size() > opts_.min_features_)
   {
     return;
   }
+
+  // Criteria for sub-pixel refinement
+  cv::TermCriteria criteria = cv::TermCriteria(cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 20, 0.001);
 
   // Compute keypoints needed (The amount of keypoints we need to extract)
   uint needed_kpts = opts_.max_features_ - features.size();
@@ -165,9 +168,10 @@ void Tracker::detectAndUndistort(std::vector<cv::Mat>& pyramids, cv::Mat& mask, 
   std::vector<Keypoints> cell_kpts(opts_.grid_x_size_ * opts_.grid_y_size_);
 
   // Mask existing features
-  maskGivenFeatures(mask, features.uvs_);
+  maskGivenFeatures(mask, features.distorted_uvs_);
 
-  for (uint i = 0; i < opts_.pyramid_levels_; ++i)
+  // for (uint i = 0; i < opts_.pyramid_levels_; ++i)
+  for (uint i = 0; i < 1; ++i)
   {
     uint pyr_idx = 2 * i;
     int scale = utils::pow2(i);
@@ -183,8 +187,9 @@ void Tracker::detectAndUndistort(std::vector<cv::Mat>& pyramids, cv::Mat& mask, 
     }
 
     // Reset value of max keypoints per cell for the given pyramid
-    max_kpts_per_cell_ =
-        std::max(uint(1), needed_kpts / (opts_.grid_x_size_ * opts_.grid_y_size_ * opts_.pyramid_levels_));
+    // max_kpts_per_cell_ =
+    //     std::max(uint(1), needed_kpts / (opts_.grid_x_size_ * opts_.grid_y_size_ * opts_.pyramid_levels_));
+    max_kpts_per_cell_ = std::max(uint(1), needed_kpts / (opts_.grid_x_size_ * opts_.grid_y_size_));
 
     std::atomic<size_t> num_detected(0);
     std::atomic<int> cell_cnt(0);
@@ -206,9 +211,14 @@ void Tracker::detectAndUndistort(std::vector<cv::Mat>& pyramids, cv::Mat& mask, 
 
                           // Dynamic max keypoints per cell based on the amount of previously extracted keypoints
                           num_detected += cell_kpts[cell_idx].size();
+                          // if (max_kpts_per_cell_.load() > 1)
+                          // {
+                          //   max_kpts_per_cell_ = ((needed_kpts / opts_.pyramid_levels_) - num_detected.load()) /
+                          //                        ((opts_.grid_x_size_ * opts_.grid_y_size_) - cell_cnt.load());
+                          // }
                           if (max_kpts_per_cell_.load() > 1)
                           {
-                            max_kpts_per_cell_ = ((needed_kpts / opts_.pyramid_levels_) - num_detected.load()) /
+                            max_kpts_per_cell_ = (needed_kpts - num_detected.load()) /
                                                  ((opts_.grid_x_size_ * opts_.grid_y_size_) - cell_cnt.load());
                           }
 
@@ -236,12 +246,31 @@ void Tracker::detectAndUndistort(std::vector<cv::Mat>& pyramids, cv::Mat& mask, 
       }
     }
 
+    // Sub-pixel refinement for all the detected keypoints
+    if (!detected[i].empty())
+    {
+      cv::cornerSubPix(pyramids[pyr_idx], detected[i], cv::Size(5, 5), cv::Size(-1, -1), criteria);
+    }
+
     // mask already detected features
     maskGivenFeatures(mask, detected[i]);
   }
 
   // Flatten detected features
   FeaturesCoordinates detected_flat = utils::flatten(detected);
+
+  if (detected_flat.empty())
+  {
+    return;
+  }
+
+  // Undistort
+  FeaturesCoordinates undistorted_detected_flat(detected_flat);
+  cam_->undistort(undistorted_detected_flat);
+
+  // Normalize
+  FeaturesCoordinates normalized_detected_flat(undistorted_detected_flat);
+  cam_->normalize(normalized_detected_flat);
 
   // Return if no keypoints has been found
   if (detected_flat.empty())
@@ -250,32 +279,18 @@ void Tracker::detectAndUndistort(std::vector<cv::Mat>& pyramids, cv::Mat& mask, 
     return;
   }
 
-  // // Remove features below minimum distance
-  // if (opts_.min_px_dist_ > 0)
-  // {
-  //   removeCloseFeatures(detected_flat);
-  // }
-
-  // Sub-pixel refinement for all the detected keypoints
-  cv::TermCriteria criteria = cv::TermCriteria(cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 20, 0.001);
-  cv::cornerSubPix(pyramids[0], detected_flat, cv::Size(5, 5), cv::Size(-1, -1), criteria);
-
-  // Undistort
-  cam_->undistort(detected_flat);
-
-  // Normalize
-  FeaturesCoordinates normalized_detected_flat(detected_flat);
-  cam_->normalize(normalized_detected_flat);
-
   size_t detected_size = detected_flat.size();
   size_t total_size = features.size() + detected_size;
 
+  features.distorted_uvs_.reserve(total_size);
   features.uvs_.reserve(total_size);
   features.normalized_uvs_.reserve(total_size);
 
   // Append newly detected features to existing
-  features.uvs_.insert(features.uvs_.end(), std::make_move_iterator(detected_flat.begin()),
-                       std::make_move_iterator(detected_flat.end()));
+  features.distorted_uvs_.insert(features.distorted_uvs_.end(), std::make_move_iterator(detected_flat.begin()),
+                                 std::make_move_iterator(detected_flat.end()));
+  features.uvs_.insert(features.uvs_.end(), std::make_move_iterator(undistorted_detected_flat.begin()),
+                       std::make_move_iterator(undistorted_detected_flat.end()));
   features.normalized_uvs_.insert(features.normalized_uvs_.end(),
                                   std::make_move_iterator(normalized_detected_flat.begin()),
                                   std::make_move_iterator(normalized_detected_flat.end()));
@@ -302,6 +317,12 @@ void Tracker::maskGivenFeatures(cv::Mat& mask, const FeaturesCoordinates& points
   {
     int x = static_cast<int>(point.x);
     int y = static_cast<int>(point.y);
+
+    if (x < 0 || y < 0 || x > mask.cols || y > mask.rows)
+    {
+      continue;
+    }
+
     int x1 = std::max(0, x - px_dist);
     int y1 = std::max(0, y - px_dist);
     int x2 = std::min(mask.cols - 1, x + px_dist);
@@ -314,18 +335,12 @@ void Tracker::extractCellKeypoints(const cv::Mat& cell, const cv::Mat& mask, Key
 {
   detector_->detect(cell, cell_kpts, mask);
 
-  // // Remove features below minimum distance in this cell if we are using FAST
-  // if (opts_.min_px_dist_ > 0 && opts_.detector_ == FeatureDetector::FAST)
-  // {
-  //   removeCloseFeatures(cell_kpts);
-  // }
-
   // Sort detected keypoints based on fast score
   std::sort(cell_kpts.begin(), cell_kpts.end(),
             [](const cv::KeyPoint& pre, const cv::KeyPoint& post) { return pre.response > post.response; });
 
   // Cap keypoints to max_kpts_per_cell_, keeping the ones with the highest score
-  cell_kpts.resize(std::min(cell_kpts.size(), (max_kpts_per_cell_.load() - previous_features_.second.size())));
+  cell_kpts.resize(std::min(cell_kpts.size(), static_cast<size_t>(max_kpts_per_cell_.load())));
 }
 
 void Tracker::matchKLT(std::vector<uchar>& mask)
@@ -336,14 +351,15 @@ void Tracker::matchKLT(std::vector<uchar>& mask)
   std::vector<float> error;
   cv::TermCriteria criteria = cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 30, 0.01);
 
-  cv::calcOpticalFlowPyrLK(previous_pyramids_, current_pyramids_, previous_features_.second.uvs_,
-                           current_features_.second.uvs_, mask, error, win_, opts_.pyramid_levels_ - 1, criteria,
-                           cv::OPTFLOW_USE_INITIAL_FLOW);
+  cv::calcOpticalFlowPyrLK(previous_pyramids_, current_pyramids_, previous_features_.second.distorted_uvs_,
+                           current_features_.second.distorted_uvs_, mask, error, win_, opts_.pyramid_levels_ - 1,
+                           criteria, cv::OPTFLOW_USE_INITIAL_FLOW);
 
-  // Normalized tracked features
-  FeaturesCoordinates normalized_tracked(current_features_.second.uvs_);
-  cam_->normalize(normalized_tracked);
-  current_features_.second.normalized_uvs_ = std::move(normalized_tracked);
+  // Undistort and Normalize tracked features
+  current_features_.second.uvs_ = current_features_.second.distorted_uvs_;
+  cam_->undistort(current_features_.second.uvs_);
+  current_features_.second.normalized_uvs_ = current_features_.second.uvs_;
+  cam_->normalize(current_features_.second.normalized_uvs_);
 }
 
 void Tracker::ransac(std::vector<uchar>& mask)
@@ -356,10 +372,13 @@ void Tracker::ransac(std::vector<uchar>& mask)
     return;
   }
 
-  cv::findFundamentalMat(previous_features_.second.normalized_uvs_, current_features_.second.normalized_uvs_,
-                         cv::FM_RANSAC, 0.25, 0.999, mask);
+  cv::findFundamentalMat(
+      previous_features_.second.normalized_uvs_, current_features_.second.normalized_uvs_, cv::FM_RANSAC,
+      opts_.ransac_reprojection_ / std::max(cam_->intrinsics()(0), cam_->intrinsics()(1)), 0.999, mask);
 }
 
 const Tracker::TimedFeatures& Tracker::currentFeatures() const { return current_features_; }
+
+const PinholeCameraUniquePtr& Tracker::cam() const { return cam_; }
 
 }  // namespace msceqf

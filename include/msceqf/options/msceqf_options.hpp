@@ -19,7 +19,7 @@ namespace msceqf
 
 enum class FeatureRepresentation
 {
-  EUCLIDEAN,
+  ANCHORED_EUCLIDEAN,
   ANCHORED_POLAR,
   ANCHORED_INVERSE_DEPTH,
 };
@@ -48,26 +48,21 @@ enum class FeatureDetector
   GFTT,
 };
 
+/// @note The camera extrinsics are interpreted as IC_S, thus IC_S transofrm vectors in camera frame to vectors in imu
+/// frame according to the following equation: I_x = IC_S * C_x
 struct StateOptions
 {
-  /// initial covariance values
-  Matrix9 D_init_cov_;      //!< Initial covariance of the D element of the state
-  Matrix6 delta_init_cov_;  //!< Initial covariance of the delta element of the state
-  Matrix6 E_init_cov_;      //!< Initial covariance of the E element of the state
-  Matrix4 L_init_cov_;      //!< Initial covariance of the L element of the state
-
-  /// Initial calibration values (or calibration values to be used if no online calibration is activated)
-  SE3 initial_camera_extrinsics_;
-  In initial_camera_intrinsics_;
-
-  /// Filter flags
+  Matrix9 D_init_cov_;                         //!< Initial covariance of the D element of the state
+  Matrix6 delta_init_cov_;                     //!< Initial covariance of the delta element of the state
+  Matrix6 E_init_cov_;                         //!< Initial covariance of the E element of the state
+  Matrix4 L_init_cov_;                         //!< Initial covariance of the L element of the state
+  SE3 initial_camera_extrinsics_;              //!< Initial camera extrinsics
+  In initial_camera_intrinsics_;               //!< Initial camera intrinsics
   bool enable_camera_extrinsics_calibration_;  //!< Boolean to enable estrinsic camera calibration
   bool enable_camera_intrinsics_calibration_;  //!< Boolean to enable intinsic camera calibration
-
-  /// State and filter options
-  fp gravity_;                    //!< The magnitude of the gravity vector in m/s^2
-  uint num_clones_;               //!< The maximum number of stochastic clones
-  uint num_persistent_features_;  //!< The maximum number of persistent (SLAM) features
+  fp gravity_;                                 //!< The magnitude of the gravity vector in m/s^2
+  uint num_clones_;                            //!< The maximum number of stochastic clones
+  uint num_persistent_features_;               //!< The maximum number of persistent (SLAM) features
 };
 
 struct PropagatorOptions
@@ -89,16 +84,19 @@ struct UpdaterOptions
   fp tollerance_;              //!< Tollerance for features triangulation refinement
   FeatureRepresentation msc_features_representation_;  //!< Multi State Constraint features representation
   ProjectionMethod projection_method_;                 //!< The feature projection method
+  uint min_track_lenght_;                              //!< Minimum track length for triangulation
+  fp min_angle_;                                       //!< Minimum angle (in degrees) between views for trianglulation
   fp pixel_std_;                                       //!< The pixel standard deviation
   bool curvature_correction_;                          //!< Boolean to enable the curvature correction
 };
 
 struct InitializerOptions
 {
-  fp disparity_threshold_;   //!< the disparity threshold for the static initializer
-  fp acc_threshold_;         //!< The acceleration threshold for the static initializer
-  size_t imu_init_window_;   //!< The window in seconds used to check for acceleration spikes
-  size_t disparity_window_;  //!< The window is seconds used to check disparity
+  fp disparity_threshold_;  //!< the disparity threshold for the static initializer
+  fp acc_threshold_;        //!< The acceleration threshold for the static initializer
+  fp imu_init_window_;      //!< The window in seconds used to check for acceleration spikes
+  fp disparity_window_;     //!< The window is seconds used to check disparity
+  fp gravity_;              //!< The magnitude of the gravity vector in m/s^2
 };
 
 struct CameraOptions
@@ -130,6 +128,7 @@ struct TrackerOptions
   uint min_px_dist_;                  //!< minimum pixel distance between features
   uint pyramid_levels_;               //!< pyramids levels for optical flow and feature extraction (1-based)
   uint optical_flow_win_size_;        //!< window size for optical flow
+  fp ransac_reprojection_;            //!< RANSAC reprojection threshold
   FastOptions fast_opts_;             //!< Fast feature detector options
   GFTTOptions gftt_opts_;             //!< Shi-Tomasi feature detector options
 };

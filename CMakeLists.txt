@@ -113,7 +113,7 @@ endif()
 message(STATUS "CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE}.")
 
 # Set CMAKE compile flags
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -O3 -fsee -fomit-frame-pointer -fno-signed-zeros -fno-math-errno -funroll-loops")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -O3 -fsee -fomit-frame-pointer -fno-signed-zeros -fno-math-errno -funroll-loops -fno-unsafe-math-optimizations")
 # set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g3 -Wall -Wextra -Werror -Wuninitialized -Wmaybe-uninitialized -pedantic -fno-omit-frame-pointer -fsanitize=thread")
 # set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -O0 -g3 -Wall -Wextra -Werror -Wuninitialized -Wmaybe-uninitialized -pedantic -fno-omit-frame-pointer -fsanitize=address -fsanitize-recover=address")
 set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g3 -Wall -Wextra -Werror -Wuninitialized -Wmaybe-uninitialized -pedantic -fno-omit-frame-pointer -fsanitize=undefined")
@@ -153,3 +153,20 @@ if(${BUILD_TESTS})
     include(GoogleTest)
     gtest_discover_tests(msceqf_tests)
 endif()
+
+# Declare C++ examples
+add_executable(msceqf_euroc examples/euroc/euroc.cpp)
+target_include_directories(msceqf_euroc PRIVATE ${include_dirs})
+target_link_libraries(msceqf_euroc ${PROJECT_NAME} pthread)
+
+add_executable(msceqf_uzhfpv examples/uzhfpv/uzhfpv.cpp)
+target_include_directories(msceqf_uzhfpv PRIVATE ${include_dirs})
+target_link_libraries(msceqf_uzhfpv ${PROJECT_NAME} pthread)
+
+add_executable(msceqf_synthetic examples/synthetic/synthetic.cpp)
+target_include_directories(msceqf_synthetic PRIVATE ${include_dirs})
+target_link_libraries(msceqf_synthetic ${PROJECT_NAME} pthread)
+
+add_executable(msceqf_synthetic_images examples/synthetic_images/synthetic_images.cpp)
+target_include_directories(msceqf_synthetic_images PRIVATE ${include_dirs})
+target_link_libraries(msceqf_synthetic_images ${PROJECT_NAME} pthread)

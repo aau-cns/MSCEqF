@@ -18,10 +18,18 @@
 
 namespace msceqf
 {
-StaticInitializer::StaticInitializer(const InitializerOptions& opts) : opts_(opts) {}
+StaticInitializer::StaticInitializer(const InitializerOptions& opts)
+    : opts_(opts), imu_buffer_(), T0_(), b0_(Vector6::Zero())
+{
+}
 
 void StaticInitializer::insertImu(const Imu& imu)
 {
+  if (imu_buffer_.empty())
+  {
+    utils::Logger::info("Collecting IMU measurements for static initialization");
+  }
+
   if (imu_buffer_.empty() || imu.timestamp_ > imu_buffer_.back().timestamp_)
   {
     imu_buffer_.push_back(imu);
@@ -32,18 +40,15 @@ void StaticInitializer::insertImu(const Imu& imu)
   }
 
   if (imu_buffer_.size() > 1 &&
-      (imu_buffer_.back().timestamp_ - imu_buffer_.front().timestamp_) > opts_.imu_init_window_)
+      (imu_buffer_.back().timestamp_ - imu_buffer_.front().timestamp_) > (1.0 + opts_.imu_init_window_))
   {
     imu_buffer_.pop_front();
   }
 }
 
-bool StaticInitializer::detectMotion(const Tracks& tracks) const
-{
-  return accelerationCheck() && disparityCheck(tracks);
-}
+bool StaticInitializer::detectMotion(const Tracks& tracks) { return accelerationCheck() && disparityCheck(tracks); }
 
-bool StaticInitializer::accelerationCheck() const
+bool StaticInitializer::accelerationCheck()
 {
   if (opts_.acc_threshold_ > 0 &&
       (imu_buffer_.back().timestamp_ - imu_buffer_.front().timestamp_) < opts_.imu_init_window_)
@@ -53,16 +58,21 @@ bool StaticInitializer::accelerationCheck() const
   }
 
   Vector3 acc_mean = Vector3::Zero();
+  Vector3 ang_mean = Vector3::Zero();
   for (const auto& imu : imu_buffer_)
   {
     acc_mean += imu.acc_;
+    ang_mean += imu.ang_;
   }
+  acc_mean /= imu_buffer_.size();
+  ang_mean /= imu_buffer_.size();
 
   std::vector<fp> acc_diff_norm_square;
   acc_diff_norm_square.reserve(imu_buffer_.size());
   std::transform(imu_buffer_.begin(), imu_buffer_.end(), std::back_inserter(acc_diff_norm_square),
                  [&acc_mean](const Imu& imu) { return (imu.acc_ - acc_mean).dot(imu.acc_ - acc_mean); });
   fp acc_std = std::reduce(acc_diff_norm_square.begin(), acc_diff_norm_square.end());
+  acc_std = std::sqrt(acc_std / (acc_diff_norm_square.size() - 1));
 
   if (acc_std < opts_.acc_threshold_)
   {
@@ -70,14 +80,35 @@ bool StaticInitializer::accelerationCheck() const
     return false;
   }
 
+  Vector3 z = acc_mean / acc_mean.norm();
+
+  Vector3 x = Vector3(1, 0, 0) - z * z.dot(Vector3(1, 0, 0));
+  x = x / x.norm();
+
+  Vector3 y = z.cross(x);
+  y = y / y.norm();
+
+  Matrix3 R0;
+  R0 << x, y, z;
+
+  T0_ = SE23(R0, {Vector3::Zero(), Vector3::Zero()});
+  b0_.segment<3>(0) = ang_mean;
+  b0_.segment<3>(3) = acc_mean - R0.transpose() * (opts_.gravity_ * Vector3(0, 0, 1));
+
   return true;
 }
 
 bool StaticInitializer::disparityCheck(const Tracks& tracks) const
 {
-  size_t first_track_lenght = tracks.begin()->second.timestamps_.back() - tracks.begin()->second.timestamps_.front();
+  const auto& longest_track = std::max_element(tracks.begin(), tracks.end(),
+                                               [](const auto& pre, const auto& post) {
+                                                 return pre.second.timestamps_.size() < post.second.timestamps_.size();
+                                               })
+                                  ->second;
 
-  if (first_track_lenght < opts_.disparity_window_)
+  const fp& longest_track_time = longest_track.timestamps_.back() - longest_track.timestamps_.front();
+
+  if (longest_track_time < opts_.disparity_window_)
   {
     utils::Logger::info("feature tracks not long enough for disparity check in static initializer");
     return false;
@@ -88,7 +119,7 @@ bool StaticInitializer::disparityCheck(const Tracks& tracks) const
 
   for (const auto& [id, track] : tracks)
   {
-    if (track.size() == first_track_lenght)
+    if (track.size() == longest_track.size())
     {
       average_disparity += cv::norm(track.uvs_.back() - track.uvs_.front());
       ++track_cnt;
@@ -98,5 +129,9 @@ bool StaticInitializer::disparityCheck(const Tracks& tracks) const
 
   return average_disparity > opts_.disparity_threshold_ ? true : false;
 }
+
+const SE23& StaticInitializer::T0() const { return T0_; }
+
+const Vector6& StaticInitializer::b0() const { return b0_; }
 
 }  // namespace msceqf

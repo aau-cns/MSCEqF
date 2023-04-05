@@ -45,9 +45,10 @@ struct Features
    */
   inline size_t size() const noexcept
   {
-    assert(uvs_.size() == normalized_uvs_.size());
-    assert(uvs_.size() == ids_.size());
-    return uvs_.size();
+    assert(distorted_uvs_.size() == uvs_.size());
+    assert(distorted_uvs_.size() == normalized_uvs_.size());
+    assert(distorted_uvs_.size() == ids_.size());
+    return distorted_uvs_.size();
   }
 
   /**
@@ -58,17 +59,19 @@ struct Features
    */
   void removeInvalid(std::vector<bool>& invalid)
   {
-    assert(invalid.size() == uvs_.size());
-    assert(uvs_.size() == normalized_uvs_.size());
-    assert(uvs_.size() == ids_.size());
+    assert(invalid.size() == distorted_uvs_.size());
+    assert(distorted_uvs_.size() == uvs_.size());
+    assert(distorted_uvs_.size() == normalized_uvs_.size());
+    assert(distorted_uvs_.size() == ids_.size());
 
     size_t i = 0;
     size_t j = 0;
 
-    while (i < uvs_.size())
+    while (i < invalid.size())
     {
       if (!invalid[i])
       {
+        distorted_uvs_[j] = distorted_uvs_[i];
         uvs_[j] = uvs_[i];
         normalized_uvs_[j] = normalized_uvs_[i];
         ids_[j] = ids_[i];
@@ -77,13 +80,15 @@ struct Features
       ++i;
     }
 
+    distorted_uvs_.resize(j);
     uvs_.resize(j);
     normalized_uvs_.resize(j);
     ids_.resize(j);
   }
 
-  FeaturesCoordinates uvs_;             //!< (u, v) coordinates of the features detected/tracked
-  FeaturesCoordinates normalized_uvs_;  //!< Normalized (u, v) coordinates of features detected/tracked
+  FeaturesCoordinates distorted_uvs_;   //!< Distorted (u, v) coordinates of the features detected/tracked
+  FeaturesCoordinates uvs_;             //!< Undistorted (u, v) coordinates of the features detected/tracked
+  FeaturesCoordinates normalized_uvs_;  //!< Undistorted normalized (u, v) coordinates of features detected/tracked
   FeatureIds ids_;                      //!< Id of the features detected/tracked
 };
 

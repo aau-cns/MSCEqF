@@ -11,8 +11,6 @@
 
 #include "msceqf/msceqf.hpp"
 
-#include <future>
-
 namespace msceqf
 {
 
@@ -25,6 +23,7 @@ MSCEqF::MSCEqF(const std::string& params_filepath)
     , initializer_(opts_.init_options_)
     , propagator_(opts_.propagator_options_)
     , updater_(opts_.updater_options_, xi0_)
+    , visualizer_(track_manager_)
     , ids_to_update_()
     , timestamp_(-1)
     , is_filter_initialized_(false)
@@ -37,7 +36,6 @@ void MSCEqF::processImuMeasurement(const Imu& imu)
 
   if (!is_filter_initialized_)
   {
-    utils::Logger::info("Collecting IMU measurements for static initialization.");
     initializer_.insertImu(imu);
     return;
   }
@@ -60,12 +58,28 @@ void MSCEqF::processCameraMeasurement(Camera& cam)
   if (!is_filter_initialized_)
   {
     track_manager_.processCamera(cam);
-    is_filter_initialized_ = initializer_.detectMotion(track_manager_.tracks());
+    if (initializer_.detectMotion(track_manager_.tracks()))
+    {
+      utils::Logger::info("Static initialization succeeded");
+      track_manager_.clear();
+
+      Matrix6 adb0 = SE3::adjoint(initializer_.b0());
+      Matrix6 B_init_cov = opts_.state_options_.D_init_cov_.block<6, 6>(0, 0);
+
+      opts_.state_options_.delta_init_cov_ += adb0 * B_init_cov * adb0.transpose();
+      xi0_ = SystemState(opts_.state_options_, initializer_.T0(), initializer_.b0());
+      X_ = MSCEqFState(opts_.state_options_);
+
+      is_filter_initialized_ = true;
+      logInit();
+    }
+    visualizer_.visualizeImageWithTracks(cam);
+    return;
   }
 
   if (cam.timestamp_ < timestamp_)
   {
-    utils::Logger::warn("Received Camera measurement older than actual state estimate. Discarding measurement.");
+    utils::Logger::warn("Received Camera measurement older than actual state estimate. Discarding measurement");
     return;
   }
 
@@ -75,7 +89,7 @@ void MSCEqF::processCameraMeasurement(Camera& cam)
 
   if (!future_propagation.get())
   {
-    utils::Logger::err("Propagation failure.");
+    utils::Logger::err("Propagation failure");
     return;
   }
 
@@ -83,6 +97,9 @@ void MSCEqF::processCameraMeasurement(Camera& cam)
   auto future_cloning = std::async([&]() { X_.stochasticCloning(cam.timestamp_); });
 
   future_image_processing.wait();
+
+  visualizer_.visualizeImageWithTracks(cam);
+
   future_cloning.wait();
 
   track_manager_.lostTracksIds(cam.timestamp_, ids_to_update_);
@@ -97,24 +114,156 @@ void MSCEqF::processCameraMeasurement(Camera& cam)
   }
 
   // Update
-  updater_.update(X_, track_manager_.tracks(), ids_to_update_);
-
-  if (marginalize)
+  updater_.mscUpdate(X_, track_manager_.tracks(), ids_to_update_);
+  if (!ids_to_update_.empty())
   {
-    X_.marginalizeCloneAt(marginalize_timestamp);
+    utils::Logger::info("Successful update with " + std::to_string(ids_to_update_.size()) + " tracks");
+  }
+  else
+  {
+    utils::Logger::warn("Failed update.");
+  }
+
+  // Update camera intrinsics if we are doing online camera intrinsic calibration
+  if (X_.opts().enable_camera_intrinsics_calibration_)
+  {
+    SystemState xi = stateEstimate();
+    track_manager_.cam()->setIntrinsics(xi.k());
   }
 
   // Remove tracks used for update and clear ids_to_update_
   track_manager_.removeTracksId(ids_to_update_);
   ids_to_update_.clear();
+
+  // Marginalize
+  if (marginalize)
+  {
+    X_.marginalizeCloneAt(marginalize_timestamp);
+    track_manager_.removeTracksTail(marginalize_timestamp);
+  }
+}
+
+void MSCEqF::processFeaturesMeasurement(const TriangulatedFeatures& features)
+{
+  assert(features.timestamp_ >= 0);
+
+  if (!is_filter_initialized_)
+  {
+    track_manager_.processFeatures(features);
+    if (initializer_.detectMotion(track_manager_.tracks()))
+    {
+      utils::Logger::info("Static initialization succeeded");
+      track_manager_.clear();
+
+      Matrix6 adb0 = SE3::adjoint(initializer_.b0());
+      Matrix6 B_init_cov = opts_.state_options_.D_init_cov_.block<6, 6>(0, 0);
+
+      opts_.state_options_.delta_init_cov_ += adb0 * B_init_cov * adb0.transpose();
+      xi0_ = SystemState(opts_.state_options_, initializer_.T0(), initializer_.b0());
+      X_ = MSCEqFState(opts_.state_options_);
+
+      is_filter_initialized_ = true;
+      logInit();
+
+      is_filter_initialized_ = true;
+    }
+    return;
+  }
+
+  if (features.timestamp_ < timestamp_)
+  {
+    utils::Logger::warn("Received Features measurement older than actual state estimate. Discarding measurement");
+    return;
+  }
+
+  // Add given features to the track manager
+  track_manager_.processFeatures(features);
+
+  propagator_.propagate(X_, xi0_, timestamp_, features.timestamp_);
+  X_.stochasticCloning(features.timestamp_);
+
+  track_manager_.lostTracksIds(features.timestamp_, ids_to_update_);
+
+  bool marginalize = false;
+  fp marginalize_timestamp = -1;
+  if (X_.clonesSize() == opts_.state_options_.num_clones_)
+  {
+    marginalize_timestamp = X_.cloneTimestampToMarginalize();
+    track_manager_.activeTracksIds(marginalize_timestamp, ids_to_update_);
+    marginalize = true;
+  }
+
+  updater_.mscUpdate(X_, track_manager_.tracks(), ids_to_update_);
+  if (!ids_to_update_.empty())
+  {
+    utils::Logger::info("Successful update with " + std::to_string(ids_to_update_.size()) + " tracks");
+  }
+  else
+  {
+    utils::Logger::warn("Failed update.");
+  }
+
+  if (X_.opts().enable_camera_intrinsics_calibration_)
+  {
+    SystemState xi = stateEstimate();
+    track_manager_.cam()->setIntrinsics(xi.k());
+  }
+
+  track_manager_.removeTracksId(ids_to_update_);
+  ids_to_update_.clear();
+
+  if (marginalize)
+  {
+    X_.marginalizeCloneAt(marginalize_timestamp);
+    track_manager_.removeTracksTail(marginalize_timestamp);
+  }
 }
 
 const MSCEqFOptions& MSCEqF::options() const { return opts_; }
 
 const StateOptions& MSCEqF::stateOptions() const { return opts_.state_options_; }
 
-const MatrixX& MSCEqF::Covariance() const { return X_.Cov(); }
+const MatrixX& MSCEqF::Covariance() const { return X_.cov(); }
 
 const SystemState MSCEqF::stateEstimate() const { return Symmetry::phi(X_, xi0_); }
+
+void MSCEqF::logInit() const
+{
+  std::ostringstream os;
+
+  os << "Origin set to:" << '\n'
+     << "T0:" << '\n'
+     << xi0_.T().asMatrix() << '\n'
+     << "b0:" << '\n'
+     << xi0_.b().transpose() << "\n";
+
+  if (opts_.state_options_.enable_camera_extrinsics_calibration_)
+  {
+    os << "S0:" << '\n' << xi0_.S().asMatrix() << '\n';
+  }
+  if (opts_.state_options_.enable_camera_intrinsics_calibration_)
+  {
+    os << "K0:\n" << xi0_.K().asMatrix() << '\n';
+  }
+
+  os << "Set initial MSCEqF core state to" << '\n'
+     << "D:" << '\n'
+     << X_.D().asMatrix() << '\n'
+     << "delta:" << '\n'
+     << X_.delta().transpose() << '\n';
+
+  if (opts_.state_options_.enable_camera_extrinsics_calibration_)
+  {
+    os << "E:" << '\n' << X_.E().asMatrix() << '\n';
+  }
+  if (opts_.state_options_.enable_camera_intrinsics_calibration_)
+  {
+    os << "L:" << '\n' << X_.L().asMatrix() << '\n';
+  }
+
+  os << "Set initial MSCEqF covariance to:" << '\n' << X_.cov();
+
+  utils::Logger::info(os.str());
+}
 
 }  // namespace msceqf

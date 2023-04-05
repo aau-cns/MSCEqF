@@ -55,6 +55,13 @@ class Tracker
    */
   const TimedFeatures& currentFeatures() const;
 
+  /**
+   * @brief Get the camera pointer
+   *
+   * @return const PinholeCameraUniquePtr&
+   */
+  const PinholeCameraUniquePtr& cam() const;
+
  private:
   /**
    * @brief Detect/Tracks feature in the given camera measurement.
@@ -68,24 +75,21 @@ class Tracker
   void track(Camera& cam);
 
   /**
-   * @brief Detect and undistort features based on the selected feature detector.
+   * @brief Detect features based on the selected feature detector.
    * This method detects feature in a image through its pyramids. Each pyramid is split in a grid, and features are
    * extracted for each grid cell in parallel. The number of feature per cell is "dynamic". It starts with the policy
    * that the extraction should be uniform for each cell but the max number of features are "redistributed" if the
    * detection produces few features in some cells.
-   * Detected features are stored in original coordinates and normalized coordinates. An id is assigned to each feature.
+   * Detected features are stored in original distorted, undistorted, and normalized coordinates.
+   * An id is assigned to each feature.
    *
    * @param pyramids
    * @param mask
    * @param features
    * @param timestamp
    *
-   * @note This method undistort detected features but it *does not* normalize them
    */
-  void detectAndUndistort(std::vector<cv::Mat>& pyramids, cv::Mat& mask, Features& features);
-
-  // [TODO] here i need to think... If i simply give points, can i easily handle timestamp? can i easily handle
-  // extension of the detected features????
+  void detect(std::vector<cv::Mat>& pyramids, cv::Mat& mask, Features& features);
 
   /**
    * @brief Match features between consecutive images using Lukas-Kanade Optical Flow.
@@ -144,5 +148,3 @@ class Tracker
 }  // namespace msceqf
 
 #endif  // TRACKER_HPP
-
-// [TODO] Check constructor init list

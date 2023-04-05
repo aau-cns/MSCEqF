@@ -147,7 +147,7 @@ class Propagator
   int state_transition_order_;  //!< Truncation order of the state transition matrix
   uint imu_buffer_max_size_;    //!< Maximum imu buffer size
 
-  static constexpr fp eps_ = 1e-6;  //!< epsilon for checks
+  static constexpr fp eps_ = 1e-6;  //!< epsilon, minimum time difference accepted
 };
 
 }  // namespace msceqf

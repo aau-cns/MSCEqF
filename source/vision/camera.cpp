@@ -25,6 +25,10 @@ PinholeCamera::PinholeCamera(const VectorX& distortion_coefficients,
 
 void PinholeCamera::setIntrinsics(const Vector4& intrinsics) { intrinsics_ = intrinsics; }
 
+const Vector4& PinholeCamera::intrinsics() const { return intrinsics_; }
+
+const VectorX& PinholeCamera::distortionCoefficients() const { return distortion_coefficients_; }
+
 void PinholeCamera::normalize(std::vector<Eigen::Vector2f>& uv)
 {
   for (auto& coords : uv)
@@ -130,6 +134,22 @@ void RadtanCamera::undistort(std::vector<cv::Point2f>& uv_cv, const bool& normal
   {
     cv::undistortPoints(uv_cv, uv_cv, K_cv, dist_cv, cv::noArray(), K_cv);
   }
+}
+
+void RadtanCamera::undistortImage(const cv::Mat& image, cv::Mat& image_undistorted)
+{
+  cv::Vec<fp, 4> dist_cv;
+  cv::Matx<fp, 3, 3> K_cv;
+
+  cv::eigen2cv(distortion_coefficients_, dist_cv);
+
+  K_cv(0, 0) = intrinsics_(0);
+  K_cv(1, 1) = intrinsics_(1);
+  K_cv(0, 2) = intrinsics_(2);
+  K_cv(1, 2) = intrinsics_(3);
+  K_cv(2, 2) = 1.0f;
+
+  cv::undistort(image, image_undistorted, K_cv, dist_cv);
 }
 
 }  // namespace msceqf

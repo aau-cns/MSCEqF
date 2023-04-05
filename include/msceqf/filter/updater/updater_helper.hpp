@@ -18,31 +18,31 @@
 
 #include "types/fptypes.hpp"
 #include "msceqf/system/system.hpp"
+#include "utils/tools.hpp"
 
 namespace msceqf
 {
-
 using MatrixXBlockRowRef = Eigen::Ref<MatrixX::RowsBlockXpr>;  //!< Block row reference for a dynamic matrix
 using VectorXBlockRowRef = Eigen::Ref<VectorX::RowsBlockXpr>;  //!< Block row reference for a dynamic vector
 
+using ColsMap = utils::InsertionOrderedMap<MSCEqFState::MSCEqFKey, size_t>;  //!< Map of indices for C and delta
+
 /**
  * @brief FeatHelper struct.
- * This struct implements a helper structure holding all the information related to a single feature measurement to be
- * used in the MSCEqF update.
- *
- * @note The clone pointer is passed by reference because there is no need to share ownership of the clone.
+ * This struct implements a helper structure holding all the information related to a single feature measurement to
+ * be used in the computation of the C matrix, Cf matrix and residual delta, for the MSCEqF update.
  */
 struct FeatHelper
 {
   FeatHelper(
-      const SE3& A_E, const Vector3& A_f, const Vector2& uvn, const MSCEqFSE3StateSharedPtr& clone, const fp& timestamp)
-      : A_E_(A_E), A_f_(A_f), uvn_(uvn), clone_(clone), timetamp_(timestamp){};
+      const Vector3& A_f, const Vector2& uv, const Vector2& uvn, const fp& anchor_timestamp, const fp& clone_timestamp)
+      : A_f_(A_f), uv_(uv), uvn_(uvn), anchor_timestamp_(anchor_timestamp), clone_timestamp_(clone_timestamp){};
 
-  const SE3& A_E_;                        //!< Anchor E element
-  const Vector3& A_f_;                    //!< Triangulated feature in anchor frame
-  const Vector2& uvn_;                    //!< Normalized (measured) feature coordinates
-  const MSCEqFSE3StateSharedPtr& clone_;  //!< Clone of the state at the time of the feature measurement
-  const fp& timetamp_;                    //!< Timestamp of the feature measurement
+  const Vector3& A_f_;          //!< Triangulated feature in anchor frame
+  const Vector2& uv_;           //!< (measured) feature coordinates
+  const Vector2& uvn_;          //!< Normalized (measured) feature coordinates
+  const fp& anchor_timestamp_;  //!< Timestamp of the anchor
+  const fp& clone_timestamp_;   //!< Timestamp of the feature measurement
 };
 
 /**
@@ -73,37 +73,49 @@ class ProjectionHelper
 
   /**
    * @brief Computes a block row of the C matrix and a block of the residual, corresponding to the given feature
-   * This method compute the Ct matrix, the Cf matrix and the residual for a given feature. Perform the nullspace
-   * projection and assign the result to the given block of C matrix, and the residual, after performing a chi2
-   * rejection test.
+   * This method compute the Ct matrix, the Cf matrix and the residual for a given feature.
    *
    * @param X MSCEqF state
    * @param feat Feature helper
    * @param C_block_row Block row of the C matrix
    * @param delta_block_row Block of the residual delta
    * @param Cf_block_row Block of the Cf matrix
+   * @param cols_map map of indices for the C matrix and the residual delta
    */
-  virtual void innovationBlock(const MSCEqFState& X,
-                               const SystemState& xi0,
-                               const FeatHelper& feat,
-                               MatrixXBlockRowRef C_block_row,
-                               VectorXBlockRowRef delta_block_row,
-                               MatrixXBlockRowRef Cf_block_row) = 0;
+  virtual void residualJacobianBlock(const MSCEqFState& X,
+                                     const SystemState& xi0,
+                                     const FeatHelper& feat,
+                                     MatrixXBlockRowRef C_block_row,
+                                     VectorXBlockRowRef delta_block_row,
+                                     MatrixXBlockRowRef Cf_block_row,
+                                     const ColsMap& cols_map) = 0;
 
-  size_t block_rows_;  //!< Number of rows of a C matrix block and a residual block
+  /**
+   * @brief Get the number of rows of a C matrix block and a residual block
+   *
+   * @return const size_t&
+   */
+  [[nodiscard]] const size_t& block_rows() const { return block_rows_; }
+
+  /**
+   * @brief Get the dimension lost due to nullspace projection
+   *
+   * @return const size_t&
+   */
+  [[nodiscard]] const size_t& dim_loss() const { return dim_loss_; }
 
  protected:
   /// Rule of 5
-  ProjectionHelper(const FeatureRepresentation& feature_representation)
-      : feature_representation_(feature_representation)
-  {
-  }
+  ProjectionHelper(const FeatureRepresentation& feature_representation);
   ProjectionHelper(const ProjectionHelper&) = default;
   ProjectionHelper(ProjectionHelper&&) = default;
   ProjectionHelper& operator=(const ProjectionHelper&) = default;
   ProjectionHelper& operator=(ProjectionHelper&&) = default;
 
   FeatureRepresentation feature_representation_;  //!< Feature representation
+
+  size_t block_rows_;  //!< Number of rows of a C matrix block and a residual block
+  size_t dim_loss_;    //!< Dimension lost due to nullspace projection
 };
 
 /**
@@ -137,22 +149,22 @@ class ProjectionHelperS2 : public ProjectionHelper
 
   /**
    * @brief Computes a block row of the C matrix and a block of the residual, corresponding to the given feature
-   * This method compute the Ct matrix, the Cf matrix and the residual for a given feature. Perform the nullspace
-   * projection and assign the result to the given block of C matrix, and the residual, after performing a chi2
-   * rejection test.
+   * This method compute the Ct matrix, the Cf matrix and the residual for a given feature.
    *
    * @param X MSCEqF state
    * @param feat Feature helper
    * @param C_block_row Block row of the C matrix
    * @param delta_block_row Block of the residual delta
    * @param Cf_block_row Block of the Cf matrix
+   * @param cols_map map of indices for the C matrix and the residual delta
    */
-  void innovationBlock(const MSCEqFState& X,
-                       const SystemState& xi0,
-                       const FeatHelper& feat,
-                       MatrixXBlockRowRef C_block_row,
-                       VectorXBlockRowRef delta_block_row,
-                       MatrixXBlockRowRef Cf_block_row) override;
+  void residualJacobianBlock(const MSCEqFState& X,
+                             const SystemState& xi0,
+                             const FeatHelper& feat,
+                             MatrixXBlockRowRef C_block_row,
+                             VectorXBlockRowRef delta_block_row,
+                             MatrixXBlockRowRef Cf_block_row,
+                             const ColsMap& cols_map) override;
 };
 
 /**
@@ -186,22 +198,22 @@ class ProjectionHelperZ1 : public ProjectionHelper
 
   /**
    * @brief Computes a block row of the C matrix and a block of the residual, corresponding to the given feature
-   * This method compute the Ct matrix, the Cf matrix and the residual for a given feature. Perform the nullspace
-   * projection and assign the result to the given block of C matrix, and the residual, after performing a chi2
-   * rejection test.
+   * This method compute the Ct matrix, the Cf matrix and the residual for a given feature.
    *
    * @param X MSCEqF state
    * @param feat Feature helper
    * @param C_block_row Block row of the C matrix
    * @param delta_block_row Block of the residual delta
    * @param Cf_block_row Block of the Cf matrix
+   * @param cols_map map of indices for the C matrix and the residual delta
    */
-  void innovationBlock(const MSCEqFState& X,
-                       const SystemState& xi0,
-                       const FeatHelper& feat,
-                       MatrixXBlockRowRef C_block_row,
-                       VectorXBlockRowRef delta_block_row,
-                       MatrixXBlockRowRef Cf_block_row) override;
+  void residualJacobianBlock(const MSCEqFState& X,
+                             const SystemState& xi0,
+                             const FeatHelper& feat,
+                             MatrixXBlockRowRef C_block_row,
+                             VectorXBlockRowRef delta_block_row,
+                             MatrixXBlockRowRef Cf_block_row,
+                             const ColsMap& cols_map) override;
 };
 
 using ProjectionHelperSharedPtr = std::shared_ptr<ProjectionHelper>;
@@ -269,24 +281,19 @@ struct UpdaterHelper
    *
    * @param C C matrix
    * @param delta residual
+   * @param R R matrix
    */
-  static void updateQRCompression(MatrixX& C, VectorX& delta);
+  static void updateQRCompression(MatrixX& C, VectorX& delta, MatrixX& R);
 
   /**
    * @brief Perform chi2 test (based on precomputed table) on the given block of the residual
    *
-   * @param X MSCEqF state
-   * @param Ct_block Block of the Ct matrix
-   * @param delta_block Block of the residual delta
-   * @param pixel_std Standard deviation of the pixel noise
-   * @param chi2_table Chi2 table (precomputed)
+   * @param chi2 chi2 value
+   * @param dof degrees of freedom
+   * @param chi2_table precomputed chi2 table
    * @return true if test passed, false otherwise
    */
-  [[nodiscard]] static bool chi2Test(const MSCEqFState& X,
-                                     const MatrixXBlockRowRef Ct_block,
-                                     const VectorXBlockRowRef delta_block,
-                                     const fp& pixel_std,
-                                     const std::map<uint, fp>& chi2_table);
+  [[nodiscard]] static bool chi2Test(const fp& chi2, const size_t& dof, const std::map<uint, fp>& chi2_table);
 };
 
 }  // namespace msceqf

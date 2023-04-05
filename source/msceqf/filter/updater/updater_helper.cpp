@@ -14,6 +14,23 @@
 namespace msceqf
 {
 
+ProjectionHelper::ProjectionHelper(const FeatureRepresentation& feature_representation)
+    : feature_representation_(feature_representation)
+{
+  switch (feature_representation_)
+  {
+    case FeatureRepresentation::ANCHORED_EUCLIDEAN:
+      dim_loss_ = 3;
+      break;
+    case FeatureRepresentation::ANCHORED_INVERSE_DEPTH:
+      dim_loss_ = 3;
+      break;
+    case FeatureRepresentation::ANCHORED_POLAR:
+      dim_loss_ = 4;
+      break;
+  }
+}
+
 Vector3 ProjectionHelperS2::pi(const Vector3& f) { return f / f.norm(); }
 
 Vector3 ProjectionHelperZ1::pi(const Vector3& f) { return (Vector3() << f(0) / f(2), f(1) / f(2), 1.0).finished(); }
@@ -29,70 +46,93 @@ MatrixX ProjectionHelperZ1::dpi(const Vector3& f)
       .finished();
 }
 
-void ProjectionHelperS2::innovationBlock([[maybe_unused]] const MSCEqFState& X,
-                                         [[maybe_unused]] const SystemState& xi0,
-                                         [[maybe_unused]] const FeatHelper& feat,
-                                         [[maybe_unused]] MatrixXBlockRowRef C_block_row,
-                                         [[maybe_unused]] VectorXBlockRowRef delta_block_row,
-                                         [[maybe_unused]] MatrixXBlockRowRef Cf_block_row)
+void ProjectionHelperS2::residualJacobianBlock([[maybe_unused]] const MSCEqFState& X,
+                                               [[maybe_unused]] const SystemState& xi0,
+                                               [[maybe_unused]] const FeatHelper& feat,
+                                               [[maybe_unused]] MatrixXBlockRowRef C_block_row,
+                                               [[maybe_unused]] VectorXBlockRowRef delta_block_row,
+                                               [[maybe_unused]] MatrixXBlockRowRef Cf_block_row,
+                                               [[maybe_unused]] const ColsMap& cols_map)
 {
   throw std::runtime_error("Update with S2 projection not implemented yet");
 }
 
-void ProjectionHelperZ1::innovationBlock(const MSCEqFState& X,
-                                         const SystemState& xi0,
-                                         const FeatHelper& feat,
-                                         MatrixXBlockRowRef C_block_row,
-                                         VectorXBlockRowRef delta_block_row,
-                                         MatrixXBlockRowRef Cf_block_row)
+void ProjectionHelperZ1::residualJacobianBlock(const MSCEqFState& X,
+                                               const SystemState& xi0,
+                                               const FeatHelper& feat,
+                                               MatrixXBlockRowRef C_block_row,
+                                               VectorXBlockRowRef delta_block_row,
+                                               MatrixXBlockRowRef Cf_block_row,
+                                               const ColsMap& cols_map)
 {
-  // feature in origin frmae and camera frame
-  Vector3 G0_f = feat.A_E_ * feat.A_f_;
-  Vector3 C_f = feat.clone_->E_.inv() * G0_f;
+  const auto& anchor_E = X.clone(feat.anchor_timestamp_);
+  const auto& clone_E = X.clone(feat.clone_timestamp_);
 
-  // precompute some terms (K0 * L * dpi(C_f) and L * pi(C_f))
-  Eigen::Matrix<fp, 2, 3> K0Ldpi = (xi0.K() * X.L()).asMatrix().block<2, 2>(0, 0) * dpi(C_f);
-  Vector3 Lpi_homogenous = X.L().asMatrix() * pi(C_f);
+  // feature in origin frame and camera frame
+  Vector3 G0_f = anchor_E * feat.A_f_;
+  Vector3 C_f = clone_E.inv() * G0_f;
 
-  if (X.opts_.enable_camera_extrinsics_calibration_)
+  // precompute D = K0 * L * dpi(C_f) if intrinsics are calibrated, D = dpi(C_f) otherwise
+  Eigen::Matrix<fp, 2, 3> D = X.opts().enable_camera_intrinsics_calibration_ ?
+                                  (xi0.K() * X.L()).asMatrix().block<2, 2>(0, 0) * dpi(C_f) :
+                                  dpi(C_f);
+
+  // Precompute P = L * pi(C_f) if intrinsics are calibrated, P = pi(C_f) otherwise
+  Vector3 P = X.opts().enable_camera_intrinsics_calibration_ ? X.L().asMatrix() * pi(C_f) : pi(C_f);
+
+  if (X.opts().enable_camera_intrinsics_calibration_)
+  {
+    C_block_row.block(0, cols_map.at(MSCEqFStateElementName::L), block_rows_, X.dof(MSCEqFStateElementName::L))
+        .noalias() = xi0.K().asMatrix().block<2, 2>(0, 0) * UpdaterHelper::Xi(P);
+  }
+
+  if (X.opts().enable_camera_extrinsics_calibration_)
   {
     Eigen::Matrix<fp, 3, 6> A = Eigen::Matrix<fp, 3, 6>::Zero();
     A.block<3, 3>(0, 0) = SO3::wedge(G0_f);
     A.block<3, 3>(0, 3) = -Matrix3::Identity();
 
-    const uint& col_idx = X.stateElementIndex(MSCEqFStateElementName::E);
-    C_block_row.block(0, col_idx, block_rows_, 6).noalias() = K0Ldpi * X.E().inv().R() * A;
+    if (feat.clone_timestamp_ != feat.anchor_timestamp_)
+    {
+      C_block_row.block(0, cols_map.at(feat.clone_timestamp_), block_rows_, X.dof(feat.clone_timestamp_)).noalias() =
+          D * clone_E.R().transpose() * A;
+      C_block_row.block(0, cols_map.at(feat.anchor_timestamp_), block_rows_, X.dof(feat.anchor_timestamp_)) =
+          -C_block_row.block(0, cols_map.at(feat.clone_timestamp_), block_rows_, X.dof(feat.clone_timestamp_));
+    }
   }
   else
   {
     // [TODO] Ct if extrinsics are not calibrated
   }
 
-  if (X.opts_.enable_camera_intrinsics_calibration_)
-  {
-    const uint& col_idx = X.stateElementIndex(MSCEqFStateElementName::L);
-    C_block_row.block(0, col_idx, block_rows_, 4).noalias() =
-        xi0.K().asMatrix().block<2, 2>(0, 0) * UpdaterHelper::Xi(Lpi_homogenous);
-  }
-
   switch (feature_representation_)
   {
-    case FeatureRepresentation::EUCLIDEAN:
-      Cf_block_row = K0Ldpi * X.E().inv().R();
+    case FeatureRepresentation::ANCHORED_EUCLIDEAN:
+      Cf_block_row = D * clone_E.R().transpose() * anchor_E.R();
       break;
     case FeatureRepresentation::ANCHORED_INVERSE_DEPTH:
-      Cf_block_row = K0Ldpi * (X.E().inv() * feat.A_E_).R() * UpdaterHelper::inverseDepthJacobian(feat.A_f_);
+      Cf_block_row = D * clone_E.R().transpose() * anchor_E.R() * UpdaterHelper::inverseDepthJacobian(feat.A_f_);
       break;
     case FeatureRepresentation::ANCHORED_POLAR:
-      Cf_block_row = Eigen::Matrix<fp, 2, 4>::Zero();
-      throw std::runtime_error("Anchored polar representation update not implemented");
-      break;
-    default:
+      // [TODO] Check Cf for polar representation with anchoring
+      Vector3 C_f0 = (Vector3() << 0.0, 0.0, 1.0).finished();
+      Vector3 thetak = std::acos((C_f0.normalized().transpose() * C_f.normalized())) * C_f0.cross(C_f).normalized();
+      Eigen::Matrix<fp, 3, 4> J = Eigen::Matrix<fp, 3, 4>::Zero();
+      J.block<3, 3>(0, 0) = SO3::wedge(C_f) * SO3::leftJacobian(thetak);
+      J.block<3, 1>(0, 3) = -C_f;
+      Cf_block_row = D * J;
       break;
   }
 
   // Residual
-  delta_block_row = feat.uvn_ - (xi0.K().asMatrix() * Lpi_homogenous).segment<2>(0);
+  if (X.opts().enable_camera_intrinsics_calibration_)
+  {
+    delta_block_row = feat.uv_ - (xi0.K().asMatrix() * P).segment<2>(0);
+  }
+  else
+  {
+    delta_block_row = feat.uvn_ - P.segment<2>(0);
+  }
 }
 
 Eigen::Matrix<fp, 2, 4> UpdaterHelper::Xi(const Vector3& f)
@@ -117,57 +157,32 @@ void UpdaterHelper::nullspaceProjection(Eigen::Ref<MatrixX> Cf, MatrixXBlockRowR
 {
   Eigen::HouseholderQR<Eigen::Ref<MatrixX>> QR(Cf);
 
-  MatrixX Q = MatrixX::Identity(Cf.rows(), Cf.rows());
+  MatrixX Q = MatrixX::Zero(Cf.rows(), Cf.rows() - Cf.cols());
+  Q.block(Cf.cols(), 0, Cf.rows() - Cf.cols(), Cf.rows() - Cf.cols()) =
+      MatrixX::Identity(Cf.rows() - Cf.cols(), Cf.rows() - Cf.cols());
   Q.applyOnTheLeft(QR.householderQ());
+  Q.transposeInPlace();
 
-  MatrixX A = Q.block(0, 0, Cf.rows(), Cf.cols()).transpose();
-
-  Ct = A * Ct;
-  delta = A * delta;
+  Ct.block(0, 0, Q.rows(), Ct.cols()) = Q * Ct;
+  delta.segment(0, Q.rows()) = Q * delta;
 }
 
-void UpdaterHelper::updateQRCompression(MatrixX& C, VectorX& delta)
+void UpdaterHelper::updateQRCompression(MatrixX& C, VectorX& delta, MatrixX& R)
 {
   Eigen::HouseholderQR<MatrixX> QR(C.rows(), C.cols());
   QR.compute(C);
 
-  MatrixX Q = MatrixX::Identity(C.rows(), C.rows());
+  MatrixX Q = MatrixX::Zero(C.rows(), C.cols());
+  Q.block(0, 0, C.cols(), C.cols()) = MatrixX::Identity(C.cols(), C.cols());
   Q.applyOnTheLeft(QR.householderQ());
 
-  MatrixX A = Q.block(0, 0, C.rows(), C.cols()).transpose();
-
-  C = A * C;
-  delta = A * delta;
+  C = QR.matrixQR().topRows(Q.cols()).triangularView<Eigen::Upper>();
+  delta = Q.transpose() * delta;
+  R = Q.transpose() * R * Q;
 }
 
-bool UpdaterHelper::chi2Test(const MSCEqFState& X,
-                             const MatrixXBlockRowRef Ct_block,
-                             const VectorXBlockRowRef delta_block,
-                             const fp& pixel_std,
-                             const std::map<uint, fp>& chi2_table)
+bool UpdaterHelper::chi2Test(const fp& chi2, const size_t& dof, const std::map<uint, fp>& chi2_table)
 {
-  const auto& dof = delta_block.rows();
-
-  // get covariance of variables involved in update
-  std::vector<MSCEqFState::MSCEqFStateKey> keys;
-  if (X.opts_.enable_camera_extrinsics_calibration_)
-  {
-    keys.push_back(MSCEqFStateElementName::E);
-  }
-  else
-  {
-    // [TODO]
-  }
-  if (X.opts_.enable_camera_intrinsics_calibration_)
-  {
-    keys.push_back(MSCEqFStateElementName::L);
-  }
-
-  MatrixX S = Ct_block * X.subCov(keys) * Ct_block.transpose();
-  S.diagonal() += Eigen::VectorXd::Ones(S.rows()) * pixel_std * pixel_std;
-  fp chi2 = delta_block.dot(S.llt().solve(delta_block));
-
-  // Compute chi2 threshold
   fp chi2_threshold;
   if (dof < 1000)
   {
@@ -186,4 +201,5 @@ bool UpdaterHelper::chi2Test(const MSCEqFState& X,
 
   return true;
 }
+
 }  // namespace msceqf

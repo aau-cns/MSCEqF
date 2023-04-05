@@ -15,26 +15,26 @@
 
 namespace msceqf
 {
-SystemState::SystemState(const StateOptions& opts) : opts_(opts), state_()
+SystemState::SystemState(const StateOptions& opts, const SE23& T0, const Vector6& b0) : opts_(opts), state_()
 {
   preallocate();
 
   insertSystemStateElement(
-      std::make_pair(SystemStateElementName::T, createSystemStateElement<ExtendedPoseState>(std::make_tuple())));
+      std::make_pair(SystemStateElementName::T, createSystemStateElement<ExtendedPoseState>(std::make_tuple(T0))));
   insertSystemStateElement(
-      std::make_pair(SystemStateElementName::b, createSystemStateElement<BiasState>(std::make_tuple())));
+      std::make_pair(SystemStateElementName::b, createSystemStateElement<BiasState>(std::make_tuple(b0))));
 
-  if (opts.enable_camera_extrinsics_calibration_)
+  if (opts_.enable_camera_extrinsics_calibration_)
   {
     insertSystemStateElement(std::make_pair(
         SystemStateElementName::S,
-        createSystemStateElement<CameraExtrinsicState>(std::make_tuple(opts.initial_camera_extrinsics_))));
+        createSystemStateElement<CameraExtrinsicState>(std::make_tuple(opts_.initial_camera_extrinsics_))));
   }
-  if (opts.enable_camera_intrinsics_calibration_)
+  if (opts_.enable_camera_intrinsics_calibration_)
   {
     insertSystemStateElement(std::make_pair(
         SystemStateElementName::K,
-        createSystemStateElement<CameraIntrinsicState>(std::make_tuple(opts.initial_camera_intrinsics_))));
+        createSystemStateElement<CameraIntrinsicState>(std::make_tuple(opts_.initial_camera_intrinsics_))));
   }
 }
 
@@ -158,7 +158,7 @@ const Vector3& SystemState::f(const uint& feat_id) const
   return std::static_pointer_cast<FeatureState>(state_.at(feat_id))->f_;
 }
 
-const Vector3 SystemState::ge3() const { return opts_.gravity_ * (Vector3() << 0, 0, -1).finished(); }
+const Vector3 SystemState::ge3() const { return opts_.gravity_ * Vector3(0, 0, -1); }
 
 std::string SystemState::toString(const SystemStateKey& key)
 {

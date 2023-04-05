@@ -120,7 +120,7 @@ class Logger
   }
 
  private:
-  static inline LoggerLevel level_ = LoggerLevel::FULL;  //!< Logger level (FULL by default)
+  static inline LoggerLevel level_ = LoggerLevel::INFO;  //!< Logger level (INFO by default)
 };
 
 }  // namespace utils
