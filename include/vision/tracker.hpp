@@ -111,11 +111,12 @@ class Tracker
    * @brief Extract keypoints for the given cell. Extracted keypoints are limited to a maximum number given by the
    * difference between the max number of features allowed and the number of previous features.
    *
+   * @param idx
    * @param cell
    * @param mask
    * @param cell_kpts
    */
-  void extractCellKeypoints(const cv::Mat& cell, const cv::Mat& mask, Keypoints& cell_kpts);
+  void extractCellKeypoints(const uint& idx, const cv::Mat& cell, const cv::Mat& mask, Keypoints& cell_kpts);
 
   /**
    * @brief This method build a mask for feature extraction.
@@ -129,11 +130,11 @@ class Tracker
 
   TrackerOptions opts_;  //!< Tracker options
 
-  PinholeCameraUniquePtr cam_;  //!< Pointer to the pinhole camera object
+  PinholeCameraUniquePtr cam_;       //!< Pointer to the pinhole camera object
+  cv::Ptr<cv::Feature2D> detector_;  //!< The feature detector
 
-  cv::Ptr<cv::Feature2D> detector_;      //!< The feature detector
-  std::atomic<uint> max_kpts_per_cell_;  //!< Maximum number of keypoints for each cell of the grid
-  uint id_;                              //!< Feature id counter
+  std::map<uint, std::atomic<uint>> max_kpts_per_cell_;  //!< Maximum number of keypoints for each cell of the grid
+  uint id_;                                              //!< Feature id counter
 
   std::vector<cv::Mat> previous_pyramids_;  //!< Pyramids for Optical Flow and feature extraction from previous image
   cv::Mat previous_mask_;                   //!< Maks from previous image
@@ -143,6 +144,8 @@ class Tracker
   TimedFeatures current_features_;         //!< Features detected in previous image associated to their timestamp
 
   cv::Size win_;  //!< The Optical Flow window size
+
+  static constexpr std::array<uint, 4> ratio_ = {10, 6, 3, 1};  //!< Ratio of features among pyramid levels
 };
 
 }  // namespace msceqf

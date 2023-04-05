@@ -53,9 +53,11 @@ MSCEqFOptions OptionParser::parseOptions()
   readDefault(opts.track_manager_options_.tracker_options_.grid_x_size_, 8, "grid_x_size");
   readDefault(opts.track_manager_options_.tracker_options_.grid_y_size_, 5, "grid_y_size");
   readDefault(opts.track_manager_options_.tracker_options_.min_px_dist_, 5, "min_feature_pixel_distance");
-  readDefault(opts.track_manager_options_.tracker_options_.pyramid_levels_, 3, "optical_flow_pyramid_levels");
   readDefault(opts.track_manager_options_.tracker_options_.optical_flow_win_size_, 21, "optical_flow_win_size");
+  readDefault(opts.track_manager_options_.tracker_options_.detector_pyramid_levels_, 3, "detector_pyramid_levels");
   readDefault(opts.track_manager_options_.tracker_options_.ransac_reprojection_, 0.5, "ransac_reprojection");
+  readDefault(opts.track_manager_options_.tracker_options_.optical_flow_pyramid_levels_, 3,
+              "optical_flow_pyramid_levels");
 
   // Parse camera parameters
   parseCameraParameters(opts.state_options_.initial_camera_extrinsics_, opts.state_options_.initial_camera_intrinsics_,

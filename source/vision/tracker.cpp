@@ -21,7 +21,7 @@ Tracker::Tracker(const TrackerOptions& opts, const Vector4& intrinsics)
     : opts_(opts)
     , cam_()
     , detector_()
-    , max_kpts_per_cell_(opts_.max_features_ / (opts_.grid_x_size_ * opts_.grid_y_size_ * opts_.pyramid_levels_))
+    , max_kpts_per_cell_()
     , id_(0)
     , previous_pyramids_()
     , previous_mask_()
@@ -30,10 +30,28 @@ Tracker::Tracker(const TrackerOptions& opts, const Vector4& intrinsics)
     , current_features_()
     , win_(cv::Size(opts_.optical_flow_win_size_, opts_.optical_flow_win_size_))
 {
-  assert(opts_.pyramid_levels_ > 0);
+  assert(opts_.optical_flow_pyramid_levels_ > 0);
+  assert(opts_.detector_pyramid_levels_ > 0);
 
-  previous_pyramids_.reserve(opts_.pyramid_levels_);
-  current_pyramids_.reserve(opts_.pyramid_levels_);
+  if (opts_.optical_flow_pyramid_levels_ > 4)
+  {
+    utils::Logger::warn("Number of pyramid levels for optical flow greater than 4, limiting it to 4.");
+    opts_.optical_flow_pyramid_levels_ = 4;
+  }
+
+  previous_pyramids_.reserve(opts_.optical_flow_pyramid_levels_);
+  current_pyramids_.reserve(opts_.optical_flow_pyramid_levels_);
+
+  if (opts_.detector_pyramid_levels_ > 4)
+  {
+    utils::Logger::warn("Number of pyramid levels for detection greater than 4, limiting it to 4.");
+    opts_.detector_pyramid_levels_ = 4;
+  }
+
+  for (uint i = 0; i < opts_.detector_pyramid_levels_; ++i)
+  {
+    max_kpts_per_cell_.try_emplace(i, 0);
+  }
 
   switch (opts_.distortion_model_)
   {
@@ -59,12 +77,6 @@ Tracker::Tracker(const TrackerOptions& opts, const Vector4& intrinsics)
       break;
     default:
       break;
-  }
-
-  if (max_kpts_per_cell_ < 1)
-  {
-    utils::Logger::warn("Number of cells grater than max features, extracting one feature per cell.");
-    max_kpts_per_cell_ = 1;
   }
 
   assert(cam_ != nullptr);
@@ -101,10 +113,10 @@ void Tracker::track(Camera& cam)
   // Assign timestamp
   current_features_.first = cam.timestamp_;
 
-  // Update opts_.pyramid_levels_ with the actual number of pyramid levels
-  // (opts_.pyramid_levels_ - 1) is given since maxLevel is 0-based in buildOpticalFlowPyramid
-  opts_.pyramid_levels_ =
-      cv::buildOpticalFlowPyramid(cam.image_, current_pyramids_, win_, opts_.pyramid_levels_ - 1) + 1;
+  // Update opts_.optical_flow_pyramid_levels_ with the actual number of pyramid levels
+  // (opts_.optical_flow_pyramid_levels_ - 1) is given since maxLevel is 0-based in buildOpticalFlowPyramid
+  opts_.optical_flow_pyramid_levels_ =
+      cv::buildOpticalFlowPyramid(cam.image_, current_pyramids_, win_, opts_.optical_flow_pyramid_levels_ - 1) + 1;
 
   if (previous_features_.second.empty())
   {
@@ -156,13 +168,15 @@ void Tracker::detect(std::vector<cv::Mat>& pyramids, cv::Mat& mask, Features& fe
   // Criteria for sub-pixel refinement
   cv::TermCriteria criteria = cv::TermCriteria(cv::TermCriteria::EPS + cv::TermCriteria::COUNT, 20, 0.001);
 
-  // Compute keypoints needed (The amount of keypoints we need to extract)
-  uint needed_kpts = opts_.max_features_ - features.size();
+  // Compute alpha needed (The amount of keypoints we need to extract divided by the sum of the ratios)
+  const uint needed_alpha =
+      std::ceil(static_cast<float>(opts_.max_features_ - features.size()) /
+                std::accumulate(ratio_.begin(), ratio_.begin() + opts_.detector_pyramid_levels_, 0));
 
   utils::Logger::debug("Not enough existing features, detecting new features");
 
   // Declare detected features (through all the pyramid levels)
-  std::vector<FeaturesCoordinates> detected(opts_.pyramid_levels_);
+  std::vector<FeaturesCoordinates> detected(opts_.detector_pyramid_levels_);
 
   // Declare cell keypoints
   std::vector<Keypoints> cell_kpts(opts_.grid_x_size_ * opts_.grid_y_size_);
@@ -170,8 +184,7 @@ void Tracker::detect(std::vector<cv::Mat>& pyramids, cv::Mat& mask, Features& fe
   // Mask existing features
   maskGivenFeatures(mask, features.distorted_uvs_);
 
-  // for (uint i = 0; i < opts_.pyramid_levels_; ++i)
-  for (uint i = 0; i < 1; ++i)
+  for (uint i = 0; i < opts_.detector_pyramid_levels_; ++i)
   {
     uint pyr_idx = 2 * i;
     int scale = utils::pow2(i);
@@ -187,9 +200,8 @@ void Tracker::detect(std::vector<cv::Mat>& pyramids, cv::Mat& mask, Features& fe
     }
 
     // Reset value of max keypoints per cell for the given pyramid
-    // max_kpts_per_cell_ =
-    //     std::max(uint(1), needed_kpts / (opts_.grid_x_size_ * opts_.grid_y_size_ * opts_.pyramid_levels_));
-    max_kpts_per_cell_ = std::max(uint(1), needed_kpts / (opts_.grid_x_size_ * opts_.grid_y_size_));
+    max_kpts_per_cell_.at(i) =
+        std::max(uint(1), (ratio_[i] * needed_alpha) / (opts_.grid_x_size_ * opts_.grid_y_size_));
 
     std::atomic<size_t> num_detected(0);
     std::atomic<int> cell_cnt(0);
@@ -207,19 +219,14 @@ void Tracker::detect(std::vector<cv::Mat>& pyramids, cv::Mat& mask, Features& fe
                           int x = cell_idx % opts_.grid_x_size_;
                           cv::Rect cell(x * cell_width, y * cell_height, cell_width, cell_height);
 
-                          extractCellKeypoints(pyramids[pyr_idx](cell), resized_mask(cell), cell_kpts[cell_idx]);
+                          extractCellKeypoints(i, pyramids[pyr_idx](cell), resized_mask(cell), cell_kpts[cell_idx]);
 
                           // Dynamic max keypoints per cell based on the amount of previously extracted keypoints
                           num_detected += cell_kpts[cell_idx].size();
-                          // if (max_kpts_per_cell_.load() > 1)
-                          // {
-                          //   max_kpts_per_cell_ = ((needed_kpts / opts_.pyramid_levels_) - num_detected.load()) /
-                          //                        ((opts_.grid_x_size_ * opts_.grid_y_size_) - cell_cnt.load());
-                          // }
-                          if (max_kpts_per_cell_.load() > 1)
+                          if (max_kpts_per_cell_.at(i).load() > 1)
                           {
-                            max_kpts_per_cell_ = (needed_kpts - num_detected.load()) /
-                                                 ((opts_.grid_x_size_ * opts_.grid_y_size_) - cell_cnt.load());
+                            max_kpts_per_cell_.at(i) = ((ratio_[i] * needed_alpha) - num_detected.load()) /
+                                                       ((opts_.grid_x_size_ * opts_.grid_y_size_) - cell_cnt.load());
                           }
 
                           ++cell_cnt;
@@ -331,7 +338,7 @@ void Tracker::maskGivenFeatures(cv::Mat& mask, const FeaturesCoordinates& points
   }
 }
 
-void Tracker::extractCellKeypoints(const cv::Mat& cell, const cv::Mat& mask, Keypoints& cell_kpts)
+void Tracker::extractCellKeypoints(const uint& idx, const cv::Mat& cell, const cv::Mat& mask, Keypoints& cell_kpts)
 {
   detector_->detect(cell, cell_kpts, mask);
 
@@ -340,7 +347,7 @@ void Tracker::extractCellKeypoints(const cv::Mat& cell, const cv::Mat& mask, Key
             [](const cv::KeyPoint& pre, const cv::KeyPoint& post) { return pre.response > post.response; });
 
   // Cap keypoints to max_kpts_per_cell_, keeping the ones with the highest score
-  cell_kpts.resize(std::min(cell_kpts.size(), static_cast<size_t>(max_kpts_per_cell_.load())));
+  cell_kpts.resize(std::min(cell_kpts.size(), static_cast<size_t>(max_kpts_per_cell_.at(idx).load())));
 }
 
 void Tracker::matchKLT(std::vector<uchar>& mask)
@@ -352,8 +359,8 @@ void Tracker::matchKLT(std::vector<uchar>& mask)
   cv::TermCriteria criteria = cv::TermCriteria(cv::TermCriteria::COUNT + cv::TermCriteria::EPS, 30, 0.01);
 
   cv::calcOpticalFlowPyrLK(previous_pyramids_, current_pyramids_, previous_features_.second.distorted_uvs_,
-                           current_features_.second.distorted_uvs_, mask, error, win_, opts_.pyramid_levels_ - 1,
-                           criteria, cv::OPTFLOW_USE_INITIAL_FLOW);
+                           current_features_.second.distorted_uvs_, mask, error, win_,
+                           opts_.optical_flow_pyramid_levels_ - 1, criteria, cv::OPTFLOW_USE_INITIAL_FLOW);
 
   // Undistort and Normalize tracked features
   current_features_.second.uvs_ = current_features_.second.distorted_uvs_;
