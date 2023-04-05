@@ -18,7 +18,10 @@
 
 namespace msceqf
 {
-StaticInitializer::StaticInitializer(const InitializerOptions& opts) : opts_(opts) {}
+StaticInitializer::StaticInitializer(const InitializerOptions& opts)
+    : opts_(opts), imu_buffer_(), T0_(), b0_(Vector6::Zero())
+{
+}
 
 void StaticInitializer::insertImu(const Imu& imu)
 {
@@ -43,12 +46,9 @@ void StaticInitializer::insertImu(const Imu& imu)
   }
 }
 
-bool StaticInitializer::detectMotion(const Tracks& tracks) const
-{
-  return accelerationCheck() && disparityCheck(tracks);
-}
+bool StaticInitializer::detectMotion(const Tracks& tracks) { return accelerationCheck() && disparityCheck(tracks); }
 
-bool StaticInitializer::accelerationCheck() const
+bool StaticInitializer::accelerationCheck()
 {
   if (opts_.acc_threshold_ > 0 &&
       (imu_buffer_.back().timestamp_ - imu_buffer_.front().timestamp_) < opts_.imu_init_window_)
@@ -58,11 +58,14 @@ bool StaticInitializer::accelerationCheck() const
   }
 
   Vector3 acc_mean = Vector3::Zero();
+  Vector3 ang_mean = Vector3::Zero();
   for (const auto& imu : imu_buffer_)
   {
     acc_mean += imu.acc_;
+    ang_mean += imu.ang_;
   }
   acc_mean /= imu_buffer_.size();
+  ang_mean /= imu_buffer_.size();
 
   std::vector<fp> acc_diff_norm_square;
   acc_diff_norm_square.reserve(imu_buffer_.size());
@@ -76,6 +79,21 @@ bool StaticInitializer::accelerationCheck() const
     utils::Logger::info("No accelerometer spike detected");
     return false;
   }
+
+  Vector3 z = acc_mean / acc_mean.norm();
+
+  Vector3 x = Vector3(1, 0, 0) - z * z.dot(Vector3(1, 0, 0));
+  x = x / x.norm();
+
+  Vector3 y = z.cross(x);
+  y = y / y.norm();
+
+  Matrix3 R0;
+  R0 << x, y, z;
+
+  T0_ = SE23(R0, {Vector3::Zero(), Vector3::Zero()});
+  b0_.segment<3>(0) = ang_mean;
+  b0_.segment<3>(3) = acc_mean - R0.transpose() * (opts_.gravity_ * Vector3(0, 0, 1));
 
   return true;
 }
@@ -111,5 +129,9 @@ bool StaticInitializer::disparityCheck(const Tracks& tracks) const
 
   return average_disparity > opts_.disparity_threshold_ ? true : false;
 }
+
+const SE23& StaticInitializer::T0() const { return T0_; }
+
+const Vector6& StaticInitializer::b0() const { return b0_; }
 
 }  // namespace msceqf
