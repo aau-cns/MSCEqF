@@ -254,13 +254,6 @@ class MSCEqFState
   [[nodiscard]] const MSCEqFState Random() const;
 
   /**
-   * @brief Set the MSCEqF state to a specific orientation
-   *
-   * *THIS IS MEANT TO BE AN HELPER FUNCTION FOR DEBUG/TESTING*
-   */
-  void setMSCEqFStateInitialOrientation(const Quaternion& q);
-
-  /**
    * @brief operator* overloading for MSCEqFState.
    * This function will perform the composition this * other for each element of the state map.
    * This method will *NOT* perform any composition for the covariance matrix, and for the clones map.

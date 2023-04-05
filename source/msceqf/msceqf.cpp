@@ -30,41 +30,6 @@ MSCEqF::MSCEqF(const std::string& params_filepath)
 {
 }
 
-MSCEqF::MSCEqF(const std::string& params_filepath, const Quaternion& q)
-    : parser_(params_filepath)
-    , opts_(parser_.parseOptions())
-    , X_(opts_.state_options_)
-    , xi0_(opts_.state_options_)
-    , track_manager_(opts_.track_manager_options_, opts_.state_options_.initial_camera_intrinsics_.k())
-    , initializer_(opts_.init_options_)
-    , propagator_(opts_.propagator_options_)
-    , updater_(opts_.updater_options_, xi0_)
-    , visualizer_(track_manager_)
-    , ids_to_update_()
-    , timestamp_(-1)
-    , is_filter_initialized_(false)
-{
-  X_.setMSCEqFStateInitialOrientation(q);
-
-  utils::Logger::debug("Set origin to:");
-  utils::Logger::debug(
-      "Quaternion: " +
-      static_cast<std::ostringstream&>(std::ostringstream() << xi0_.T().q().coeffs().transpose()).str());
-  utils::Logger::debug("velocity: " +
-                       static_cast<std::ostringstream&>(std::ostringstream() << xi0_.T().v().transpose()).str());
-  utils::Logger::debug("Position: " +
-                       static_cast<std::ostringstream&>(std::ostringstream() << xi0_.T().p().transpose()).str());
-  utils::Logger::debug("Biases: " +
-                       static_cast<std::ostringstream&>(std::ostringstream() << xi0_.b().transpose()).str());
-  utils::Logger::debug(
-      "Calibration euler angles (ypr): " +
-      static_cast<std::ostringstream&>(std::ostringstream()
-                                       << xi0_.S().q().toRotationMatrix().eulerAngles(2, 1, 0).transpose() * 180 / M_PI)
-          .str());
-  utils::Logger::debug("Calibration Position: " +
-                       static_cast<std::ostringstream&>(std::ostringstream() << xi0_.S().x().transpose()).str());
-}
-
 void MSCEqF::processImuMeasurement(const Imu& imu)
 {
   assert(imu.timestamp_ >= 0);
@@ -97,7 +62,16 @@ void MSCEqF::processCameraMeasurement(Camera& cam)
     {
       utils::Logger::info("Static initialization succeeded");
       track_manager_.clear();
+
+      Matrix6 adb0 = SE3::adjoint(initializer_.b0());
+      Matrix6 B_init_cov = opts_.state_options_.D_init_cov_.block<6, 6>(0, 0);
+
+      opts_.state_options_.delta_init_cov_ += adb0 * B_init_cov * adb0.transpose();
+      xi0_ = SystemState(opts_.state_options_, initializer_.T0(), initializer_.b0());
+      X_ = MSCEqFState(opts_.state_options_);
+
       is_filter_initialized_ = true;
+      logInit();
     }
     visualizer_.visualizeImageWithTracks(cam);
     return;
@@ -180,6 +154,17 @@ void MSCEqF::processFeaturesMeasurement(const TriangulatedFeatures& features)
     {
       utils::Logger::info("Static initialization succeeded");
       track_manager_.clear();
+
+      Matrix6 adb0 = SE3::adjoint(initializer_.b0());
+      Matrix6 B_init_cov = opts_.state_options_.D_init_cov_.block<6, 6>(0, 0);
+
+      opts_.state_options_.delta_init_cov_ += adb0 * B_init_cov * adb0.transpose();
+      xi0_ = SystemState(opts_.state_options_, initializer_.T0(), initializer_.b0());
+      X_ = MSCEqFState(opts_.state_options_);
+
+      is_filter_initialized_ = true;
+      logInit();
+
       is_filter_initialized_ = true;
     }
     return;
@@ -241,5 +226,44 @@ const StateOptions& MSCEqF::stateOptions() const { return opts_.state_options_; 
 const MatrixX& MSCEqF::Covariance() const { return X_.cov(); }
 
 const SystemState MSCEqF::stateEstimate() const { return Symmetry::phi(X_, xi0_); }
+
+void MSCEqF::logInit() const
+{
+  std::ostringstream os;
+
+  os << "Origin set to:" << '\n'
+     << "T0:" << '\n'
+     << xi0_.T().asMatrix() << '\n'
+     << "b0:" << '\n'
+     << xi0_.b().transpose() << "\n";
+
+  if (opts_.state_options_.enable_camera_extrinsics_calibration_)
+  {
+    os << "S0:" << '\n' << xi0_.S().asMatrix() << '\n';
+  }
+  if (opts_.state_options_.enable_camera_intrinsics_calibration_)
+  {
+    os << "K0:\n" << xi0_.K().asMatrix() << '\n';
+  }
+
+  os << "Set initial MSCEqF core state to" << '\n'
+     << "D:" << '\n'
+     << X_.D().asMatrix() << '\n'
+     << "delta:" << '\n'
+     << X_.delta().transpose() << '\n';
+
+  if (opts_.state_options_.enable_camera_extrinsics_calibration_)
+  {
+    os << "E:" << '\n' << X_.E().asMatrix() << '\n';
+  }
+  if (opts_.state_options_.enable_camera_intrinsics_calibration_)
+  {
+    os << "L:" << '\n' << X_.L().asMatrix() << '\n';
+  }
+
+  os << "Set initial MSCEqF covariance to:" << '\n' << X_.cov();
+
+  utils::Logger::info(os.str());
+}
 
 }  // namespace msceqf

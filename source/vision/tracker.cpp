@@ -372,8 +372,9 @@ void Tracker::ransac(std::vector<uchar>& mask)
     return;
   }
 
-  cv::findFundamentalMat(previous_features_.second.normalized_uvs_, current_features_.second.normalized_uvs_,
-                         cv::FM_RANSAC, 1.0 / std::max(cam_->intrinsics()(0), cam_->intrinsics()(1)), 0.999, mask);
+  cv::findFundamentalMat(
+      previous_features_.second.normalized_uvs_, current_features_.second.normalized_uvs_, cv::FM_RANSAC,
+      opts_.ransac_reprojection_ / std::max(cam_->intrinsics()(0), cam_->intrinsics()(1)), 0.999, mask);
 }
 
 const Tracker::TimedFeatures& Tracker::currentFeatures() const { return current_features_; }

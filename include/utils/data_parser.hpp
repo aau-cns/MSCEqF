@@ -189,6 +189,11 @@ class dataParser
       have_velocity = false;
       have_bias = true;
     }
+    else if (groundtruth_header_titles_.size() == 11)
+    {
+      have_velocity = true;
+      have_bias = false;
+    }
     else if (groundtruth_header_titles_.size() == 8)
     {
       have_velocity = false;

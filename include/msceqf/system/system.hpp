@@ -39,12 +39,14 @@ class SystemState
   SystemState() = delete;
 
   /**
-   * @brief Initialize a system state with identity extended pose and zero bias.
+   * @brief Initialize a system state with given extended pose and bias (Identity and zero by default).
    * Camera intrinsics and extrinsics are initialized from the given values in the options.
    *
    * @param opts State options
+   * @param T0 Initial extended pose
+   * @param b0 Initial bias
    */
-  SystemState(const StateOptions& opts);
+  SystemState(const StateOptions& opts, const SE23& T0 = SE23(), const Vector6& b0 = Vector6::Zero());
 
   /**
    * @brief Construct system state given a multiple pairs of key-pointer of states element. This methods preallocate

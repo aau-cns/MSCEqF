@@ -37,14 +37,6 @@ class MSCEqF
   MSCEqF(const std::string& params_filepath);
 
   /**
-   * @brief MSCEqF Constructor with given initial orientation
-   *
-   * @param params_filepath filepath of the parameter file to be parsed
-   * @param q initial otientation
-   */
-  MSCEqF(const std::string& params_filepath, const Quaternion& q);
-
-  /**
    * @brief This function provide a simple interface for processing measurements of different kind.
    *
    * @tparam T Type of the measurement
@@ -105,11 +97,17 @@ class MSCEqF
    */
   void processFeaturesMeasurement(const TriangulatedFeatures& features);
 
-  OptionParser parser_;  //!< The parser to parse all the configuration from a yaml file
-  MSCEqFOptions opts_;   //!< All the MSCEqF options
+  /**
+   * @brief Log initial condition of the filter
+   *
+   */
+  void logInit() const;
 
-  MSCEqFState X_;          //!< The state of the MSCEqF
-  const SystemState xi0_;  //!< The origin state of the System
+      OptionParser parser_;  //!< The parser to parse all the configuration from a yaml file
+  MSCEqFOptions opts_;       //!< All the MSCEqF options
+
+  MSCEqFState X_;    //!< The state of the MSCEqF
+  SystemState xi0_;  //!< The origin state of the System
 
   TrackManager track_manager_;     //!< The MSCEqF track manager
   StaticInitializer initializer_;  //!< The MSCEqF static initializer
