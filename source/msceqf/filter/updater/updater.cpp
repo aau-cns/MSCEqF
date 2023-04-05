@@ -363,9 +363,20 @@ void Updater::UpdateMSCEqF(MSCEqFState& X, const MatrixX& C, const VectorX& delt
 {
   // Compute Kalman gain and innovation
   MatrixX G = X.subCovCols(cols_map_.keys()) * C.transpose();
-  MatrixX S = C * X.subCov(cols_map_.keys()) * C.transpose() + R;
-  MatrixX K = G * S.inverse();
+
+  // MatrixX S = C * X.subCov(cols_map_.keys()) * C.transpose() + R;
+  // MatrixX K = G * S.inverse();
+
+  MatrixX S(R.rows(), R.cols());
+  S.triangularView<Eigen::Upper>() = C * X.subCov(cols_map_.keys()) * C.transpose();
+  S.triangularView<Eigen::Upper>() += R;
+  MatrixX invS = MatrixX::Identity(R.rows(), R.cols());
+  S.selfadjointView<Eigen::Upper>().ldlt().solveInPlace(invS);
+  MatrixX K = G * invS.selfadjointView<Eigen::Upper>();
+
   VectorX inn = K * delta;
+
+  assert((inn.segment(15, 6) - inn.segment(inn.rows() - 6, 6)).norm() < 1e-12);
 
   // Update state
   X.state_.at(MSCEqFStateElementName::Dd)
@@ -386,7 +397,11 @@ void Updater::UpdateMSCEqF(MSCEqFState& X, const MatrixX& C, const VectorX& delt
   }
 
   // Update covariance
-  X.cov_ -= K * G.transpose();
+  // X.cov_ -= (K * G.transpose() + G * K.transpose() - K * S * K.transpose());
+  // X.cov_ -= K * G.transpose();
+
+  X.cov_.triangularView<Eigen::Upper>() -= K * G.transpose();
+  X.cov_ = X.cov_.selfadjointView<Eigen::Upper>();
 }
 
 }  // namespace msceqf
