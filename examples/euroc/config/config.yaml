@@ -3,8 +3,8 @@
 # Initial standard deviations (attitude, velocity, position, bias, extrinsics, instrinsics)
 extended_pose_std: [1.0e-1, 1.0e-1, 1.0e-9, 1.0, 1.0, 1.0, 1.0e-9, 1.0e-9, 1.0e-9]
 bias_std: [1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1]
-extrinsics_std: [1.0e-3, 1.0e-3, 1.0e-3, 1.0e-3, 1.0e-3, 1.0e-3]
-# intrinsics_std: [10, 10, 10, 10]
+extrinsics_std: [1.0e-2, 1.0e-2, 1.0e-2, 1.0e-2, 1.0e-2, 1.0e-2]
+intrinsics_std: [1.0, 1.0, 1.0, 1.0]
 
 # IMU noise statistics
 accelerometer_noise_density: 2.0000e-3  
@@ -30,7 +30,7 @@ static_initializer_acc_threshold: 0.05
 static_initializer_disparity_threshold: 2.0
 
 # Propagator
-state_transition_order: 2
+state_transition_order: -1
 imu_buffer_max_size: 1000
 
 # Updater
@@ -40,10 +40,10 @@ feature_max_depth: 20
 feature_refinement_max_iterations: 20
 feature_refinement_tollerance: 1e-9
 measurement_projection_method: unit_plane
-feature_representation: anchored_inverse_depth
+feature_representation: anchored_polar
 pixel_standerd_deviation: 1.0
 curveture_correction: false
-min_angle_deg: 1.0
+min_angle_deg: 2.0
 
 # State options
 enable_camera_extrinsic_calibration: true
@@ -55,11 +55,12 @@ num_persistent_features: 0
 # Tracker
 equalization_method: histogram
 optical_flow_pyramid_levels: 3
+detector_pyramid_levels: 2
 feature_detector: fast
-grid_x_size: 5
-grid_y_size: 5
+grid_x_size: 4
+grid_y_size: 4
 min_feature_pixel_distance: 10
-min_features: 180
+min_features: 160
 max_features: 200
 fast_threshold: 20
 shi_tomasi_quality_level: 0.75

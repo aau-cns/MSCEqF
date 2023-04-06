@@ -33,6 +33,7 @@ enum class ProjectionMethod
 enum class DistortionModel
 {
   RADTAN,
+  EQUIDISTANT,
 };
 
 enum class EqualizationMethod

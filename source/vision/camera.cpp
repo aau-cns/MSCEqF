@@ -89,12 +89,7 @@ void PinholeCamera::denormalize(cv::Point2f& uv)
   uv.y = uv.y * intrinsics_(1) + intrinsics_(3);
 }
 
-RadtanCamera::RadtanCamera(const CameraOptions& opts, const Vector4& intrinsics)
-    : PinholeCamera(opts.distortion_coefficients_, intrinsics, opts.resolution_(0), opts.resolution_(1))
-{
-}
-
-void RadtanCamera::undistort(std::vector<Eigen::Vector2f>& uv, const bool& normalize)
+void PinholeCamera::undistort(std::vector<Eigen::Vector2f>& uv, const bool& normalize)
 {
   std::vector<cv::Point2f> uv_cv;
   uv_cv.reserve(uv.size());
@@ -111,6 +106,11 @@ void RadtanCamera::undistort(std::vector<Eigen::Vector2f>& uv, const bool& norma
     uv[i](0) = uv_cv[i].x;
     uv[i](1) = uv_cv[i].y;
   }
+}
+
+RadtanCamera::RadtanCamera(const CameraOptions& opts, const Vector4& intrinsics)
+    : PinholeCamera(opts.distortion_coefficients_, intrinsics, opts.resolution_(0), opts.resolution_(1))
+{
 }
 
 void RadtanCamera::undistort(std::vector<cv::Point2f>& uv_cv, const bool& normalize)
@@ -150,6 +150,54 @@ void RadtanCamera::undistortImage(const cv::Mat& image, cv::Mat& image_undistort
   K_cv(2, 2) = 1.0f;
 
   cv::undistort(image, image_undistorted, K_cv, dist_cv);
+}
+
+EquidistantCamera::EquidistantCamera(const CameraOptions& opts, const Vector4& intrinsics)
+    : PinholeCamera(opts.distortion_coefficients_, intrinsics, opts.resolution_(0), opts.resolution_(1))
+{
+}
+
+void EquidistantCamera::undistort(std::vector<cv::Point2f>& uv_cv, const bool& normalize)
+{
+  cv::Vec<fp, 4> dist_cv;
+  cv::Matx<fp, 3, 3> K_cv;
+
+  cv::eigen2cv(distortion_coefficients_, dist_cv);
+
+  K_cv(0, 0) = intrinsics_(0);
+  K_cv(1, 1) = intrinsics_(1);
+  K_cv(0, 2) = intrinsics_(2);
+  K_cv(1, 2) = intrinsics_(3);
+  K_cv(2, 2) = 1.0f;
+
+  if (normalize)
+  {
+    cv::fisheye::undistortPoints(uv_cv, uv_cv, K_cv, dist_cv);
+  }
+  else
+  {
+    cv::fisheye::undistortPoints(uv_cv, uv_cv, K_cv, dist_cv, cv::noArray(), K_cv);
+  }
+}
+
+void EquidistantCamera::undistortImage(const cv::Mat& image, cv::Mat& image_undistorted)
+{
+  cv::Vec<fp, 4> dist_cv;
+  cv::Matx<fp, 3, 3> K_cv;
+
+  cv::eigen2cv(distortion_coefficients_, dist_cv);
+
+  K_cv(0, 0) = intrinsics_(0);
+  K_cv(1, 1) = intrinsics_(1);
+  K_cv(0, 2) = intrinsics_(2);
+  K_cv(1, 2) = intrinsics_(3);
+  K_cv(2, 2) = 1.0f;
+
+  // cv::fisheye::undistortImage(image, image_undistorted, K_cv, dist_cv);
+  cv::Mat map1, map2;
+  cv::fisheye::initUndistortRectifyMap(K_cv, dist_cv, cv::Matx33d::eye(), K_cv, cv::Size(image.cols, image.rows),
+                                       CV_32FC1, map1, map2);
+  cv::remap(image, image_undistorted, map1, map2, cv::INTER_LINEAR);
 }
 
 }  // namespace msceqf

@@ -4,7 +4,7 @@
 extended_pose_std: [1.0e-2, 1.0e-2, 1.0e-9, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-9, 1.0e-9, 1.0e-9]
 bias_std: [5.0e-2, 5.0e-2, 5.0e-2, 5.0e-2, 5.0e-2, 5.0e-2]
 extrinsics_std: [1.0e-3, 1.0e-3, 1.0e-3, 1.0e-3, 1.0e-3, 1.0e-3]
-# intrinsics_std: [10, 10, 10, 10]
+intrinsics_std: [1.0, 1.0, 1.0, 1.0]
 
 # IMU noise statistics
 accelerometer_noise_density: 0.1
@@ -14,7 +14,7 @@ gyroscope_random_walk: 4.0e-05
 
 # Camera calibration
 distortion_coeffs: [-0.013721808247486035, 0.020727425669427896, -0.012786476702685545, 0.0025242267320687625]
-distortion_model: radtan
+distortion_model: equidistant
 resolution: [640, 480]
 intrinsics: [278.66723066149086, 278.48991409740296, 319.75221200593535, 241.96858910358173]
 T_cam_imu:
@@ -25,7 +25,7 @@ T_cam_imu:
 
 
 # Initializer
-static_initializer_imu_window: 0.5
+static_initializer_imu_window: 1.0
 static_initializer_disparity_window: 0.5
 static_initializer_acc_threshold: 0.55
 static_initializer_disparity_threshold: 5.0
@@ -42,9 +42,9 @@ feature_refinement_max_iterations: 20
 feature_refinement_tollerance: 1e-10
 measurement_projection_method: unit_plane
 feature_representation: anchored_inverse_depth
-pixel_standerd_deviation: 2.0
+pixel_standerd_deviation: 1.0
 curveture_correction: false
-min_angle_deg: 5.0
+min_angle_deg: 1.0
 
 # State options
 enable_camera_extrinsic_calibration: true
@@ -56,14 +56,15 @@ num_persistent_features: 0
 # Tracker
 equalization_method: histogram
 optical_flow_pyramid_levels: 3
+detection_pyramid_levels: 2
 feature_detector: fast
-grid_x_size: 2
-grid_y_size: 2
+grid_x_size: 3
+grid_y_size: 3
 min_feature_pixel_distance: 10
 min_features: 100
 max_features: 140
 fast_threshold: 50
-shi_tomasi_quality_level: 0.1
+shi_tomasi_quality_level: 0.75
 
 # Track Manager
 max_track_length: 150

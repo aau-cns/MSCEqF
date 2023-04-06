@@ -35,7 +35,7 @@ class PinholeCamera
    * @param uv
    * @param normalize flag to decide wether normalize coordinates or not
    */
-  virtual void undistort(std::vector<Eigen::Vector2f>& uv, const bool& normalize = false) = 0;
+  void undistort(std::vector<Eigen::Vector2f>& uv, const bool& normalize = false);
 
   /**
    * @brief Undistort given distorted point in OpenCV format (std::vector<cv::Point2f>)
@@ -158,12 +158,25 @@ struct RadtanCamera final : public PinholeCamera
   RadtanCamera(const CameraOptions& opts, const Vector4& intrinsics);
 
   /**
-   * @brief Undistort given distorted point in Eigen format (std::vector<Eigen::Vector2f>)
+   * @brief Undistort given distorted point in OpenCV format (std::vector<cv::Point2f>)
    *
-   * @param uv
+   * @param uv_cv
    * @param normalize flag to decide wether normalize coordinates or not
    */
-  void undistort(std::vector<Eigen::Vector2f>& uv, const bool& normalize) override;
+  void undistort(std::vector<cv::Point2f>& uv_cv, const bool& normalize) override;
+
+  /**
+   * @brief Undistort given image in openCV format (cv::Mat)
+   *
+   * @param image
+   * @param image_undistorted
+   */
+  void undistortImage(const cv::Mat& image, cv::Mat& image_undistorted) override;
+};
+
+struct EquidistantCamera final : public PinholeCamera
+{
+  EquidistantCamera(const CameraOptions& opts, const Vector4& intrinsics);
 
   /**
    * @brief Undistort given distorted point in OpenCV format (std::vector<cv::Point2f>)
@@ -182,12 +195,12 @@ struct RadtanCamera final : public PinholeCamera
   void undistortImage(const cv::Mat& image, cv::Mat& image_undistorted) override;
 };
 
-// [TODO] Add support for other distortion model
-
 using PinholeCameraSharedPtr = std::shared_ptr<PinholeCamera>;
 using PinholeCameraUniquePtr = std::unique_ptr<PinholeCamera>;
 using RadtanCameraSharedPtr = std::shared_ptr<RadtanCamera>;
 using RadtanCameraUniquePtr = std::unique_ptr<RadtanCamera>;
+using EquidistantCameraSharedPtr = std::shared_ptr<EquidistantCamera>;
+using EquidistantCameraUniquePtr = std::unique_ptr<EquidistantCamera>;
 
 /**
  * @brief Factory method for cameras

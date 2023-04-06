@@ -61,6 +61,11 @@ Tracker::Tracker(const TrackerOptions& opts, const Vector4& intrinsics)
       utils::Logger::info("Initialized KLT tracker based on pinhole-radtan camera model");
     }
     break;
+    case DistortionModel::EQUIDISTANT:
+    {
+      cam_ = createCamera<EquidistantCamera>(opts_.cam_options_, intrinsics);
+      utils::Logger::info("Initialized KLT tracker based on pinhole-equidistant camera model");
+    }
     default:
       break;
   }

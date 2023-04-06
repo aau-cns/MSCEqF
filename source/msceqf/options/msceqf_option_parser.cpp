@@ -199,6 +199,10 @@ void OptionParser::parseCameraParameters(SE3& extrinsics,
     {
       distortion_model = DistortionModel::RADTAN;
     }
+    else if (model.compare("equidistant") == 0)
+    {
+      distortion_model = DistortionModel::EQUIDISTANT;
+    }
     else
     {
       throw std::runtime_error(model + " distortion model not supported.");
