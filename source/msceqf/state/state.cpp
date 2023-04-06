@@ -361,7 +361,6 @@ bool MSCEqFState::insertCloneElement(const fp& timestamp, MSCEqFStateElementUniq
   assert(ptr != nullptr);
   if (clones_.try_emplace(timestamp, std::move(ptr)).second)
   {
-    utils::Logger::info("Created MSCEqF Clone element at time: " + std::to_string(timestamp));
     return true;
   }
   return false;

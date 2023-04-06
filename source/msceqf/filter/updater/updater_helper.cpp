@@ -114,13 +114,13 @@ void ProjectionHelperZ1::residualJacobianBlock(const MSCEqFState& X,
       Cf_block_row = D * clone_E.R().transpose() * anchor_E.R() * UpdaterHelper::inverseDepthJacobian(feat.A_f_);
       break;
     case FeatureRepresentation::ANCHORED_POLAR:
-      // [TODO] Check Cf for polar representation with anchoring
-      Vector3 C_f0 = (Vector3() << 0.0, 0.0, 1.0).finished();
-      Vector3 thetak = std::acos((C_f0.normalized().transpose() * C_f.normalized())) * C_f0.cross(C_f).normalized();
+      Vector3 A_f0 = (Vector3() << 0.0, 0.0, 1.0).finished();
+      Vector3 thetak =
+          std::acos((A_f0.normalized().transpose() * feat.A_f_.normalized())) * A_f0.cross(feat.A_f_).normalized();
       Eigen::Matrix<fp, 3, 4> J = Eigen::Matrix<fp, 3, 4>::Zero();
-      J.block<3, 3>(0, 0) = SO3::wedge(C_f) * SO3::leftJacobian(thetak);
-      J.block<3, 1>(0, 3) = -C_f;
-      Cf_block_row = D * J;
+      J.block<3, 3>(0, 0) = SO3::wedge(feat.A_f_) * SO3::leftJacobian(thetak);
+      J.block<3, 1>(0, 3) = -feat.A_f_;
+      Cf_block_row = D * clone_E.R().transpose() * anchor_E.R() * J;
       break;
   }
 
