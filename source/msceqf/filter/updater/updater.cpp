@@ -14,6 +14,7 @@
 #include <opencv2/core/eigen.hpp>
 
 #include "msceqf/filter/updater/updater.hpp"
+#include "msceqf/symmetry/symmetry.hpp"
 #include "utils/logger.hpp"
 
 namespace msceqf
@@ -363,17 +364,12 @@ void Updater::UpdateMSCEqF(MSCEqFState& X, const MatrixX& C, const VectorX& delt
 {
   // Compute Kalman gain and innovation
   MatrixX G = X.subCovCols(cols_map_.keys()) * C.transpose();
-
-  // MatrixX S = C * X.subCov(cols_map_.keys()) * C.transpose() + R;
-  // MatrixX K = G * S.inverse();
-
   MatrixX S(R.rows(), R.cols());
   S.triangularView<Eigen::Upper>() = C * X.subCov(cols_map_.keys()) * C.transpose();
   S.triangularView<Eigen::Upper>() += R;
   MatrixX invS = MatrixX::Identity(R.rows(), R.cols());
   S.selfadjointView<Eigen::Upper>().ldlt().solveInPlace(invS);
   MatrixX K = G * invS.selfadjointView<Eigen::Upper>();
-
   VectorX inn = K * delta;
 
   assert((inn.segment(15, 6) - inn.segment(inn.rows() - 6, 6)).norm() < 1e-12);
@@ -396,12 +392,14 @@ void Updater::UpdateMSCEqF(MSCEqFState& X, const MatrixX& C, const VectorX& delt
     clone->updateLeft(inn.segment(clone->getIndex(), clone->getDof()));
   }
 
-  // Update covariance
-  // X.cov_ -= (K * G.transpose() + G * K.transpose() - K * S * K.transpose());
-  // X.cov_ -= K * G.transpose();
-
   X.cov_.triangularView<Eigen::Upper>() -= K * G.transpose();
   X.cov_ = X.cov_.selfadjointView<Eigen::Upper>();
+
+  if (opts_.curvature_correction_)
+  {
+    MatrixX expGamma = Symmetry::curvatureCorrection(X, inn);
+    X.cov_ = expGamma * X.cov_ * expGamma.transpose();
+  }
 }
 
 }  // namespace msceqf

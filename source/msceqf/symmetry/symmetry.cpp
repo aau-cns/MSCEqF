@@ -9,6 +9,8 @@
 //
 // You can contact the authors at <alessandro.fornasier@ieee.org>
 
+#include <unsupported/Eigen/MatrixFunctions>
+
 #include "msceqf/symmetry/symmetry.hpp"
 
 namespace msceqf
@@ -128,6 +130,42 @@ const SystemState::SystemStateAlgebraMap Symmetry::lift(const SystemState& xi, c
   }
 
   return lambda;
+}
+
+const MatrixX Symmetry::curvatureCorrection(const MSCEqFState& X, const VectorX& inn)
+{
+  MatrixX Gamma = MatrixX::Zero(inn.rows(), inn.rows());
+
+  Gamma.block(X.index(MSCEqFStateElementName::Dd), X.index(MSCEqFStateElementName::Dd), 9, 9) =
+      SE23::adjoint(inn.segment(X.index(MSCEqFStateElementName::Dd), 9));
+
+  Gamma.block(X.index(MSCEqFStateElementName::Dd) + 9, X.index(MSCEqFStateElementName::Dd), 6, 6) =
+      SE3::adjoint(inn.segment(X.index(MSCEqFStateElementName::Dd) + 9, 6));
+
+  Gamma.block(X.index(MSCEqFStateElementName::Dd) + 9, X.index(MSCEqFStateElementName::Dd) + 9, 6, 6) =
+      SE3::adjoint(inn.segment(X.index(MSCEqFStateElementName::Dd), 6));
+
+  if (X.opts().enable_camera_extrinsics_calibration_)
+  {
+    Gamma.block(X.index(MSCEqFStateElementName::E), X.index(MSCEqFStateElementName::E), 6, 6) =
+        SE3::adjoint(inn.segment(X.index(MSCEqFStateElementName::E), X.dof(MSCEqFStateElementName::E)));
+  }
+
+  if (X.opts().enable_camera_intrinsics_calibration_)
+  {
+    Gamma.block(X.index(MSCEqFStateElementName::L), X.index(MSCEqFStateElementName::L), 4, 4) =
+        In::adjoint(inn.segment(X.index(MSCEqFStateElementName::L), X.dof(MSCEqFStateElementName::L)));
+  }
+
+  for (auto& [timestamp, clone] : X.clones_)
+  {
+    Gamma.block(clone->getIndex(), clone->getIndex(), 6, 6) =
+        SE3::adjoint(inn.segment(clone->getIndex(), clone->getDof()));
+  }
+
+  Gamma *= 0.5;
+
+  return Gamma.exp();
 }
 
 }  // namespace msceqf
