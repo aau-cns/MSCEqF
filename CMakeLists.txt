@@ -11,10 +11,6 @@ project(
 set(BUILD_TESTS ON)
 message(STATUS "BUILD TESTS = ${BUILD_TESTS}")
 
-## Include libraries
-include(CMakeFindDependencyMacro)
-find_dependency(Eigen3 3.4)
-
 ## Include and set up external libraries
 include(FetchContent)
 
@@ -41,7 +37,6 @@ FetchContent_Declare(
     GIT_SHALLOW     TRUE
     GIT_PROGRESS    TRUE
 )
-# FetchContent_GetProperties(Eigen)
 set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
 set(EIGEN_BUILD_DOC OFF)
 set(EIGEN_BUILD_PKGCONFIG OFF)
@@ -74,7 +69,7 @@ find_package(Boost REQUIRED)
 list(APPEND include_dirs ${Boost_INCLUDE_DIRS})
 list(APPEND libs ${Boost_LIBRARIES})
 
-# # OpenCV
+# OpenCV
 # FetchContent_Declare(
 #     opencv
 #     GIT_REPOSITORY https://github.com/opencv/opencv.git
@@ -83,7 +78,7 @@ list(APPEND libs ${Boost_LIBRARIES})
 #     GIT_PROGRESS    TRUE
 # )
 # list(APPEND external opencv)
-find_package(OpenCV 3 REQUIRED)
+find_package(OpenCV 4 REQUIRED)
 list(APPEND include_dirs ${OpenCV_INCLUDE_DIRS})
 list(APPEND libs ${OpenCV_LIBRARIES})
 
