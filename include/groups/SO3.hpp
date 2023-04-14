@@ -15,7 +15,7 @@
 #ifndef SO3_HPP
 #define SO3_HPP
 
-#include <eigen3/Eigen/Dense>
+#include <Eigen/Dense>
 
 namespace group
 {
@@ -34,7 +34,7 @@ class SO3
  public:
   using MatrixType = Eigen::Matrix<FPType, 3, 3>;    //!< Lie Algebra / Lie Group matrix type
   using TMatrixType = Eigen::Matrix<FPType, 3, 3>;   //!< Transformation matrix type (Linear operator on R3)
-  using VectorType = Eigen::Vector<FPType, 3>;       //!< R3 Vectorspace element type (isomorphic to Lie Algebra so3)
+  using VectorType = Eigen::Matrix<FPType, 3, 1>;    //!< R3 Vectorspace element type (isomorphic to Lie Algebra so3)
   using QuaternionType = Eigen::Quaternion<FPType>;  //!< Quaternion type
 
   /**

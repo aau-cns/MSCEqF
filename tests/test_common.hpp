@@ -17,7 +17,7 @@
 
 #include <gtest/gtest.h>
 
-#include <eigen3/Eigen/Dense>
+#include <Eigen/Dense>
 
 #include "msceqf/state/state.hpp"
 #include "msceqf/system/system.hpp"

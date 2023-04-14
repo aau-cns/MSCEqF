@@ -19,7 +19,7 @@
 #include <queue>
 #include <random>
 #include <type_traits>
-#include <eigen3/Eigen/Dense>
+#include <Eigen/Dense>
 
 namespace utils
 {

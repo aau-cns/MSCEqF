@@ -19,7 +19,6 @@
 
 namespace msceqf
 {
-
 class Visualizer
 {
  public:
@@ -82,7 +81,7 @@ class Visualizer
     track_manager_.cam()->undistortImage(cam.image_, undistorted_image);
 
     cv::Mat3b color_image;
-    cv::cvtColor(undistorted_image, color_image, CV_GRAY2BGR);
+    cv::cvtColor(undistorted_image, color_image, cv::COLOR_GRAY2BGR);
 
     Tracker::Keypoints active_kpts;
     std::unordered_set<uint> active_ids;
