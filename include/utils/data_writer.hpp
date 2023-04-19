@@ -33,7 +33,7 @@ class dataWriter
    * @param delimiter delimiter used in csv file
    * @note titles has to be provided according to the following order
    * @note [t, q_x, q_y, q_z, q_w, p_x, p_y, p_z, v_x, v_y, v_z, bw_x, bw_y, bw_z, ba_x, ba_y, ba_z, s_q_x, s_q_y,
-   * s_q_z, s_q_w, s_p_x, s_p_y, s_p_z, f_x, f_y, c_x, c_y]
+   * s_q_z, s_q_w, s_p_x, s_p_y, s_p_z, f_x, f_y, c_x, c_y, P_11, P_12, ...]
    */
   dataWriter(const std::string& data_filename,
              const std::vector<std::string> titles,
@@ -67,24 +67,39 @@ class dataWriter
     {
       for (int col = 0; col < matrix.cols(); ++col)
       {
-        fs_ << matrix(row, col);
-        if (col < matrix.cols() - 1)
-        {
-          fs_ << delimiter_;
-        }
+        fs_ << matrix(row, col) << delimiter_;
       }
     }
     return *this;
   }
 
   /**
-   * @brief Overload operator<< for Eigen::QuaternionBase
+   * @brief Overload operator<< for Eigen::Quaternion
    *
-   * @tparam Derived
-   * @param quat
+   * @tparam FPType
+   * @param quaternion
    * @return dataWriter&
    */
-  template <typename T>
+  template <typename FPType>
+  dataWriter& operator<<(const Eigen::Quaternion<FPType>& quaternion)
+  {
+    auto& coeffs = quaternion.coeffs();
+    for (int idx = 0; idx < 4; ++idx)
+    {
+      fs_ << coeffs(idx) << delimiter_;
+    }
+    return *this;
+  }
+
+  /**
+   * @brief Overload operator<< for integral and floating point types
+   *
+   * @tparam T
+   * @param val
+   * @return dataWriter&
+   */
+  template <typename T,
+            typename std::enable_if<std::is_floating_point_v<T> || std::is_integral_v<T>, T>::type* = nullptr>
   dataWriter& operator<<(const T& val)
   {
     fs_ << val << delimiter_;
@@ -123,7 +138,7 @@ class dataWriter
     this->operator<<(state.S().x().y());
     this->operator<<(state.S().x().z());
     this->operator<<(state.k().x());
-    this->operator<<(state.k().x());
+    this->operator<<(state.k().y());
     this->operator<<(state.k().z());
     this->operator<<(state.k().w());
     return *this;
