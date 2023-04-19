@@ -1,7 +1,7 @@
 # Euroc Config
 
 # Initial standard deviations (attitude, velocity, position, bias, extrinsics, instrinsics)
-extended_pose_std: [1.0e-1, 1.0e-1, 1.0e-9, 1.0, 1.0, 1.0, 1.0e-9, 1.0e-9, 1.0e-9]
+extended_pose_std: [1.0e-1, 1.0e-1, 1.0e-9, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-9, 1.0e-9, 1.0e-9]
 bias_std: [1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1]
 extrinsics_std: [1.0e-2, 1.0e-2, 1.0e-2, 1.0e-2, 1.0e-2, 1.0e-2]
 intrinsics_std: [1.0, 1.0, 1.0, 1.0]
@@ -38,9 +38,9 @@ refine_traingulation: true
 feature_min_depth: 0.1
 feature_max_depth: 20
 feature_refinement_max_iterations: 20
-feature_refinement_tollerance: 1e-9
+feature_refinement_tollerance: 1e-10
 measurement_projection_method: unit_plane
-feature_representation: anchored_polar
+feature_representation: anchored_inverse_depth
 pixel_standerd_deviation: 1.0
 curveture_correction: false
 min_angle_deg: 2.0

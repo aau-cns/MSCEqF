@@ -12,6 +12,8 @@
 #ifndef TRACKER_HPP
 #define TRACKER_HPP
 
+#include <atomic>
+
 #include "sensors/sensor_data.hpp"
 #include "types/fptypes.hpp"
 #include "vision/camera.hpp"
@@ -20,7 +22,6 @@
 
 namespace msceqf
 {
-
 /**
  * @brief This class implement the feature tracker module based on Lucas-Kanade optical flow.
  * The tracker tracks feature temporally in subsequent images and produces a set of matches.

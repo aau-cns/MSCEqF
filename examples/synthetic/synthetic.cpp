@@ -42,10 +42,18 @@ int main(int argc, char** argv)
 
   data.parseAndCheck();
 
-  const std::vector<std::string> results_titles = {"t",     "q_x",   "q_y",   "q_z",   "q_w",   "p_x",   "p_y",
-                                                   "p_z",   "v_x",   "v_y",   "v_z",   "b_w_x", "b_w_y", "b_w_z",
-                                                   "b_a_x", "b_a_y", "b_a_z", "s_q_x", "s_q_y", "s_q_z", "s_q_w",
-                                                   "s_p_x", "s_p_y", "s_p_z", "f_x",   "f_y",   "c_x",   "c_y"};
+  std::vector<std::string> results_titles = {"t",     "q_x",   "q_y",   "q_z",   "q_w",   "p_x",   "p_y",
+                                             "p_z",   "v_x",   "v_y",   "v_z",   "b_w_x", "b_w_y", "b_w_z",
+                                             "b_a_x", "b_a_y", "b_a_z", "s_q_x", "s_q_y", "s_q_z", "s_q_w",
+                                             "s_p_x", "s_p_y", "s_p_z", "f_x",   "f_y",   "c_x",   "c_y"};
+
+  for (int i = 1; i <= 15; i++)
+  {
+    for (int j = 1; j <= 15; j++)
+    {
+      results_titles.emplace_back("P_" + std::to_string(i) + std::to_string(j));
+    }
+  }
 
   utils::dataWriter result_writer(results_path + "synthetic.csv", results_titles, ",");
 
@@ -60,7 +68,8 @@ int main(int argc, char** argv)
     if (std::holds_alternative<msceqf::TriangulatedFeatures>(reading))
     {
       auto est = sys.stateEstimate();
-      result_writer << timestamp << est << std::endl;
+      auto cov = sys.Covariance().block(0, 0, 15, 15);
+      result_writer << timestamp << est << cov << std::endl;
     }
   }
 

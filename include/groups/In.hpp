@@ -14,7 +14,7 @@
 #ifndef IN_HPP
 #define IN_HPP
 
-#include <eigen3/Eigen/Dense>
+#include <Eigen/Dense>
 #include <unsupported/Eigen/MatrixFunctions>
 
 namespace group

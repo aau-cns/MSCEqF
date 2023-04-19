@@ -1,10 +1,10 @@
 # UZHFPV Config
 
 # Initial standard deviations (attitude, velocity, position)
-extended_pose_std: [1.0e-2, 1.0e-2, 1.0e-9, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-9, 1.0e-9, 1.0e-9]
-bias_std: [5.0e-2, 5.0e-2, 5.0e-2, 5.0e-2, 5.0e-2, 5.0e-2]
-extrinsics_std: [1.0e-3, 1.0e-3, 1.0e-3, 1.0e-3, 1.0e-3, 1.0e-3]
-intrinsics_std: [1.0, 1.0, 1.0, 1.0]
+extended_pose_std: [1.0e-1, 1.0e-1, 1.0e-9, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-9, 1.0e-9, 1.0e-9]
+bias_std: [1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1]
+extrinsics_std: [1.0e-2, 1.0e-2, 1.0e-2, 1.0e-2, 1.0e-2, 1.0e-2]
+intrinsics_std: [1.0e-9, 1.0e-2, 1.0e-9, 1.0e-9]
 
 # IMU noise statistics
 accelerometer_noise_density: 0.1
@@ -23,12 +23,11 @@ T_cam_imu:
   - [0.999497743623523, -0.028225682131089447, 0.014407337010089172, -0.00048817563004522853]
   - [0.0, 0.0, 0.0, 1.0]
 
-
 # Initializer
-static_initializer_imu_window: 1.0
+static_initializer_imu_window: 2.0
 static_initializer_disparity_window: 0.5
-static_initializer_acc_threshold: 0.55
-static_initializer_disparity_threshold: 5.0
+static_initializer_acc_threshold: 0.4
+static_initializer_disparity_threshold: 4.0
 
 # Propagator
 state_transition_order: -1
@@ -42,8 +41,8 @@ feature_refinement_max_iterations: 20
 feature_refinement_tollerance: 1e-10
 measurement_projection_method: unit_plane
 feature_representation: anchored_inverse_depth
-pixel_standerd_deviation: 1.0
-curveture_correction: false
+pixel_standerd_deviation: 1.5
+curveture_correction: true
 min_angle_deg: 1.0
 
 # State options
@@ -56,13 +55,13 @@ num_persistent_features: 0
 # Tracker
 equalization_method: histogram
 optical_flow_pyramid_levels: 3
-detection_pyramid_levels: 2
+detection_pyramid_levels: 1
 feature_detector: fast
 grid_x_size: 3
 grid_y_size: 3
 min_feature_pixel_distance: 10
-min_features: 100
-max_features: 140
+min_features: 120
+max_features: 160
 fast_threshold: 50
 shi_tomasi_quality_level: 0.75
 

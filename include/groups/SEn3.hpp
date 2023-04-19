@@ -36,8 +36,9 @@ class SEn3
   static_assert(n > 0, "SEn3: n needs to be grater than 0");
 
  public:
-  using SO3Type = SO3<FPType>;                          //!< The underlying SO3 type
-  using VectorType = Eigen::Vector<FPType, 3 + 3 * n>;  //!< R6 Vectorspace element type (isomorphic to Lie Algebra se3)
+  using SO3Type = SO3<FPType>;  //!< The underlying SO3 type
+  using VectorType =
+      Eigen::Matrix<FPType, 3 + 3 * n, 1>;  //!< R6 Vectorspace element type (isomorphic to Lie Algebra se3)
   using MatrixType = Eigen::Matrix<FPType, 3 + n, 3 + n>;              //!< Lie Algebra / Lie Group matrix type
   using TMatrixType = Eigen::Matrix<FPType, 3 + 3 * n, 3 + 3 * n>;     //!< Transformation matrix type
   using IsometriesType = std::array<typename SO3Type::VectorType, n>;  //!< Vector of translations (Isometries)

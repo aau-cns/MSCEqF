@@ -26,8 +26,8 @@ class Symmetry
   /**
    * @brief Implement the right group action phi of the symmetry group, acting on the homogenous space (phi(X, xi))
    *
-   * @param X a MSCEqFState object
-   * @param xi a SystemState object
+   * @param X MSCEqFState
+   * @param xi SystemState
    * @return const SystemState
    */
   [[nodiscard]] static const SystemState phi(const MSCEqFState& X, const SystemState& xi);
@@ -35,11 +35,20 @@ class Symmetry
   /**
    * @brief Implement the lift function. Lift the actual dynamics onto the symmetry group
    *
-   * @param xi a SystemState object
-   * @param u a Input (Imu) object
+   * @param xi SystemState
+   * @param u Input (Imu)
    * @return const SystemState::SystemStateAlgebraMap
    */
   [[nodiscard]] static const SystemState::SystemStateAlgebraMap lift(const SystemState& xi, const Imu& u);
+
+  /**
+   * @brief Return the Gamma matrix for the reset / curvature correction
+   *
+   * @param X MSCEqFState
+   * @param inn VectorX
+   * @return const MatrixX
+   */
+  [[nodiscard]] static const MatrixX curvatureCorrection(const MSCEqFState& X, const VectorX& inn);
 
   static const Matrix5 D;  //!< The D matrix
 

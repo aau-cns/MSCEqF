@@ -62,6 +62,8 @@ class dataParser
    * @param imu_header_titles header titles of the imu data file
    * @param groundtruth_header_titles header titles of the groundtruth data file
    * @param image_header_titles  header titles of the image data file
+   * @param delimiter delimiter of the data file
+   * @param timeoffset time offset between the imu and the camera
    *
    * @note imu_header_titles has to be provided according to the following order
    * @note [t, ang_x, ang_y, ang_z, acc_x, acc_y, acc_z]
