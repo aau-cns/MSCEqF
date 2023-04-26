@@ -13,7 +13,6 @@
 
 namespace msceqf
 {
-
 MSCEqF::MSCEqF(const std::string& params_filepath)
     : parser_(params_filepath)
     , opts_(parser_.parseOptions())
@@ -73,7 +72,6 @@ void MSCEqF::processCameraMeasurement(Camera& cam)
       is_filter_initialized_ = true;
       logInit();
     }
-    visualizer_.visualizeImageWithTracks(cam);
     return;
   }
 
@@ -97,8 +95,6 @@ void MSCEqF::processCameraMeasurement(Camera& cam)
   auto future_cloning = std::async([&]() { X_.stochasticCloning(cam.timestamp_); });
 
   future_image_processing.wait();
-
-  visualizer_.visualizeImageWithTracks(cam);
 
   future_cloning.wait();
 
@@ -223,7 +219,7 @@ const MSCEqFOptions& MSCEqF::options() const { return opts_; }
 
 const StateOptions& MSCEqF::stateOptions() const { return opts_.state_options_; }
 
-const MatrixX& MSCEqF::Covariance() const { return X_.cov(); }
+const MatrixX& MSCEqF::covariance() const { return X_.cov(); }
 
 const SystemState MSCEqF::stateEstimate() const { return Symmetry::phi(X_, xi0_); }
 
@@ -264,6 +260,13 @@ void MSCEqF::logInit() const
   os << "Set initial MSCEqF covariance to:" << '\n' << X_.cov();
 
   utils::Logger::info(os.str());
+}
+
+const cv::Mat3b MSCEqF::imageWithTracks(const Camera& cam) const { return visualizer_.imageWithTracks(cam); }
+
+const void MSCEqF::visualizeImageWithTracks(const Camera& cam) const
+{
+  return visualizer_.visualizeImageWithTracks(cam);
 }
 
 }  // namespace msceqf

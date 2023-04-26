@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+
+    <!-- arguments config -->
+    <arg name="config_filepath" default="/home/alfornasier/Catkin_ws/catkin_ws_msceqf/src/config/r15.yaml" />
+
+    <!-- arguments topics -->
+    <arg name="imu_topic"       default="/mus/imu" />
+    <arg name="cam_topic"       default="/mus/image" />
+    <arg name="pose_topic"      default="/pose" />
+    <arg name="path_topic"      default="/path" />
+    <arg name="image_topic"     default="/tracks" />
+
+    <!-- autonomy node -->
+    <node name="msceqf_ros1" pkg="msceqf" type="msceqf_ros1" output="screen" clear_params="true">
+
+        <!-- topics -->
+        <param name="config_filepath"   type="string"       value="$(arg config_filepath)" />
+        <param name="imu_topic"         type="string"       value="$(arg imu_topic)" />
+        <param name="cam_topic"         type="string"       value="$(arg cam_topic)" />
+        <param name="pose_topic"        type="string"       value="$(arg pose_topic)" />
+        <param name="path_topic"        type="string"       value="$(arg path_topic)" />
+        <param name="image_topic"       type="string"       value="$(arg image_topic)" />
+        
+    </node>
+
+</launch>

@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.13)
+
 project(
     msceqf
     VERSION 1.0
@@ -7,9 +8,8 @@ project(
 )
 
 ## Options
-# option(BUILD_TESTS "Build tests")
 set(BUILD_TESTS ON)
-message(STATUS "BUILD TESTS = ${BUILD_TESTS}")
+set(ROS_BUILD OFF)
 
 ## Include and set up external libraries
 include(FetchContent)
@@ -89,6 +89,9 @@ message(STATUS "Yaml-cpp: " ${YAML_CPP})
 message(STATUS "Boost:    " ${Boost_VERSION})
 message(STATUS "OpenCV:   " ${OpenCV_VERSION})
 
+message(STATUS "BUILD TESTS = ${BUILD_TESTS}")
+message(STATUS "ROS BUILD = ${ROS_BUILD}")
+
 ## Try to compile with C++ 17 (make sure GCC>=7, clang>=5, MSVC>=19.12)
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++17" COMPILER_SUPPORTS_CXX17)
@@ -133,35 +136,28 @@ list(
 )
 
 ## Declare a C++ library
-add_library(${PROJECT_NAME} STATIC ${lib_sources})
-target_link_libraries(${PROJECT_NAME} ${libs})
+add_library(${PROJECT_NAME}_lib STATIC ${lib_sources})
+target_link_libraries(${PROJECT_NAME}_lib ${libs})
 
 ## Define includes
 list(APPEND include_dirs ${CMAKE_CURRENT_SOURCE_DIR}/include)
 include_directories(${include_dirs})
 
-## Declare C++ tests
-if(${BUILD_TESTS})
-    add_executable(msceqf_tests tests/tests.cpp)
-    target_include_directories(msceqf_tests PRIVATE ${include_dirs})
-    target_link_libraries(msceqf_tests ${PROJECT_NAME} GTest::gtest_main)
-    include(GoogleTest)
-    gtest_discover_tests(msceqf_tests)
-endif()
-
-# Declare C++ examples
-add_executable(msceqf_euroc examples/euroc/euroc.cpp)
-target_include_directories(msceqf_euroc PRIVATE ${include_dirs})
-target_link_libraries(msceqf_euroc ${PROJECT_NAME} pthread)
-
-add_executable(msceqf_uzhfpv examples/uzhfpv/uzhfpv.cpp)
-target_include_directories(msceqf_uzhfpv PRIVATE ${include_dirs})
-target_link_libraries(msceqf_uzhfpv ${PROJECT_NAME} pthread)
-
-add_executable(msceqf_synthetic examples/synthetic/synthetic.cpp)
-target_include_directories(msceqf_synthetic PRIVATE ${include_dirs})
-target_link_libraries(msceqf_synthetic ${PROJECT_NAME} pthread)
-
-add_executable(msceqf_synthetic_images examples/synthetic_images/synthetic_images.cpp)
-target_include_directories(msceqf_synthetic_images PRIVATE ${include_dirs})
-target_link_libraries(msceqf_synthetic_images ${PROJECT_NAME} pthread)
+# Define build
+if (ROS_BUILD)
+    find_package(catkin QUIET COMPONENTS roscpp)
+    find_package(ament_cmake QUIET)
+    if (catkin_FOUND)
+        message(STATUS "ROS 1 version found, building with ROS1")
+        include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/ros1.cmake)
+    elseif (ament_cmake_FOUND)
+        message(STATUS "ROS 2 version found, building with ROS2")
+        include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/ros2.cmake)
+    else ()
+        message(STATUS "No ROS versions found, building native C++")
+        include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/native.cmake)
+    endif ()
+else ()
+    message(STATUS "Building native C++")
+    include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/native.cmake)
+endif ()
