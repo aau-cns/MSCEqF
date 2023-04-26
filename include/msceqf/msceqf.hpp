@@ -25,7 +25,6 @@
 
 namespace msceqf
 {
-
 class MSCEqF
 {
  public:
@@ -65,7 +64,7 @@ class MSCEqF
    *
    * @return const MatrixX&
    */
-  const MatrixX& Covariance() const;
+  const MatrixX& covariance() const;
 
   /**
    * @brief Get a constant copy of the estimated state
@@ -73,6 +72,20 @@ class MSCEqF
    * @return const SystemState
    */
   const SystemState stateEstimate() const;
+
+  /**
+   * @brief Get the processed image with overlayed tracks
+   *
+   * @return const cv::Mat3b
+   */
+  const cv::Mat3b imageWithTracks(const Camera& cam) const;
+
+  /**
+   * @brief Visualize the processed image with overlayed tracks
+   *
+   * @param cam
+   */
+  const void visualizeImageWithTracks(const Camera& cam) const;
 
  private:
   /**
@@ -103,8 +116,8 @@ class MSCEqF
    */
   void logInit() const;
 
-      OptionParser parser_;  //!< The parser to parse all the configuration from a yaml file
-  MSCEqFOptions opts_;       //!< All the MSCEqF options
+  OptionParser parser_;  //!< The parser to parse all the configuration from a yaml file
+  MSCEqFOptions opts_;   //!< All the MSCEqF options
 
   MSCEqFState X_;    //!< The state of the MSCEqF
   SystemState xi0_;  //!< The origin state of the System

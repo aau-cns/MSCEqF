@@ -1,4 +1,4 @@
-# Euroc Config
+# R15 Config
 
 # Initial standard deviations (attitude, velocity, position, bias, extrinsics, instrinsics)
 extended_pose_std: [1.0e-1, 1.0e-1, 1.0e-9, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-9, 1.0e-9, 1.0e-9]
@@ -7,27 +7,28 @@ extrinsics_std: [1.0e-2, 1.0e-2, 1.0e-2, 1.0e-2, 1.0e-2, 1.0e-2]
 intrinsics_std: [1.0, 1.0, 1.0, 1.0]
 
 # IMU noise statistics
-accelerometer_noise_density: 2.0000e-3  
-accelerometer_random_walk:   3.0000e-3
-gyroscope_noise_density: 1.6968e-04
-gyroscope_random_walk:   1.9393e-05
+accelerometer_noise_density: 1.86e-3
+accelerometer_random_walk:   4.33e-4
+gyroscope_noise_density: 1.87e-4
+gyroscope_random_walk:   2.66e-5
 
 # Camera calibration
-distortion_coeffs: [-0.28340811, 0.07395907, 0.00019359, 1.76187114e-05]
+distortion_coeffs: [0.0, 0.0, 0.0, 0.0]
 distortion_model: radtan
-resolution: [752, 480]
-intrinsics: [458.654, 457.296, 367.215, 248.375]
-T_imu_cam:
- - [0.0148655429818, -0.999880929698, 0.00414029679422, -0.0216401454975]
- - [0.999557249008, 0.0149672133247, 0.025715529948, -0.064676986768]
- - [-0.0257744366974, 0.00375618835797, 0.999660727178, 0.00981073058949]
- - [0.0, 0.0, 0.0, 1.0]
+resolution: [320, 240]
+intrinsics: [250.0, 250.0, 159.5, 119.5]
+T_imu_cam: 
+  - [1.0, 0.0, 0.0, 0.0]
+  - [0.0, -1.0, 0.0, 0.0]
+  - [0.0, 0.0, -1.0, 0.0]
+  - [0.0, 0.0, 0.0, 1.0]
+
 
 # Initializer
-static_initializer_imu_window: 2.0
+static_initializer_imu_window: 1.0
 static_initializer_disparity_window: 0.5
-static_initializer_acc_threshold: 0.05
-static_initializer_disparity_threshold: 2.0
+static_initializer_acc_threshold: 0.0
+static_initializer_disparity_threshold: 1.0
 
 # Propagator
 state_transition_order: -1
@@ -43,7 +44,7 @@ measurement_projection_method: unit_plane
 feature_representation: anchored_inverse_depth
 pixel_standerd_deviation: 1.0
 curveture_correction: true
-min_angle_deg: 1.0
+min_angle_deg: 0.0
 
 # State options
 enable_camera_extrinsic_calibration: true
@@ -57,9 +58,9 @@ equalization_method: histogram
 optical_flow_pyramid_levels: 3
 detector_pyramid_levels: 1
 feature_detector: fast
-grid_x_size: 4
-grid_y_size: 4
-min_feature_pixel_distance: 10
+grid_x_size: 2
+grid_y_size: 2
+min_feature_pixel_distance: 5
 min_features: 160
 max_features: 200
 fast_threshold: 20

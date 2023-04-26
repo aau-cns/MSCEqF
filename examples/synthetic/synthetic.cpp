@@ -68,7 +68,7 @@ int main(int argc, char** argv)
     if (std::holds_alternative<msceqf::TriangulatedFeatures>(reading))
     {
       auto est = sys.stateEstimate();
-      auto cov = sys.Covariance().block(0, 0, 15, 15);
+      auto cov = sys.covariance().block(0, 0, 15, 15);
       result_writer << timestamp << est << cov << std::endl;
     }
   }
