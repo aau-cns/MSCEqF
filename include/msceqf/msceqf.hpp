@@ -87,6 +87,13 @@ class MSCEqF
    */
   const void visualizeImageWithTracks(const Camera& cam) const;
 
+  /**
+   * @brief Check if the filter is initialized
+   *
+   * @return true if the filter is initialized, false otherwise
+   */
+  const bool isInit() const;
+
  private:
   /**
    * @brief Process a single IMU measurement. This method will fill the internal IMU measurement buffer, that will

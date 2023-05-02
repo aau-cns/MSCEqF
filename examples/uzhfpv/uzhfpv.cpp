@@ -67,9 +67,12 @@ int main(int argc, char** argv)
 
     if (std::holds_alternative<msceqf::Camera>(data))
     {
-      auto est = sys.stateEstimate();
-      auto cov = sys.covariance().block(0, 0, 9, 9);
-      result_writer << timestamp << est << cov << std::endl;
+      if (sys.isInit())
+      {
+        auto est = sys.stateEstimate();
+        auto cov = sys.covariance().block(0, 0, 9, 9);
+        result_writer << timestamp << est << cov << std::endl;
+      }
       sys.visualizeImageWithTracks(std::get<msceqf::Camera>(data));
     }
   }

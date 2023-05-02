@@ -78,6 +78,11 @@ void MSCEqFRos::callback_imu(const sensor_msgs::Imu::ConstPtr& msg)
 
 void MSCEqFRos::publish(const msceqf::Camera& cam)
 {
+  if (!sys_.isInit())
+  {
+    return;
+  }
+
   auto est = sys_.stateEstimate();
 
   pose_.header.stamp.fromSec(cam.timestamp_);

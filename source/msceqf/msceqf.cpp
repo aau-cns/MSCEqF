@@ -223,6 +223,8 @@ const MatrixX& MSCEqF::covariance() const { return X_.cov(); }
 
 const SystemState MSCEqF::stateEstimate() const { return Symmetry::phi(X_, xi0_); }
 
+const bool MSCEqF::isInit() const { return is_filter_initialized_; }
+
 void MSCEqF::logInit() const
 {
   std::ostringstream os;
