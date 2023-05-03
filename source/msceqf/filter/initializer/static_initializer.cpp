@@ -89,16 +89,12 @@ bool StaticInitializer::accelerationCheck()
   y = y / y.norm();
 
   Matrix3 R0;
-  // R0.block<3, 1>(0, 0) = x;
-  // R0.block<3, 1>(0, 1) = y;
-  // R0.block<3, 1>(0, 2) = z;
   R0.block<1, 3>(0, 0) = x.transpose();
   R0.block<1, 3>(1, 0) = y.transpose();
   R0.block<1, 3>(2, 0) = z.transpose();
 
   T0_ = SE23(R0, {Vector3::Zero(), Vector3::Zero()});
   b0_.segment<3>(0) = ang_mean;
-  // b0_.segment<3>(3) = acc_mean - R0 * (opts_.gravity_ * Vector3(0, 0, 1));
   b0_.segment<3>(3) = acc_mean - R0.transpose() * (opts_.gravity_ * Vector3(0, 0, 1));
 
   return true;
@@ -106,11 +102,9 @@ bool StaticInitializer::accelerationCheck()
 
 bool StaticInitializer::disparityCheck(const Tracks& tracks) const
 {
-  const auto& longest_track = std::max_element(tracks.begin(), tracks.end(),
-                                               [](const auto& pre, const auto& post) {
-                                                 return pre.second.timestamps_.size() < post.second.timestamps_.size();
-                                               })
-                                  ->second;
+  const auto& longest_track = std::max_element(tracks.begin(), tracks.end(), [](const auto& pre, const auto& post) {
+                                return pre.second.timestamps_.size() < post.second.timestamps_.size();
+                              })->second;
 
   const fp& longest_track_time = longest_track.timestamps_.back() - longest_track.timestamps_.front();
 
