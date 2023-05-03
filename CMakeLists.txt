@@ -9,7 +9,7 @@ project(
 
 ## Options
 set(BUILD_TESTS ON)
-set(ROS_BUILD OFF)
+set(ROS_BUILD ON)
 
 ## Include and set up external libraries
 include(FetchContent)
