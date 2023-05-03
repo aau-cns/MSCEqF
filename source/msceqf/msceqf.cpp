@@ -41,7 +41,7 @@ void MSCEqF::processImuMeasurement(const Imu& imu)
 
   if (imu.timestamp_ < timestamp_)
   {
-    utils::Logger::warn("Received IMU measurement older than actual state estimate. Discarding measurement.");
+    utils::Logger::warn("Received IMU measurement older than actual state estimate. Discarding measurement");
   }
   else
   {
