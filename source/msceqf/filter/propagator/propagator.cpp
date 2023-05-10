@@ -64,13 +64,20 @@ Propagator::ImuBuffer Propagator::getImuReadings(const fp& t0, const fp& t1)
   Propagator::ImuBuffer readings;
 
   auto first = std::lower_bound(imu_buffer_.begin(), imu_buffer_.end(), t0);
-  auto last = std::upper_bound(imu_buffer_.begin(), imu_buffer_.end(), t1);
+  auto last = std::lower_bound(imu_buffer_.begin(), imu_buffer_.end(), t1);
+
+  if ((first == imu_buffer_.end() && last == imu_buffer_.end()) ||
+      (first == imu_buffer_.begin() && last == imu_buffer_.begin()))
+  {
+    utils::Logger::err("No IMU readings in between " + std::to_string(t0) + " and " + std::to_string(t1));
+    return readings;
+  }
 
   // First IMU reading for integration checks
   // If the timestamp does not match t0, and if we have a measurement prior t0, then perform linear interpolation.
   if (first != imu_buffer_.begin() && first->timestamp_ > t0)
   {
-    fp alpha = (t0 - first->timestamp_) / ((first - 1)->timestamp_ - first->timestamp_);
+    fp alpha = (t0 - (first - 1)->timestamp_) / (first->timestamp_ - (first - 1)->timestamp_);
 
     // utils::Logger::debug("First IMU reading interpolation between (" + std::to_string((first - 1)->timestamp_) + ", "
     // +
@@ -80,20 +87,14 @@ Propagator::ImuBuffer Propagator::getImuReadings(const fp& t0, const fp& t1)
     readings.insert(readings.end(), lerp(*(first - 1), *first, alpha));
   }
 
-  // Last IMU reading for integration checks
-  // If the timestamp mathces t1 than take all the previous readings for integration
-  // if the timestamp does not match t1 and there are measurements past t1, then perform linear interpolation
-  // If the timestamp does not match t1 and there are no measurements past t1, then take all the measurement
-  // preserving the last in the buffer (for future interpolation)
-  if (std::abs((last - 1)->timestamp_ - t1) < eps_)
-  {
-    readings.insert(readings.end(), first, last - 1);
-    imu_buffer_.erase(imu_buffer_.begin(), last - 1);
-  }
-  else
+  // If last is one past the end of the imu buffer then take all the previous readings for integration and keep the last
+  // for future interpolation. If the last is not one past the end of imu buffer then take all the previous readings for
+  // integration and if possible perform linear interpolation for future propagation
+  if (last != imu_buffer_.end())
   {
     readings.insert(readings.end(), first, last);
-    if (last != imu_buffer_.end())
+
+    if (last != imu_buffer_.begin() && last->timestamp_ > t1)
     {
       fp alpha = (t1 - (last - 1)->timestamp_) / (last->timestamp_ - (last - 1)->timestamp_);
 
@@ -102,14 +103,24 @@ Propagator::ImuBuffer Propagator::getImuReadings(const fp& t0, const fp& t1)
       //                      std::to_string(last->timestamp_) + "), at (" + std::to_string(t1) +
       //                      "), with alpha = " + std::to_string(alpha));
 
+      msceqf::Imu new_first = lerp(*(last - 1), *last, alpha);
+
+      // First erase to avoid invalidating the iterator
       imu_buffer_.erase(imu_buffer_.begin(), last);
-      imu_buffer_.push_front(lerp(*(last - 1), *last, alpha));
+
+      // Then push front the interpolated reading
+      imu_buffer_.push_front(new_first);
     }
     else
     {
       imu_buffer_.erase(imu_buffer_.begin(), last);
-      imu_buffer_.push_back(readings.back());
     }
+  }
+  else
+  {
+    readings.insert(readings.end(), first, last);
+    imu_buffer_.erase(imu_buffer_.begin(), last);
+    imu_buffer_.push_back(readings.back());
   }
 
   // {
