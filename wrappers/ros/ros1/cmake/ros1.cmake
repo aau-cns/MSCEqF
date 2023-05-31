@@ -16,3 +16,6 @@ target_include_directories(${PROJECT_NAME}_ros1_lib PUBLIC ${include_dirs} ${cat
 
 add_executable(msceqf_ros1 wrappers/ros/ros1/source/msceqf_ros_node.cpp)
 target_link_libraries(msceqf_ros1 ${PROJECT_NAME}_ros1_lib ${catkin_LIBRARIES})
+
+add_executable(msceqf_ros1_serial wrappers/ros/ros1/source/msceqf_ros_serial.cpp)
+target_link_libraries(msceqf_ros1_serial ${PROJECT_NAME}_ros1_lib ${catkin_LIBRARIES})
