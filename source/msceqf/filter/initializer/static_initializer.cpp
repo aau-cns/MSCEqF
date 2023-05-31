@@ -28,9 +28,11 @@ void StaticInitializer::insertImu(const Imu& imu)
   if (imu_buffer_.empty())
   {
     utils::Logger::info("Collecting IMU measurements for static initialization");
+    imu_buffer_.push_back(imu);
+    return;
   }
 
-  if (imu_buffer_.empty() || imu.timestamp_ > imu_buffer_.back().timestamp_)
+  if (imu.timestamp_ > imu_buffer_.back().timestamp_)
   {
     imu_buffer_.push_back(imu);
   }
@@ -39,7 +41,7 @@ void StaticInitializer::insertImu(const Imu& imu)
     utils::Logger::warn("Received IMU measurement older then newest IMU measurement in buffer. Discarding measurement");
   }
 
-  if (imu_buffer_.size() > 1 &&
+  if (imu_buffer_.size() > 2 &&
       (imu_buffer_.back().timestamp_ - imu_buffer_.front().timestamp_) > (1.0 + opts_.imu_init_window_))
   {
     imu_buffer_.pop_front();
@@ -50,7 +52,13 @@ bool StaticInitializer::detectMotion(const Tracks& tracks) { return acceleration
 
 bool StaticInitializer::accelerationCheck()
 {
-  if (opts_.acc_threshold_ > 0 &&
+  if (opts_.acc_threshold_ <= 0 && !imu_buffer_.empty())
+  {
+    utils::Logger::info("Acceleration check in static initializer disabled");
+    return true;
+  }
+
+  if (imu_buffer_.size() < 2 ||
       (imu_buffer_.back().timestamp_ - imu_buffer_.front().timestamp_) < opts_.imu_init_window_)
   {
     utils::Logger::info("Not enough imu measurement for acceleration check in static initializer");
