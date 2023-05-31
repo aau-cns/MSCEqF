@@ -67,6 +67,13 @@ class MSCEqF
   const MatrixX& covariance() const;
 
   /**
+   * @brief Get the covariance of the navigation states (D, delta)
+   *
+   * @return const MatrixX
+   */
+  const MatrixX MSCEqF::coreCovariance() const;
+
+  /**
    * @brief Get a constant copy of the estimated state
    *
    * @return const SystemState
@@ -85,14 +92,14 @@ class MSCEqF
    *
    * @param cam
    */
-  const void visualizeImageWithTracks(const Camera& cam) const;
+  void visualizeImageWithTracks(const Camera& cam) const;
 
   /**
    * @brief Check if the filter is initialized
    *
    * @return true if the filter is initialized, false otherwise
    */
-  const bool isInit() const;
+  [[nodiscard]] bool isInit() const;
 
  private:
   /**

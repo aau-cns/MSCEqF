@@ -54,6 +54,8 @@ void MSCEqF::processCameraMeasurement(Camera& cam)
   assert(cam.timestamp_ >= 0);
   assert(cam.image_.size() == cam.mask_.size());
 
+  cam.timestamp_ += opts_.track_manager_options_.tracker_options_.cam_options_.timeshift_cam_imu_;
+
   if (!is_filter_initialized_)
   {
     track_manager_.processCamera(cam);
@@ -221,9 +223,11 @@ const StateOptions& MSCEqF::stateOptions() const { return opts_.state_options_; 
 
 const MatrixX& MSCEqF::covariance() const { return X_.cov(); }
 
+const MatrixX MSCEqF::coreCovariance() const { return X_.covBlock(MSCEqFStateElementName::Dd); }
+
 const SystemState MSCEqF::stateEstimate() const { return Symmetry::phi(X_, xi0_); }
 
-const bool MSCEqF::isInit() const { return is_filter_initialized_; }
+bool MSCEqF::isInit() const { return is_filter_initialized_; }
 
 void MSCEqF::logInit() const
 {
@@ -266,9 +270,6 @@ void MSCEqF::logInit() const
 
 const cv::Mat3b MSCEqF::imageWithTracks(const Camera& cam) const { return visualizer_.imageWithTracks(cam); }
 
-const void MSCEqF::visualizeImageWithTracks(const Camera& cam) const
-{
-  return visualizer_.visualizeImageWithTracks(cam);
-}
+void MSCEqF::visualizeImageWithTracks(const Camera& cam) const { return visualizer_.visualizeImageWithTracks(cam); }
 
 }  // namespace msceqf
