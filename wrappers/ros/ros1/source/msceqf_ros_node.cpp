@@ -15,14 +15,15 @@
 #include "msceqf_ros.hpp"
 
 // Main function
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
   // Launch ros node
   ros::init(argc, argv, "msceqf_ros");
   ros::NodeHandle nh("~");
 
   // Parameters from launchfile
-  std::string config_filepath, imu_topic, cam_topic, pose_topic, path_topic, image_topic;
+  std::string config_filepath, imu_topic, cam_topic, pose_topic, path_topic, image_topic, extrinsics_topic,
+      intrinsics_topic;
 
   // Check existance of parameter
   if (!nh.getParam("config_filepath", config_filepath))
@@ -45,24 +46,37 @@ int main(int argc, char** argv)
 
   if (!nh.getParam("pose_topic", pose_topic))
   {
-    ROS_ERROR("Pose topic not defined");
-    std::exit(EXIT_FAILURE);
+    ROS_WARN("Pose topic not defined, using /pose by default");
+    pose_topic = "/pose";
   }
 
   if (!nh.getParam("path_topic", path_topic))
   {
-    ROS_ERROR("Pose topic not defined");
-    std::exit(EXIT_FAILURE);
+    ROS_WARN("Path topic not defined, using /path by default");
+    path_topic = "/path";
   }
 
   if (!nh.getParam("image_topic", image_topic))
   {
-    ROS_ERROR("Pose topic not defined");
-    std::exit(EXIT_FAILURE);
+    ROS_WARN("Image topic not defined, using /tracks by default");
+    image_topic = "/tracks";
+  }
+
+  if (!nh.getParam("extrinsics_topic", extrinsics_topic))
+  {
+    ROS_WARN("Extrinsics topic not defined, using /extrinsics by default");
+    extrinsics_topic = "/extrinsics";
+  }
+
+  if (!nh.getParam("intrinsics_topic", intrinsics_topic))
+  {
+    ROS_WARN("Intrinsics topic not defined, using /intrinsics by default");
+    intrinsics_topic = "/intrinsics";
   }
 
   // Instanciate MSCEqFRos
-  MSCEqFRos MSCEqFRos(nh, config_filepath, imu_topic, cam_topic, pose_topic, path_topic, image_topic);
+  MSCEqFRos MSCEqFRos(nh, config_filepath, imu_topic, cam_topic, pose_topic, path_topic, image_topic, extrinsics_topic,
+                      intrinsics_topic);
 
   // ROS Spin
   ros::spin();

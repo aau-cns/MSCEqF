@@ -16,6 +16,7 @@
 #include <Eigen/Eigen>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/Imu.h>
+#include <sensor_msgs/CameraInfo.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <nav_msgs/Path.h>
 #include <opencv2/opencv.hpp>
@@ -35,29 +36,33 @@ class MSCEqFRos
    * @param pose_topic
    * @param path_topic
    * @param image_topic
+   * @param extrinsics_topic
+   * @param intrinsics_topic
    */
-  MSCEqFRos(ros::NodeHandle& nh,
-            std::string& msceqf_config_filepath,
-            std::string& imu_topic,
-            std::string& cam_topic,
-            std::string& pose_topic,
-            std::string& path_topic,
-            std::string& image_topic);
+  MSCEqFRos(ros::NodeHandle &nh,
+            std::string &msceqf_config_filepath,
+            std::string &imu_topic,
+            std::string &cam_topic,
+            std::string &pose_topic,
+            std::string &path_topic,
+            std::string &image_topic,
+            std::string &extrinsics_topic,
+            std::string &intrinsics_topic);
 
- private:
   /**
    * @brief Callbacks
    * @param Message const pointer
    */
-  void callback_image(const sensor_msgs::Image::ConstPtr& msg);
-  void callback_imu(const sensor_msgs::Imu::ConstPtr& msg);
+  void callback_image(const sensor_msgs::Image::ConstPtr &msg);
+  void callback_imu(const sensor_msgs::Imu::ConstPtr &msg);
 
+ private:
   /**
    * @brief Publish pose, images and path messages
    *
    * @param cam
    */
-  void publish(const msceqf::Camera& cam);
+  void publish(const msceqf::Camera &cam);
 
   /// Ros node handler
   ros::NodeHandle nh_;
@@ -73,10 +78,14 @@ class MSCEqFRos
   ros::Publisher pub_pose_;
   ros::Publisher pub_image_;
   ros::Publisher pub_path_;
+  ros::Publisher pub_extrinsics_;
+  ros::Publisher pub_intrinsics_;
 
   /// Messages
   geometry_msgs::PoseWithCovarianceStamped pose_;
   nav_msgs::Path path_;
+  geometry_msgs::PoseStamped extrinsics_;
+  sensor_msgs::CameraInfo intrinsics_;
 
   /// Sequence number
   uint seq_ = 0;
