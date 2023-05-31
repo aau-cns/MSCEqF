@@ -63,7 +63,8 @@ MSCEqFOptions OptionParser::parseOptions()
   parseCameraParameters(opts.state_options_.initial_camera_extrinsics_, opts.state_options_.initial_camera_intrinsics_,
                         opts.track_manager_options_.tracker_options_.distortion_model_,
                         opts.track_manager_options_.tracker_options_.cam_options_.distortion_coefficients_,
-                        opts.track_manager_options_.tracker_options_.cam_options_.resolution_);
+                        opts.track_manager_options_.tracker_options_.cam_options_.resolution_,
+                        opts.track_manager_options_.tracker_options_.cam_options_.timeshift_cam_imu_);
 
   // Parse equalization method
   parseEqualizationMethod(opts.track_manager_options_.tracker_options_.equalizer_);
@@ -115,7 +116,7 @@ MSCEqFOptions OptionParser::parseOptions()
   readDefault(opts.updater_options_.tollerance_, 1e-12, "feature_refinement_tollerance");
   parseFeatureRepresentation(opts.updater_options_.msc_features_representation_);
   parseProjectionMethod(opts.updater_options_.projection_method_);
-  readDefault(opts.updater_options_.min_track_lenght_, 3, "min_track_length");
+  readDefault(opts.updater_options_.min_track_lenght_, 5, "min_track_length");
   readDefault(opts.updater_options_.min_angle_, 5.0, "min_angle_deg");
   readDefault(opts.updater_options_.curvature_correction_, false, "curveture_correction");
   parsePixStd(opts.updater_options_.pixel_std_, opts.state_options_);
@@ -145,7 +146,8 @@ void OptionParser::parseCameraParameters(SE3& extrinsics,
                                          In& intrinsics,
                                          DistortionModel& distortion_model,
                                          VectorX& distortion_coefficients,
-                                         Vector2& resolution)
+                                         Vector2& resolution,
+                                         fp& timeshift_cam_imu)
 {
   Matrix4 extrinsics_mat;
   if (!read(extrinsics_mat, "T_imu_cam"))
@@ -215,6 +217,8 @@ void OptionParser::parseCameraParameters(SE3& extrinsics,
         "Wrong or missing camera resolution. Please provide camera resolution (resolution) in the configuration "
         "file according to Kalibr convention.");
   }
+
+  readDefault(timeshift_cam_imu, 0.0, "timeshift_cam_imu");
 }
 
 void OptionParser::parseEqualizationMethod(EqualizationMethod& eq)

@@ -185,7 +185,8 @@ class OptionParser
                              In& intrinsics,
                              DistortionModel& distortion_model,
                              VectorX& distortion_coefficients,
-                             Vector2& resolution);
+                             Vector2& resolution,
+                             fp& timeshift_cam_imu);
 
   /**
    * @brief Parse the image preprocessing equalization method

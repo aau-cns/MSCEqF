@@ -16,7 +16,6 @@
 
 namespace msceqf
 {
-
 enum class FeatureRepresentation
 {
   ANCHORED_EUCLIDEAN,
@@ -104,6 +103,7 @@ struct CameraOptions
 {
   VectorX distortion_coefficients_;  //!< Distortion coefficients
   Vector2 resolution_;               //!< Width, Height
+  fp timeshift_cam_imu_;             //!< The time shift between camera and imu (t_imu = t_cam + shift)
 };
 
 struct FastOptions
