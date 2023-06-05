@@ -88,12 +88,6 @@ bool StaticInitializer::accelerationCheck()
     return false;
   }
 
-  if (opts_.identity_xi0_)
-  {
-    utils::Logger::info("Origin set to identity");
-    return true;
-  }
-
   Vector3 z = acc_mean / acc_mean.norm();
 
   Vector3 x = Vector3(1, 0, 0) - z * z.dot(Vector3(1, 0, 0));
@@ -108,6 +102,13 @@ bool StaticInitializer::accelerationCheck()
   R0.block<1, 3>(2, 0) = z.transpose();
 
   T0_ = SE23(R0, {Vector3::Zero(), Vector3::Zero()});
+
+  if (opts_.identity_b0_)
+  {
+    utils::Logger::info("Bias origin set to identity");
+    return true;
+  }
+
   b0_.segment<3>(0) = ang_mean;
   b0_.segment<3>(3) = acc_mean - R0.transpose() * (opts_.gravity_ * Vector3(0, 0, 1));
 
