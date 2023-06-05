@@ -19,7 +19,6 @@
 
 namespace msceqf
 {
-
 Updater::Updater(const UpdaterOptions& opts, const SystemState& xi0)
     : opts_(opts), xi0_(xi0), ph_(nullptr), chi2_table_(), update_ids_(), total_size_(0)
 {

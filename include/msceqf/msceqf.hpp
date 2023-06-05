@@ -71,7 +71,7 @@ class MSCEqF
    *
    * @return const MatrixX
    */
-  const MatrixX MSCEqF::coreCovariance() const;
+  const MatrixX coreCovariance() const;
 
   /**
    * @brief Get a constant copy of the estimated state

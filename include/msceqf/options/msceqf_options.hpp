@@ -97,6 +97,7 @@ struct InitializerOptions
   fp imu_init_window_;      //!< The window in seconds used to check for acceleration spikes
   fp disparity_window_;     //!< The window is seconds used to check disparity
   fp gravity_;              //!< The magnitude of the gravity vector in m/s^2
+  bool identity_xi0_;       //!< Boolean to fix identity origin (xi0)
 };
 
 struct CameraOptions
