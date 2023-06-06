@@ -100,7 +100,8 @@ struct InitializerOptions
   bool identity_b0_;            //!< Boolean to fix identity bias origin (b0)git
   bool init_with_given_state_;  //!< Boolean to initialize the state with the given state
   SE23 initial_extended_pose_;  //!< Initial extended pose
-  Vector6 inital_bias_;         //!< Initial bias
+  Vector6 initial_bias_;        //!< Initial bias
+  fp initial_timestamp_;        //!< Initial timestamp
 };
 
 struct CameraOptions

@@ -134,7 +134,8 @@ MSCEqFOptions OptionParser::parseOptions()
   readDefault(opts.init_options_.init_with_given_state_, false, "init_with_given_state");
   if (opts.init_options_.init_with_given_state_)
   {
-    parseGivenOrigin(opts.init_options_.initial_extended_pose_, opts.init_options_.inital_bias_);
+    parseGivenOrigin(opts.init_options_.initial_extended_pose_, opts.init_options_.initial_bias_,
+                     opts.init_options_.initial_timestamp_);
   }
   opts.init_options_.gravity_ = opts.state_options_.gravity_;
 
@@ -227,7 +228,7 @@ void OptionParser::parseCameraParameters(SE3& extrinsics,
   readDefault(timeshift_cam_imu, 0.0, "timeshift_cam_imu");
 }
 
-void OptionParser::parseGivenOrigin(SE23& T0, Vector6& b0)
+void OptionParser::parseGivenOrigin(SE23& T0, Vector6& b0, fp& t0)
 {
   Matrix5 T = Matrix5::Identity();
   if (!read(T, "T0"))
@@ -235,13 +236,13 @@ void OptionParser::parseGivenOrigin(SE23& T0, Vector6& b0)
     Vector4 q;
     Vector3 p;
     Vector3 v;
-    if (!read(q, "q0") && !read(p, "p0") && !read(v, "v0"))
+    if (!read(q, "q0") & !read(p, "p0") & !read(v, "v0"))
     {
       throw std::runtime_error("Wrong or missing initial T0 or q0, v0, p0.");
     }
     else
     {
-      T.block<3, 3>(0, 0) = SO3(q).R();
+      T.block<3, 3>(0, 0) = SO3(Quaternion(q)).R();
       T.block<3, 1>(0, 3) = v;
       T.block<3, 1>(0, 4) = p;
     }
@@ -251,6 +252,11 @@ void OptionParser::parseGivenOrigin(SE23& T0, Vector6& b0)
   if (!read(b0, "b0"))
   {
     throw std::runtime_error("Wrong or missing initial bias b0.");
+  }
+
+  if (!read(t0, "t0"))
+  {
+    throw std::runtime_error("Wrong or missing initial timestamp t0.");
   }
 }
 

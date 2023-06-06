@@ -74,6 +74,7 @@ void MSCEqF::processCameraMeasurement(Camera& cam)
       opts_.state_options_.delta_init_cov_ += adb0 * B_init_cov * adb0.transpose();
       xi0_ = SystemState(opts_.state_options_, initializer_.T0(), initializer_.b0());
       X_ = MSCEqFState(opts_.state_options_);
+      timestamp_ = cam.timestamp_;
 
       is_filter_initialized_ = true;
       logInit();
@@ -162,6 +163,7 @@ void MSCEqF::processFeaturesMeasurement(const TriangulatedFeatures& features)
       opts_.state_options_.delta_init_cov_ += adb0 * B_init_cov * adb0.transpose();
       xi0_ = SystemState(opts_.state_options_, initializer_.T0(), initializer_.b0());
       X_ = MSCEqFState(opts_.state_options_);
+      timestamp_ = features.timestamp_;
 
       is_filter_initialized_ = true;
       logInit();
@@ -218,12 +220,17 @@ void MSCEqF::processFeaturesMeasurement(const TriangulatedFeatures& features)
 
 void MSCEqF::setGivenOrigin()
 {
-  xi0_ =
-      SystemState(opts_.state_options_, opts_.init_options_.initial_extended_pose_, opts_.init_options_.initial_bias_);
+  xi0_ = SystemState(
+      opts_.state_options_,
+      std::make_pair(SystemStateElementName::T, createSystemStateElement<ExtendedPoseState>(
+                                                    std::make_tuple(opts_.init_options_.initial_extended_pose_))),
+      std::make_pair(SystemStateElementName::b,
+                     createSystemStateElement<BiasState>(std::make_tuple(opts_.init_options_.initial_bias_))));
   X_ = MSCEqFState(opts_.state_options_);
+  timestamp_ = opts_.init_options_.initial_timestamp_;
 
   is_filter_initialized_ = true;
-  logInit()
+  logInit();
 }
 
 const MSCEqFOptions& MSCEqF::options() const { return opts_; }
@@ -262,6 +269,8 @@ void MSCEqF::logInit() const
      << X_.D().asMatrix() << '\n'
      << "delta:" << '\n'
      << X_.delta().transpose() << '\n';
+
+  os << "Initial time: " << timestamp_ << '\n';
 
   if (opts_.state_options_.enable_camera_extrinsics_calibration_)
   {
