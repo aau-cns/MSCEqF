@@ -97,7 +97,6 @@ void MSCEqF::processCameraMeasurement(Camera& cam)
   auto future_cloning = std::async([&]() { X_.stochasticCloning(cam.timestamp_); });
 
   future_image_processing.wait();
-
   future_cloning.wait();
 
   track_manager_.lostTracksIds(cam.timestamp_, ids_to_update_);
@@ -162,8 +161,6 @@ void MSCEqF::processFeaturesMeasurement(const TriangulatedFeatures& features)
 
       is_filter_initialized_ = true;
       logInit();
-
-      is_filter_initialized_ = true;
     }
     return;
   }
@@ -174,12 +171,10 @@ void MSCEqF::processFeaturesMeasurement(const TriangulatedFeatures& features)
     return;
   }
 
-  // Add given features to the track manager
-  track_manager_.processFeatures(features);
-
   propagator_.propagate(X_, xi0_, timestamp_, features.timestamp_);
   X_.stochasticCloning(features.timestamp_);
 
+  track_manager_.processFeatures(features);
   track_manager_.lostTracksIds(features.timestamp_, ids_to_update_);
 
   bool marginalize = false;
