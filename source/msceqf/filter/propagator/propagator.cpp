@@ -47,9 +47,6 @@ void Propagator::insertImu(MSCEqFState& X, const SystemState& xi0, const Imu& im
   {
     utils::Logger::warn("Maximum imu buffer size reached. Propagating and clearing the buffer");
     propagate(X, xi0, timestamp, imu_buffer_.back().timestamp_);
-
-    // Clear the buffer keeping only the last 10% of the data
-    imu_buffer_.erase(imu_buffer_.begin(), imu_buffer_.begin() + imu_buffer_max_size_ / 10);
   }
 }
 
