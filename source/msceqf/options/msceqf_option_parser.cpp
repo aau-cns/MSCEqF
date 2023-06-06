@@ -130,8 +130,13 @@ MSCEqFOptions OptionParser::parseOptions()
   readDefault(opts.init_options_.disparity_window_, 0.5, "static_initializer_disparity_window");
   readDefault(opts.init_options_.acc_threshold_, 0.0, "static_initializer_acc_threshold");
   readDefault(opts.init_options_.disparity_threshold_, 1.0, "static_initializer_disparity_threshold");
-  readDefault(opts.init_options_.identity_xi0_, false, "identity_origin");
   opts.init_options_.gravity_ = opts.state_options_.gravity_;
+  readDefault(opts.init_options_.identity_xi0_, false, "identity_origin");
+  readDefault(opts.init_options_.init_with_given_state_, false, "init_with_given_state");
+  if (opts.init_options_.init_with_given_state_)
+  {
+    parseGivenOrigin(opts.init_options_.initial_extended_pose_, opts.init_options_.inital_bias_);
+  }
 
   ///
   /// Parse other options
@@ -220,6 +225,33 @@ void OptionParser::parseCameraParameters(SE3& extrinsics,
   }
 
   readDefault(timeshift_cam_imu, 0.0, "timeshift_cam_imu");
+}
+
+void OptionParser::parseGivenOrigin(SE23& T0, Vector6& b0)
+{
+  Matrix5 T = Matrix5::Identity();
+  if (!read(T, "T0"))
+  {
+    Vector4 q;
+    Vector3 p;
+    Vector3 v;
+    if (!read(q, "q0") && !read(p, "p0") && !read(v, "v0"))
+    {
+      throw std::runtime_error("Wrong or missing initial T0 or q0, v0, p0.");
+    }
+    else
+    {
+      T.block<3, 3>(0, 0) = SO3(q).R();
+      T.block<3, 1>(0, 3) = v;
+      T.block<3, 1>(0, 4) = p;
+    }
+  }
+  T0 = T;
+
+  if (!read(b0, "b0"))
+  {
+    throw std::runtime_error("Wrong or missing initial bias b0.");
+  }
 }
 
 void OptionParser::parseEqualizationMethod(EqualizationMethod& eq)

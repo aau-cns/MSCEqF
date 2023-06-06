@@ -92,12 +92,15 @@ struct UpdaterOptions
 
 struct InitializerOptions
 {
-  fp disparity_threshold_;  //!< the disparity threshold for the static initializer
-  fp acc_threshold_;        //!< The acceleration threshold for the static initializer
-  fp imu_init_window_;      //!< The window in seconds used to check for acceleration spikes
-  fp disparity_window_;     //!< The window is seconds used to check disparity
-  fp gravity_;              //!< The magnitude of the gravity vector in m/s^2
-  bool identity_xi0_;       //!< Boolean to fix identity origin (xi0)
+  fp disparity_threshold_;      //!< the disparity threshold for the static initializer
+  fp acc_threshold_;            //!< The acceleration threshold for the static initializer
+  fp imu_init_window_;          //!< The window in seconds used to check for acceleration spikes
+  fp disparity_window_;         //!< The window is seconds used to check disparity
+  fp gravity_;                  //!< The magnitude of the gravity vector in m/s^2
+  bool identity_xi0_;           //!< Boolean to fix identity origin (xi0)
+  bool init_with_given_state_;  //!< Boolean to initialize the state with the given state
+  SE23 initial_extended_pose_;  //!< Initial extended pose
+  Vector6 inital_bias_;         //!< Initial bias
 };
 
 struct CameraOptions

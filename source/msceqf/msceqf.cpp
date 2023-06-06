@@ -27,6 +27,10 @@ MSCEqF::MSCEqF(const std::string& params_filepath)
     , timestamp_(-1)
     , is_filter_initialized_(false)
 {
+  if (opts_.init_options_.init_with_given_state_)
+  {
+    setGivenOrigin();
+  }
 }
 
 void MSCEqF::processImuMeasurement(const Imu& imu)
@@ -210,6 +214,16 @@ void MSCEqF::processFeaturesMeasurement(const TriangulatedFeatures& features)
     X_.marginalizeCloneAt(marginalize_timestamp);
     track_manager_.removeTracksTail(marginalize_timestamp);
   }
+}
+
+void MSCEqF::setGivenOrigin()
+{
+  xi0_ =
+      SystemState(opts_.state_options_, opts_.init_options_.initial_extended_pose_, opts_.init_options_.initial_bias_);
+  X_ = MSCEqFState(opts_.state_options_);
+
+  is_filter_initialized_ = true;
+  logInit()
 }
 
 const MSCEqFOptions& MSCEqF::options() const { return opts_; }
