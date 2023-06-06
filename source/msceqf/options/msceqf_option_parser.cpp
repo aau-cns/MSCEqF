@@ -130,17 +130,13 @@ MSCEqFOptions OptionParser::parseOptions()
   readDefault(opts.init_options_.disparity_window_, 0.5, "static_initializer_disparity_window");
   readDefault(opts.init_options_.acc_threshold_, 0.0, "static_initializer_acc_threshold");
   readDefault(opts.init_options_.disparity_threshold_, 1.0, "static_initializer_disparity_threshold");
-<<<<<<< HEAD
   readDefault(opts.init_options_.identity_b0_, false, "identity_bias_origin");
-=======
->>>>>>> 011e6d1... [ADD] Added option to initialize with given origin
-  opts.init_options_.gravity_ = opts.state_options_.gravity_;
-  readDefault(opts.init_options_.identity_xi0_, false, "identity_origin");
   readDefault(opts.init_options_.init_with_given_state_, false, "init_with_given_state");
   if (opts.init_options_.init_with_given_state_)
   {
     parseGivenOrigin(opts.init_options_.initial_extended_pose_, opts.init_options_.inital_bias_);
   }
+  opts.init_options_.gravity_ = opts.state_options_.gravity_;
 
   ///
   /// Parse other options

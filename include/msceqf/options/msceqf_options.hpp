@@ -97,7 +97,7 @@ struct InitializerOptions
   fp imu_init_window_;          //!< The window in seconds used to check for acceleration spikes
   fp disparity_window_;         //!< The window is seconds used to check disparity
   fp gravity_;                  //!< The magnitude of the gravity vector in m/s^2
-  bool identity_b0_;            //!< Boolean to fix identity bias origin (b0)
+  bool identity_b0_;            //!< Boolean to fix identity bias origin (b0)git
   bool init_with_given_state_;  //!< Boolean to initialize the state with the given state
   SE23 initial_extended_pose_;  //!< Initial extended pose
   Vector6 inital_bias_;         //!< Initial bias
