@@ -125,6 +125,12 @@ class MSCEqF
   void processFeaturesMeasurement(const TriangulatedFeatures& features);
 
   /**
+   * @brief Set origin xi0 with given state
+   *
+   */
+  void setGivenOrigin();
+
+  /**
    * @brief Log initial condition of the filter
    *
    */

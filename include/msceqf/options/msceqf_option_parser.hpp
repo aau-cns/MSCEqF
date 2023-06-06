@@ -189,6 +189,14 @@ class OptionParser
                              fp& timeshift_cam_imu);
 
   /**
+   * @brief Parse the given origin (initial state)
+   *
+   * @param T
+   * @param b
+   */
+  void OptionParser::parseGivenOrigin(SE23& T, Vector6& b);
+
+  /**
    * @brief Parse the image preprocessing equalization method
    *
    * @param eq
