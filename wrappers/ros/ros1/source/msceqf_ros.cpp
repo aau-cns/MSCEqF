@@ -15,29 +15,31 @@
 #include "msceqf_ros.hpp"
 #include "utils/logger.hpp"
 
-MSCEqFRos::MSCEqFRos(ros::NodeHandle &nh,
-                     std::string &msceqf_config_filepath,
-                     std::string &imu_topic,
-                     std::string &cam_topic,
-                     std::string &pose_topic,
-                     std::string &path_topic,
-                     std::string &image_topic,
-                     std::string &extrinsics_topic,
-                     std::string &intrinsics_topic)
+MSCEqFRos::MSCEqFRos(const ros::NodeHandle &nh,
+                     const std::string &msceqf_config_filepath,
+                     const std::string &imu_topic,
+                     const std::string &cam_topic,
+                     const std::string &pose_topic,
+                     const std::string &path_topic,
+                     const std::string &image_topic,
+                     const std::string &extrinsics_topic,
+                     const std::string &intrinsics_topic,
+                     const bool &record,
+                     const std::string &bagfile)
     : nh_(nh), sys_(msceqf_config_filepath)
 {
-  sub_cam_ = nh.subscribe(cam_topic, 10, &MSCEqFRos::callback_image, this);
-  sub_imu_ = nh.subscribe(imu_topic, 1000, &MSCEqFRos::callback_imu, this);
+  sub_cam_ = nh_.subscribe(cam_topic, 10, &MSCEqFRos::callback_image, this);
+  sub_imu_ = nh_.subscribe(imu_topic, 1000, &MSCEqFRos::callback_imu, this);
 
   utils::Logger::info("Subscribing: " + std::string(sub_cam_.getTopic().c_str()));
   utils::Logger::info("Subscribing: " + std::string(sub_imu_.getTopic().c_str()));
 
   // Publishers
-  pub_pose_ = nh.advertise<geometry_msgs::PoseWithCovarianceStamped>(pose_topic, 1);
-  pub_path_ = nh.advertise<nav_msgs::Path>(path_topic, 1);
-  pub_image_ = nh.advertise<sensor_msgs::Image>(image_topic, 1);
-  pub_extrinsics_ = nh.advertise<geometry_msgs::PoseStamped>(extrinsics_topic, 1);
-  pub_intrinsics_ = nh.advertise<sensor_msgs::CameraInfo>(intrinsics_topic, 1);
+  pub_pose_ = nh_.advertise<geometry_msgs::PoseWithCovarianceStamped>(pose_topic, 1);
+  pub_path_ = nh_.advertise<nav_msgs::Path>(path_topic, 1);
+  pub_image_ = nh_.advertise<sensor_msgs::Image>(image_topic, 1);
+  pub_extrinsics_ = nh_.advertise<geometry_msgs::PoseStamped>(extrinsics_topic, 1);
+  pub_intrinsics_ = nh_.advertise<sensor_msgs::CameraInfo>(intrinsics_topic, 1);
 
   // Print topics where we are publishing on
   utils::Logger::info("Publishing: " + std::string(pub_pose_.getTopic().c_str()));
@@ -45,6 +47,13 @@ MSCEqFRos::MSCEqFRos(ros::NodeHandle &nh,
   utils::Logger::info("Publishing: " + std::string(pub_image_.getTopic().c_str()));
   utils::Logger::info("Publishing: " + std::string(pub_extrinsics_.getTopic().c_str()));
   utils::Logger::info("Publishing: " + std::string(pub_intrinsics_.getTopic().c_str()));
+
+  // record
+  record_ = record;
+  if (record_)
+  {
+    bag_.open(bagfile, rosbag::bagmode::Write);
+  }
 }
 
 void MSCEqFRos::callback_image(const sensor_msgs::Image::ConstPtr &msg)
@@ -64,7 +73,6 @@ void MSCEqFRos::callback_image(const sensor_msgs::Image::ConstPtr &msg)
 
   cam.timestamp_ = cv_ptr->header.stamp.toSec();
   cam.image_ = cv_ptr->image.clone();
-  cam.mask_ = 255 * cv::Mat::ones(cam.image_.rows, cam.image_.cols, CV_8UC1);
 
   sys_.processMeasurement(cam);
 
@@ -120,6 +128,11 @@ void MSCEqFRos::publish(const msceqf::Camera &cam)
 
   pub_pose_.publish(pose_);
 
+  if (record_)
+  {
+    bag_.write(pub_pose_.getTopic().c_str(), pose_.header.stamp, pose_);
+  }
+
   if (pub_path_.getNumSubscribers() != 0)
   {
     geometry_msgs::PoseStamped pose;
@@ -156,6 +169,11 @@ void MSCEqFRos::publish(const msceqf::Camera &cam)
 
   pub_extrinsics_.publish(extrinsics_);
 
+  if (record_)
+  {
+    bag_.write(pub_extrinsics_.getTopic().c_str(), extrinsics_.header.stamp, extrinsics_);
+  }
+
   auto intr = est.k();
 
   intrinsics_.header.stamp.fromSec(cam.timestamp_);
@@ -170,6 +188,11 @@ void MSCEqFRos::publish(const msceqf::Camera &cam)
   intrinsics_.P = {intr(0), 0.0, intr(2), 0.0, 0.0, intr(1), intr(2), 0.0, 0.0, 0.0, 1.0, 0.0};
 
   pub_intrinsics_.publish(intrinsics_);
+
+  if (record_)
+  {
+    bag_.write(pub_intrinsics_.getTopic().c_str(), intrinsics_.header.stamp, intrinsics_);
+  }
 
   ++seq_;
 }

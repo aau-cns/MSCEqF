@@ -21,6 +21,7 @@
 #include <nav_msgs/Path.h>
 #include <opencv2/opencv.hpp>
 #include <cv_bridge/cv_bridge.h>
+#include <rosbag/bag.h>
 
 #include "msceqf/msceqf.hpp"
 
@@ -38,16 +39,20 @@ class MSCEqFRos
    * @param image_topic
    * @param extrinsics_topic
    * @param intrinsics_topic
+   * @param record
+   * @param bagfile
    */
-  MSCEqFRos(ros::NodeHandle &nh,
-            std::string &msceqf_config_filepath,
-            std::string &imu_topic,
-            std::string &cam_topic,
-            std::string &pose_topic,
-            std::string &path_topic,
-            std::string &image_topic,
-            std::string &extrinsics_topic,
-            std::string &intrinsics_topic);
+  MSCEqFRos(const ros::NodeHandle &nh,
+            const std::string &msceqf_config_filepath,
+            const std::string &imu_topic,
+            const std::string &cam_topic,
+            const std::string &pose_topic,
+            const std::string &path_topic,
+            const std::string &image_topic,
+            const std::string &extrinsics_topic,
+            const std::string &intrinsics_topic,
+            const bool &record,
+            const std::string &bagfile);
 
   /**
    * @brief Callbacks
@@ -86,6 +91,10 @@ class MSCEqFRos
   nav_msgs::Path path_;
   geometry_msgs::PoseStamped extrinsics_;
   sensor_msgs::CameraInfo intrinsics_;
+
+  /// Record bagfile
+  bool record_;
+  rosbag::Bag bag_;
 
   /// Sequence number
   uint seq_ = 0;
