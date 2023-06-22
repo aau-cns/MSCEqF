@@ -12,6 +12,8 @@
 #ifndef OPTIONS_HPP
 #define OPTIONS_HPP
 
+#include <opencv2/opencv.hpp>
+
 #include "types/fptypes.hpp"
 
 namespace msceqf
@@ -109,6 +111,7 @@ struct CameraOptions
   VectorX distortion_coefficients_;  //!< Distortion coefficients
   Vector2 resolution_;               //!< Width, Height
   fp timeshift_cam_imu_;             //!< The time shift between camera and imu (t_imu = t_cam + shift)
+  cv::Mat mask_;                     //!< The image mask
 };
 
 struct FastOptions

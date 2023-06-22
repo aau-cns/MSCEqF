@@ -47,9 +47,13 @@ MSCEqFOptions OptionParser::parseOptions()
   ///
   /// Parse tracker parameters
   ///
-  uint min_feats_default = std::min(uint(20), opts.track_manager_options_.tracker_options_.max_features_);
   readDefault(opts.track_manager_options_.tracker_options_.max_features_, 100, "max_features");
-  readDefault(opts.track_manager_options_.tracker_options_.min_features_, min_feats_default, "min_features");
+  readDefault(opts.track_manager_options_.tracker_options_.min_features_, 20, "min_features");
+  opts.track_manager_options_.tracker_options_.min_features_ =
+      std::min(opts.track_manager_options_.tracker_options_.min_features_,
+               opts.track_manager_options_.tracker_options_.max_features_);
+  opts.track_manager_options_.tracker_options_.min_features_ =
+      std::max(opts.track_manager_options_.tracker_options_.min_features_, uint(20));
   readDefault(opts.track_manager_options_.tracker_options_.grid_x_size_, 8, "grid_x_size");
   readDefault(opts.track_manager_options_.tracker_options_.grid_y_size_, 5, "grid_y_size");
   readDefault(opts.track_manager_options_.tracker_options_.min_px_dist_, 5, "min_feature_pixel_distance");
@@ -64,7 +68,8 @@ MSCEqFOptions OptionParser::parseOptions()
                         opts.track_manager_options_.tracker_options_.distortion_model_,
                         opts.track_manager_options_.tracker_options_.cam_options_.distortion_coefficients_,
                         opts.track_manager_options_.tracker_options_.cam_options_.resolution_,
-                        opts.track_manager_options_.tracker_options_.cam_options_.timeshift_cam_imu_);
+                        opts.track_manager_options_.tracker_options_.cam_options_.timeshift_cam_imu_,
+                        opts.track_manager_options_.tracker_options_.cam_options_.mask_);
 
   // Parse equalization method
   parseEqualizationMethod(opts.track_manager_options_.tracker_options_.equalizer_);
@@ -154,7 +159,8 @@ void OptionParser::parseCameraParameters(SE3& extrinsics,
                                          DistortionModel& distortion_model,
                                          VectorX& distortion_coefficients,
                                          Vector2& resolution,
-                                         fp& timeshift_cam_imu)
+                                         fp& timeshift_cam_imu,
+                                         cv::Mat& mask)
 {
   Matrix4 extrinsics_mat;
   if (!read(extrinsics_mat, "T_imu_cam"))
@@ -226,6 +232,17 @@ void OptionParser::parseCameraParameters(SE3& extrinsics,
   }
 
   readDefault(timeshift_cam_imu, 0.0, "timeshift_cam_imu");
+
+  std::string maskpath;
+  if (read(maskpath, "mask"))
+  {
+    mask = cv::imread(maskpath, cv::IMREAD_GRAYSCALE);
+    cv::resize(mask, mask, cv::Size(resolution(0), resolution(1)), 0.0, 0.0, cv::INTER_NEAREST);
+  }
+  else
+  {
+    mask = 255 * cv::Mat::ones(cv::Size(resolution(0), resolution(1)), CV_8UC1);
+  }
 }
 
 void OptionParser::parseGivenOrigin(SE23& T0, Vector6& b0, fp& t0)

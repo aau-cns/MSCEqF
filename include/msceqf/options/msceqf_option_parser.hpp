@@ -16,6 +16,7 @@
 
 #include <numeric>
 #include <sstream>
+#include <opencv2/opencv.hpp>
 
 #include "msceqf/options/msceqf_options.hpp"
 #include "types/fptypes.hpp"
@@ -180,13 +181,16 @@ class OptionParser
    * @param distortion_model
    * @param distortion_coefficients
    * @param resolution
+   * @param timeshift_cam_imu
+   * @param mask
    */
   void parseCameraParameters(SE3& extrinsics,
                              In& intrinsics,
                              DistortionModel& distortion_model,
                              VectorX& distortion_coefficients,
                              Vector2& resolution,
-                             fp& timeshift_cam_imu);
+                             fp& timeshift_cam_imu,
+                             cv::Mat& mask);
 
   /**
    * @brief Parse the given origin (initial state) and the initial time

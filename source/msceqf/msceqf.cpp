@@ -59,6 +59,7 @@ void MSCEqF::processCameraMeasurement(Camera& cam)
   assert(cam.image_.size() == cam.mask_.size());
 
   cam.timestamp_ += opts_.track_manager_options_.tracker_options_.cam_options_.timeshift_cam_imu_;
+  opts_.track_manager_options_.tracker_options_.cam_options_.mask_.copyTo(cam.mask_);
 
   if (!is_filter_initialized_)
   {
