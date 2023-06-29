@@ -135,10 +135,6 @@ list(
     source/vision/track_manager.cpp
 )
 
-## Declare a C++ library
-add_library(${PROJECT_NAME}_lib STATIC ${lib_sources})
-target_link_libraries(${PROJECT_NAME}_lib ${libs})
-
 ## Define includes
 list(APPEND include_dirs ${CMAKE_CURRENT_SOURCE_DIR}/include)
 include_directories(${include_dirs})

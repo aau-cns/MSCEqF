@@ -16,8 +16,7 @@
 
 namespace msceqf
 {
-
-MSCEqFState::MSCEqFState(const StateOptions& opts) : opts_(opts), cov_(), state_(), clones_()
+MSCEqFState::MSCEqFState(const StateOptions& opts, const SystemState& xi0) : opts_(opts), cov_(), state_(), clones_()
 {
   preallocate();
 
@@ -36,6 +35,15 @@ MSCEqFState::MSCEqFState(const StateOptions& opts) : opts_(opts), cov_(), state_
   {
     initializeStateElement(MSCEqFStateElementName::L, opts_.L_init_cov_);
   }
+
+  Matrix6 AdS0inv = xi0.S().invAdjoint();
+
+  // Transform covariance to the new origin
+  MatrixX D = MatrixX::Identity(cov_.rows(), cov_.cols());
+  D.block(9, 0, 6, 6) = SE3::adjoint(xi0.b());
+  D.block(15, 0, 6, 3) = AdS0inv.block<6, 3>(0, 0);
+  D.block(15, 6, 6, 3) = AdS0inv.block<6, 3>(0, 3);
+  cov_ = D * cov_ * D.transpose();
 }
 
 MSCEqFState::MSCEqFState(const MSCEqFState& other) : opts_(other.opts_), cov_(), state_(), clones_()

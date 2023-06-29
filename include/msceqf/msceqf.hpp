@@ -19,7 +19,6 @@
 #include "msceqf/filter/updater/updater.hpp"
 #include "msceqf/options/msceqf_option_parser.hpp"
 #include "msceqf/state/state.hpp"
-#include "msceqf/system/system.hpp"
 #include "vision/track_manager.hpp"
 #include "utils/visualizer.hpp"
 
@@ -43,7 +42,7 @@ class MSCEqF
    */
   void processMeasurement(const Imu& meas) { processImuMeasurement(meas); }
   void processMeasurement(Camera& meas) { processCameraMeasurement(meas); }
-  void processMeasurement(const TriangulatedFeatures& meas) { processFeaturesMeasurement(meas); }
+  void processMeasurement(TriangulatedFeatures& meas) { processFeaturesMeasurement(meas); }
 
   /**
    * @brief Get a constant reference to the MSCEqF options
@@ -79,6 +78,21 @@ class MSCEqF
    * @return const SystemState
    */
   const SystemState stateEstimate() const;
+
+  /**
+   * @brief Get a constant reference to the origin state
+   *
+   * @return const SystemState&
+   */
+  const SystemState& stateOrigin() const;
+
+  /**
+   * @brief Set origin xi0 with given state programatically
+   *
+   * @param T0
+   * @param b0
+   */
+  void setGivenOrigin(const SE23& T0, const Vector6& b0);
 
   /**
    * @brief Get the processed image with overlayed tracks
@@ -122,7 +136,13 @@ class MSCEqF
    *
    * @param features
    */
-  void processFeaturesMeasurement(const TriangulatedFeatures& features);
+  void processFeaturesMeasurement(TriangulatedFeatures& features);
+
+  /**
+   * @brief Set origin xi0 with given state from parameters file
+   *
+   */
+  void setGivenOrigin();
 
   /**
    * @brief Log initial condition of the filter
@@ -133,8 +153,8 @@ class MSCEqF
   OptionParser parser_;  //!< The parser to parse all the configuration from a yaml file
   MSCEqFOptions opts_;   //!< All the MSCEqF options
 
-  MSCEqFState X_;    //!< The state of the MSCEqF
   SystemState xi0_;  //!< The origin state of the System
+  MSCEqFState X_;    //!< The state of the MSCEqF
 
   TrackManager track_manager_;     //!< The MSCEqF track manager
   StaticInitializer initializer_;  //!< The MSCEqF static initializer

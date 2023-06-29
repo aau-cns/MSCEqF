@@ -17,7 +17,7 @@
 #include <boost/math/distributions/chi_squared.hpp>
 
 #include "types/fptypes.hpp"
-#include "msceqf/system/system.hpp"
+#include "msceqf/state/state.hpp"
 #include "utils/tools.hpp"
 
 namespace msceqf

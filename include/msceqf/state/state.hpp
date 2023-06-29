@@ -15,6 +15,7 @@
 #include <map>
 #include <variant>
 
+#include "msceqf/system/system.hpp"
 #include "msceqf/options/msceqf_options.hpp"
 #include "msceqf/state/state_elements.hpp"
 
@@ -44,11 +45,13 @@ class MSCEqFState
    * @brief Construct the state of the MSCEqF given the options
    *
    * @param opts options of the MSCEqF state
+   * @param xi0 origin
    *
    * @note The MSCEqF state has not to be confused with the system state. The former is the state of the lifted system,
    * in which the EqF is based on, while latter is the state of the system posed on the homogenous space.
+   * The given origin is needed to initialize cross-correlation whenever the origin is not identity.
    */
-  MSCEqFState(const StateOptions& opts);
+  MSCEqFState(const StateOptions& opts, const SystemState& xi0);
 
   /// Rule of Five
   MSCEqFState(const MSCEqFState& other);

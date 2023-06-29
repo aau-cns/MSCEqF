@@ -23,58 +23,58 @@ int main(int argc, char **argv)
   ros::init(argc, argv, "msceqf_ros");
   ros::NodeHandle nh("~");
 
-  // Parameters from launchfile
-  std::string config_filepath, imu_topic, cam_topic, pose_topic, path_topic, image_topic, extrinsics_topic,
-      intrinsics_topic, bagfile;
-  double bag_duration, bag_start;
+  std::string config_filepath, imu_topic, cam_topic, features_topic, pose_topic, path_topic, image_topic,
+      extrinsics_topic, intrinsics_topic, origin_topic, bagfile;
 
-  // Check existance of parameter
+  bool exist_cam_topic = false;
+  bool exist_features_topic = false;
+
   if (!nh.getParam("config_filepath", config_filepath))
   {
     ROS_ERROR("Configuration filepath not defined");
     std::exit(EXIT_FAILURE);
   }
-
   if (!nh.getParam("imu_topic", imu_topic))
   {
     ROS_ERROR("Imu topic not defined");
     std::exit(EXIT_FAILURE);
   }
-
-  if (!nh.getParam("cam_topic", cam_topic))
+  exist_cam_topic = nh.getParam("cam_topic", cam_topic);
+  exist_features_topic = nh.getParam("features_topic", features_topic);
+  if (!exist_cam_topic && !exist_features_topic)
   {
-    ROS_ERROR("Camera topic not defined");
+    ROS_ERROR("Neither camera nor features topics defined");
     std::exit(EXIT_FAILURE);
   }
-
   if (!nh.getParam("pose_topic", pose_topic))
   {
     ROS_WARN("Pose topic not defined, using /pose by default");
     pose_topic = "/pose";
   }
-
   if (!nh.getParam("path_topic", path_topic))
   {
     ROS_WARN("Path topic not defined, using /path by default");
     path_topic = "/path";
   }
-
   if (!nh.getParam("image_topic", image_topic))
   {
     ROS_WARN("Image topic not defined, using /tracks by default");
     image_topic = "/tracks";
   }
-
   if (!nh.getParam("extrinsics_topic", extrinsics_topic))
   {
     ROS_WARN("Extrinsics topic not defined, using /extrinsics by default");
     extrinsics_topic = "/extrinsics";
   }
-
   if (!nh.getParam("intrinsics_topic", intrinsics_topic))
   {
     ROS_WARN("Intrinsics topic not defined, using /intrinsics by default");
     intrinsics_topic = "/intrinsics";
+  }
+  if (!nh.getParam("origin_topic", origin_topic))
+  {
+    ROS_WARN("Origin topic not defined, using /origin by default");
+    origin_topic = "/origin";
   }
 
   if (!nh.getParam("bag", bagfile))
@@ -83,21 +83,31 @@ int main(int argc, char **argv)
     std::exit(EXIT_FAILURE);
   }
 
+  double bag_duration, bag_start;
   if (!nh.getParam("bag_start", bag_start))
   {
     ROS_ERROR("bagfile start time not defined");
     std::exit(EXIT_FAILURE);
   }
-
   if (!nh.getParam("bag_duration", bag_duration))
   {
     ROS_ERROR("bagfile duration not defined");
     std::exit(EXIT_FAILURE);
   }
 
+  bool record;
+  nh.param("record", record, false);
+
+  std::string outbagfile;
+  if (record && !nh.getParam("outbag", outbagfile))
+  {
+    ROS_ERROR("Recording enabled and output bagfile not defined");
+    std::exit(EXIT_FAILURE);
+  }
+
   // Instanciate MSCEqFRos
-  MSCEqFRos MSCEqFRos(nh, config_filepath, imu_topic, cam_topic, pose_topic, path_topic, image_topic, extrinsics_topic,
-                      intrinsics_topic);
+  MSCEqFRos MSCEqFRos(nh, config_filepath, imu_topic, cam_topic, features_topic, pose_topic, path_topic, image_topic,
+                      extrinsics_topic, intrinsics_topic, origin_topic, record, outbagfile);
 
   // Load rosbag
   rosbag::Bag bag;
@@ -131,7 +141,7 @@ int main(int argc, char **argv)
     {
       msgs.push_back(msg);
     }
-    else if (msg.getTopic() == cam_topic)
+    else if (msg.getTopic() == cam_topic || msg.getTopic() == features_topic)
     {
       msgs.push_back(msg);
       max_camera_time = std::max(max_camera_time, msg.getTime().toSec());
@@ -148,6 +158,9 @@ int main(int argc, char **argv)
     {
       break;
     }
+
+    // sleep 0.5ms
+    ros::Duration(0.0005).sleep();
 
     if (msgs.at(m).getTime() < start_time)
     {
@@ -171,6 +184,12 @@ int main(int argc, char **argv)
     if (msgs.at(m).getTopic() == cam_topic)
     {
       MSCEqFRos.callback_image(msgs.at(m).instantiate<sensor_msgs::Image>());
+    }
+
+    // Features processing
+    if (msgs.at(m).getTopic() == features_topic)
+    {
+      MSCEqFRos.callback_feats(msgs.at(m).instantiate<sensor_msgs::PointCloud>());
     }
   }
 

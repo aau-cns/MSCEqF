@@ -1,3 +1,7 @@
+## Declare a C++ library
+add_library(${PROJECT_NAME}_lib STATIC ${lib_sources})
+target_link_libraries(${PROJECT_NAME}_lib ${libs})
+
 ## Declare C++ tests
 if(${BUILD_TESTS})
     add_executable(msceqf_tests tests/tests.cpp)

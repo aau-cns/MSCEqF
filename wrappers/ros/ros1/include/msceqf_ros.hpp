@@ -17,10 +17,12 @@
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/CameraInfo.h>
+#include <sensor_msgs/PointCloud.h>
 #include <geometry_msgs/PoseWithCovarianceStamped.h>
 #include <nav_msgs/Path.h>
 #include <opencv2/opencv.hpp>
 #include <cv_bridge/cv_bridge.h>
+#include <rosbag/bag.h>
 
 #include "msceqf/msceqf.hpp"
 
@@ -33,21 +35,28 @@ class MSCEqFRos
    * @param msceqf_config_filepath path of configuration yaml file for the msceqf
    * @param imu_topic
    * @param cam_topic
+   * @param features_topic
    * @param pose_topic
    * @param path_topic
    * @param image_topic
    * @param extrinsics_topic
    * @param intrinsics_topic
+   * @param record
+   * @param bagfile
    */
-  MSCEqFRos(ros::NodeHandle &nh,
-            std::string &msceqf_config_filepath,
-            std::string &imu_topic,
-            std::string &cam_topic,
-            std::string &pose_topic,
-            std::string &path_topic,
-            std::string &image_topic,
-            std::string &extrinsics_topic,
-            std::string &intrinsics_topic);
+  MSCEqFRos(const ros::NodeHandle &nh,
+            const std::string &msceqf_config_filepath,
+            const std::string &imu_topic,
+            const std::string &cam_topic,
+            const std::string &features_topic,
+            const std::string &pose_topic,
+            const std::string &path_topic,
+            const std::string &image_topic,
+            const std::string &extrinsics_topic,
+            const std::string &intrinsics_topic,
+            const std::string &origin_topic,
+            const bool &record,
+            const std::string &bagfile);
 
   /**
    * @brief Callbacks
@@ -55,6 +64,7 @@ class MSCEqFRos
    */
   void callback_image(const sensor_msgs::Image::ConstPtr &msg);
   void callback_imu(const sensor_msgs::Imu::ConstPtr &msg);
+  void callback_feats(const sensor_msgs::PointCloud::ConstPtr &msg);
 
  private:
   /**
@@ -63,6 +73,13 @@ class MSCEqFRos
    * @param cam
    */
   void publish(const msceqf::Camera &cam);
+
+  /**
+   * @brief Publish pose, images and path messages
+   *
+   * @param feats
+   */
+  void publish(const msceqf::TriangulatedFeatures &feats);
 
   /// Ros node handler
   ros::NodeHandle nh_;
@@ -73,6 +90,7 @@ class MSCEqFRos
   /// Subscribers
   ros::Subscriber sub_cam_;
   ros::Subscriber sub_imu_;
+  ros::Subscriber sub_feats_;
 
   /// Publishers
   ros::Publisher pub_pose_;
@@ -80,12 +98,18 @@ class MSCEqFRos
   ros::Publisher pub_path_;
   ros::Publisher pub_extrinsics_;
   ros::Publisher pub_intrinsics_;
+  ros::Publisher pub_origin_;
 
   /// Messages
   geometry_msgs::PoseWithCovarianceStamped pose_;
   nav_msgs::Path path_;
   geometry_msgs::PoseStamped extrinsics_;
   sensor_msgs::CameraInfo intrinsics_;
+  geometry_msgs::PoseStamped origin_;
+
+  /// Record bagfile
+  bool record_;
+  rosbag::Bag bag_;
 
   /// Sequence number
   uint seq_ = 0;
