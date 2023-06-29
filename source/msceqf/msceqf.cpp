@@ -16,8 +16,8 @@ namespace msceqf
 MSCEqF::MSCEqF(const std::string& params_filepath)
     : parser_(params_filepath)
     , opts_(parser_.parseOptions())
-    , X_(opts_.state_options_)
     , xi0_(opts_.state_options_)
+    , X_(opts_.state_options_, xi0_)
     , track_manager_(opts_.track_manager_options_, opts_.state_options_.initial_camera_intrinsics_.k())
     , initializer_(opts_.init_options_)
     , propagator_(opts_.propagator_options_)
@@ -69,12 +69,8 @@ void MSCEqF::processCameraMeasurement(Camera& cam)
       utils::Logger::info("Static initialization succeeded");
       track_manager_.clear();
 
-      Matrix6 adb0 = SE3::adjoint(initializer_.b0());
-      Matrix6 B_init_cov = opts_.state_options_.D_init_cov_.block<6, 6>(0, 0);
-
-      opts_.state_options_.delta_init_cov_ += adb0 * B_init_cov * adb0.transpose();
       xi0_ = SystemState(opts_.state_options_, initializer_.T0(), initializer_.b0());
-      X_ = MSCEqFState(opts_.state_options_);
+      X_ = MSCEqFState(opts_.state_options_, xi0_);
       timestamp_ = cam.timestamp_;
 
       is_filter_initialized_ = true;
@@ -146,9 +142,11 @@ void MSCEqF::processCameraMeasurement(Camera& cam)
   }
 }
 
-void MSCEqF::processFeaturesMeasurement(const TriangulatedFeatures& features)
+void MSCEqF::processFeaturesMeasurement(TriangulatedFeatures& features)
 {
   assert(features.timestamp_ >= 0);
+
+  features.timestamp_ += opts_.track_manager_options_.tracker_options_.cam_options_.timeshift_cam_imu_;
 
   if (!is_filter_initialized_)
   {
@@ -158,12 +156,12 @@ void MSCEqF::processFeaturesMeasurement(const TriangulatedFeatures& features)
       utils::Logger::info("Static initialization succeeded");
       track_manager_.clear();
 
-      Matrix6 adb0 = SE3::adjoint(initializer_.b0());
-      Matrix6 B_init_cov = opts_.state_options_.D_init_cov_.block<6, 6>(0, 0);
+      if (!opts_.init_options_.init_with_given_state_)
+      {
+        xi0_ = SystemState(opts_.state_options_, initializer_.T0(), initializer_.b0());
+        X_ = MSCEqFState(opts_.state_options_, xi0_);
+      }
 
-      opts_.state_options_.delta_init_cov_ += adb0 * B_init_cov * adb0.transpose();
-      xi0_ = SystemState(opts_.state_options_, initializer_.T0(), initializer_.b0());
-      X_ = MSCEqFState(opts_.state_options_);
       timestamp_ = features.timestamp_;
 
       is_filter_initialized_ = true;
@@ -227,7 +225,18 @@ void MSCEqF::setGivenOrigin()
                                                     std::make_tuple(opts_.init_options_.initial_extended_pose_))),
       std::make_pair(SystemStateElementName::b,
                      createSystemStateElement<BiasState>(std::make_tuple(opts_.init_options_.initial_bias_))));
-  X_ = MSCEqFState(opts_.state_options_);
+
+  X_ = MSCEqFState(opts_.state_options_, xi0_);
+  // timestamp_ = opts_.init_options_.initial_timestamp_;
+
+  // is_filter_initialized_ = true;
+  // logInit();
+}
+
+void MSCEqF::setGivenOrigin(const SE23& T0, const Vector6& b0)
+{
+  xi0_ = SystemState(opts_.state_options_, T0, b0);
+  X_ = MSCEqFState(opts_.state_options_, xi0_);
   timestamp_ = opts_.init_options_.initial_timestamp_;
 
   is_filter_initialized_ = true;
@@ -237,6 +246,8 @@ void MSCEqF::setGivenOrigin()
 const MSCEqFOptions& MSCEqF::options() const { return opts_; }
 
 const StateOptions& MSCEqF::stateOptions() const { return opts_.state_options_; }
+
+const SystemState& MSCEqF::stateOrigin() const { return xi0_; }
 
 const MatrixX& MSCEqF::covariance() const { return X_.cov(); }
 
