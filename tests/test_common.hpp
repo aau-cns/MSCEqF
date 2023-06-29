@@ -20,11 +20,9 @@
 #include <Eigen/Dense>
 
 #include "msceqf/state/state.hpp"
-#include "msceqf/system/system.hpp"
 
 namespace msceqf
 {
-
 const std::string parameters_path = "../tests/config/parameters.yaml";
 
 constexpr fp EPS = 1e-6;

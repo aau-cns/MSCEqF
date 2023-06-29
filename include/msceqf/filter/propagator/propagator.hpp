@@ -15,13 +15,12 @@
 #include "msceqf/options/msceqf_options.hpp"
 #include "msceqf/symmetry/symmetry.hpp"
 #include "sensors/sensor_data.hpp"
-#include "msceqf/system/system.hpp"
+#include "msceqf/state/state.hpp"
 #include "types/fptypes.hpp"
 #include "utils/tools.hpp"
 
 namespace msceqf
 {
-
 class Propagator
 {
  public:

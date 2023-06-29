@@ -259,7 +259,8 @@ void OptionParser::parseGivenOrigin(SE23& T0, Vector6& b0, fp& t0)
     }
     else
     {
-      T.block<3, 3>(0, 0) = SO3(Quaternion(q)).R();
+      // Note a Vector4 q is ordered as [qx, qy, qz, qw]
+      T.block<3, 3>(0, 0) = SO3(Quaternion(q).normalized()).R();
       T.block<3, 1>(0, 3) = v;
       T.block<3, 1>(0, 4) = p;
     }

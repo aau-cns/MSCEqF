@@ -173,7 +173,7 @@ bool Propagator::propagate(MSCEqFState& X, const SystemState& xi0, fp& timestamp
 
     if (dt < eps_)
     {
-      utils::Logger::err("ZERO dt in propagation, skip propagation step");
+      utils::Logger::err("ZERO dt (" + std::to_string(dt) + ") in propagation, skip propagation step");
       continue;
     }
 

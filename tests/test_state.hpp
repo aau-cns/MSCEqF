@@ -16,7 +16,6 @@
 
 #include "msceqf/state/state.hpp"
 #include "msceqf/symmetry/symmetry.hpp"
-#include "msceqf/system/system.hpp"
 #include "msceqf/options/msceqf_option_parser.hpp"
 
 namespace msceqf
