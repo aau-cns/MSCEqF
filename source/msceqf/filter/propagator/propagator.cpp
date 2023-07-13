@@ -218,7 +218,11 @@ void Propagator::propagateMean(MSCEqFState& X, const SystemState& xi0, const Imu
 
 void Propagator::propagateCovariance(MSCEqFState& X, const SystemState& xi0, const Imu& u, const fp& dt)
 {
-  MatrixX Phi_core = coreStateTransitionMatrix(X, xi0, u, dt);
+  MatrixX A = stateMatrix(X, xi0, u);
+  MatrixX B = inputMatrix(X, xi0);
+  MatrixX H = discreteTimeMatrix(A, B, dt);
+
+  MatrixX Phi_core = H.block(0, 0, A.rows(), A.cols());
 
   // Core covariance propagation Phi * Sigma * Phi^T
   X.cov_.block(0, 0, Phi_core.rows(), Phi_core.cols()) =
@@ -230,12 +234,14 @@ void Propagator::propagateCovariance(MSCEqFState& X, const SystemState& xi0, con
   X.cov_.block(Phi_core.rows(), 0, X.cov_.rows() - Phi_core.rows(), Phi_core.cols()) =
       X.cov_.block(Phi_core.rows(), 0, X.cov_.rows() - Phi_core.rows(), Phi_core.cols()) * Phi_core.transpose();
 
-  // Add discrete time processs noise covariance
-  MatrixX M = inputMatrix(X, xi0, dt);
-  X.cov_.block(0, 0, M.rows(), M.cols()) += M;
+  // Discrete time processs noise covariance
+  MatrixX M(Phi_core.rows(), Phi_core.cols());
+  M.triangularView<Eigen::Upper>() =
+      H.block(0, Phi_core.cols(), Phi_core.rows(), Phi_core.cols()) * Phi_core.transpose();
+  X.cov_.block(0, 0, M.rows(), M.cols()) += M.selfadjointView<Eigen::Upper>();
 }
 
-MatrixX Propagator::coreStateTransitionMatrix(MSCEqFState& X, const SystemState& xi0, const Imu& u, const fp& dt)
+const MatrixX Propagator::stateMatrix(MSCEqFState& X, const SystemState& xi0, const Imu& u) const
 {
   int size = 15;
   if (X.opts().enable_camera_extrinsics_calibration_)
@@ -310,64 +316,10 @@ MatrixX Propagator::coreStateTransitionMatrix(MSCEqFState& X, const SystemState&
     A.block(15, 15, 6, 6) = SE3::adjoint(AdS0inv * rho);
   }
 
-  if (state_transition_order_ == 1)
-  {
-    return MatrixX::Identity(size, size) + A * dt;
-  }
-  if (state_transition_order_ == 2)
-  {
-    return MatrixX::Identity(size, size) + (A * dt) +
-           coreSecondOrderPhi(A, dt, X.opts().enable_camera_extrinsics_calibration_);
-  }
-  else
-  {
-    // utils::Logger::debug("Computing state transition matrix via matrix exponential");
-    return (A * dt).exp();
-  }
+  return A;
 }
 
-MatrixX Propagator::coreSecondOrderPhi(const MatrixX& A, const fp& dt, const bool& enable_camera_extrinsics_calibration)
-{
-  MatrixX Phi_second = MatrixX::Zero(A.rows(), A.cols());
-
-  // 11 block
-  Phi_second.block(0, 0, 9, 9) =
-      (A.block(0, 0, 9, 9).pow(2) + A.block(0, 9, 9, 6) * A.block(9, 0, 6, 9)) * std::pow(dt, 2) / 2;
-
-  // 12 block
-  Phi_second.block(0, 9, 9, 6) =
-      ((A.block(0, 0, 9, 9) * A.block(0, 9, 9, 6)) + (A.block(0, 9, 9, 6) * A.block(9, 9, 6, 6))) * std::pow(dt, 2) / 2;
-
-  // 21 block
-  Phi_second.block(9, 0, 6, 9) =
-      ((A.block(9, 0, 6, 9) * A.block(0, 0, 9, 9)) + (A.block(9, 9, 6, 6) * A.block(9, 0, 6, 9))) * std::pow(dt, 2) / 2;
-
-  // 22 block
-  Phi_second.block(9, 9, 6, 6) =
-      (A.block(9, 9, 6, 6).pow(2) + A.block(9, 0, 6, 9) * A.block(0, 9, 9, 6)) * std::pow(dt, 2) / 2;
-
-  if (enable_camera_extrinsics_calibration)
-  {
-    // 31 block
-    Phi_second.block(15, 0, 6, 9) =
-        ((A.block(15, 0, 6, 9) * A.block(0, 0, 9, 9)) + (A.block(15, 9, 6, 6) * A.block(9, 0, 6, 9)) +
-         (A.block(15, 15, 6, 6) * A.block(15, 0, 6, 9))) *
-        std::pow(dt, 2) / 2;
-
-    // 31 block
-    Phi_second.block(15, 9, 6, 6) =
-        ((A.block(15, 0, 6, 9) * A.block(0, 9, 9, 6)) + (A.block(15, 9, 6, 6) * A.block(9, 9, 6, 6)) +
-         (A.block(15, 15, 6, 6) * A.block(15, 9, 6, 6))) *
-        std::pow(dt, 2) / 2;
-
-    // 33 block
-    Phi_second.block(15, 15, 6, 6) = A.block(15, 15, 6, 6).pow(2) * std::pow(dt, 2) / 2;
-  }
-
-  return Phi_second;
-}
-
-MatrixX Propagator::inputMatrix(MSCEqFState& X, const SystemState& xi0, const fp& dt)
+const MatrixX Propagator::inputMatrix(MSCEqFState& X, const SystemState& xi0) const
 {
   int size = 15;
   if (X.opts().enable_camera_extrinsics_calibration_)
@@ -394,7 +346,25 @@ MatrixX Propagator::inputMatrix(MSCEqFState& X, const SystemState& xi0, const fp
     B.block(15, 0, 6, 6) = (xi0.S().inv() * X.C()).Adjoint() * B2;
   }
 
-  return (B * Q_ * B.transpose()) * dt;
+  return B;
+}
+
+const MatrixX Propagator::discreteTimeMatrix(const MatrixX& A, const MatrixX& B, const fp& dt) const
+{
+  MatrixX H = MatrixX::Zero(2 * A.rows(), 2 * A.cols());
+
+  H.block(0, 0, A.rows(), A.cols()) = A;
+  H.block(A.rows(), A.cols(), A.rows(), A.cols()) = -A.transpose();
+  H.block(0, A.cols(), A.rows(), A.cols()) = B * Q_ * B.transpose();
+
+  if (state_transition_order_ == 1)
+  {
+    return MatrixX::Identity(H.rows(), H.cols()) + H * dt;
+  }
+  else
+  {
+    return (H * dt).exp();
+  }
 }
 
 }  // namespace msceqf

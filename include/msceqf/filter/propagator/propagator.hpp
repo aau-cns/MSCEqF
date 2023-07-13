@@ -106,39 +106,40 @@ class Propagator
   void propagateCovariance(MSCEqFState& X, const SystemState& xi0, const Imu& u, const fp& dt);
 
   /**
-   * @brief This function computes the core state transition matrix.
-   * The core state transition matrix is the state transition matrix for the Dd element of the MSCEqF state, and for the
+   * @brief This function computes the continuous-time state matrix A.
+   * The state matrix A is the state matrix for the Dd element of the MSCEqF state, and for the
    * E element if extrinsic calibration is enabled.
-   * Based on the given state_transition_order_, this function returns eithe a first order truncation, a second order
-   * truncation of matrix exponentaial or the numerical computation of the matrix exponential.
    *
    * @param X Actual state estimate
    * @param xi0 origin
    * @param u imu measurement to propagate the covariance with (used to compute state matrix)
-   * @param dt delta time between input measurements
-   * @return MatrixX The core state transition matrix Phi
+   * @return MatrixX The state matrix A
    */
-  MatrixX coreStateTransitionMatrix(MSCEqFState& X, const SystemState& xi0, const Imu& u, const fp& dt);
+  const MatrixX stateMatrix(MSCEqFState& X, const SystemState& xi0, const Imu& u) const;
 
   /**
-   * @brief This function computes the second order terms of the core state transition matrix.
-   *
-   * @param A Continuous time state matrix A
-   * @param dt delta time between input measurements
-   * @param enable_camera_extrinsics_calibration flag
-   * @return MatrixX The second order terms of the core state transition matrix Phi
-   */
-  MatrixX coreSecondOrderPhi(const MatrixX& A, const fp& dt, const bool& enable_camera_extrinsics_calibration);
-
-  /**
-   * @brief This function computes the discrete time process noise covariance matrix as B * Q * B^T * dt
+   * @brief This function computes the continuous-time input matrix B.
    *
    * @param X Actual state estimate
    * @param xi0 origin
-   * @param dt delta time between input measurements
    * @return MatrixX Discrete time process noise covariance matrix
    */
-  MatrixX inputMatrix(MSCEqFState& X, const SystemState& xi0, const fp& dt);
+  const MatrixX inputMatrix(MSCEqFState& X, const SystemState& xi0) const;
+
+  /**
+   * @brief This function computes the discrete-time Matrix H which is then used to compute
+   * the core state transition matrix as wel as the discrete time noise covariance matrix.
+   * Based on the given state_transition_order_, this function returns either
+   * the first order truncation, or the numerical computation of the matrix exponential.
+   * Note that the core state transition matrix is defined as the  state transition matrix
+   * for the Dd element of the MSCEqF state, and for the E element if extrinsic calibration is enabled.
+   *
+   * @param A Continuous time state matrix A
+   * @param B Continuous time input matrix B
+   * @param dt delta time between input measurements
+   * @return MatrixX The H matrix
+   */
+  const MatrixX discreteTimeMatrix(const MatrixX& A, const MatrixX& B, const fp& dt) const;
 
   ImuBuffer imu_buffer_;  //!< The imu measurement buffer
   Matrix12 Q_;            //!< The continuous time process noise covariance
