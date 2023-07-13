@@ -122,7 +122,7 @@ MSCEqFOptions OptionParser::parseOptions()
   parseFeatureRepresentation(opts.updater_options_.msc_features_representation_);
   parseProjectionMethod(opts.updater_options_.projection_method_);
   readDefault(opts.updater_options_.min_track_lenght_, 5, "min_track_length");
-  readDefault(opts.updater_options_.min_angle_, 5.0, "min_angle_deg");
+  readDefault(opts.updater_options_.min_angle_, 0.0, "min_angle_deg");
   readDefault(opts.updater_options_.curvature_correction_, false, "curveture_correction");
   parsePixStd(opts.updater_options_.pixel_std_, opts.state_options_);
 
