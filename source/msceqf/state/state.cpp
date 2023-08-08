@@ -36,13 +36,15 @@ MSCEqFState::MSCEqFState(const StateOptions& opts, const SystemState& xi0) : opt
     initializeStateElement(MSCEqFStateElementName::L, opts_.L_init_cov_);
   }
 
-  Matrix6 AdS0inv = xi0.S().invAdjoint();
-
   // Transform covariance to the new origin
+  Matrix6 AdS0inv = xi0.S().invAdjoint();
   MatrixX D = MatrixX::Identity(cov_.rows(), cov_.cols());
   D.block(9, 0, 6, 6) = SE3::adjoint(xi0.b());
-  D.block(15, 0, 6, 3) = AdS0inv.block<6, 3>(0, 0);
-  D.block(15, 6, 6, 3) = AdS0inv.block<6, 3>(0, 3);
+  if (opts_.enable_camera_extrinsics_calibration_)
+  {
+    D.block(15, 0, 6, 3) = AdS0inv.block<6, 3>(0, 0);
+    D.block(15, 6, 6, 3) = AdS0inv.block<6, 3>(0, 3);
+  }
   cov_ = D * cov_ * D.transpose();
 }
 

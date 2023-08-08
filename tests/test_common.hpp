@@ -23,7 +23,7 @@
 
 namespace msceqf
 {
-const std::string parameters_path = "../tests/config/parameters.yaml";
+const std::string parameters_path = "../../tests/config/parameters.yaml";
 
 constexpr fp EPS = 1e-6;
 constexpr int N_TESTS = 100;

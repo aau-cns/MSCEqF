@@ -20,7 +20,6 @@
 
 namespace msceqf
 {
-
 TEST(SystemStateTest, SystemStateConstructionTest)
 {
   // Param parser
@@ -289,20 +288,43 @@ TEST(MSCEqFStateTest, MSCEqFStateConstructionTest)
   {
     // Construction, copy, assignment
     {
-      MSCEqFState state(opts.state_options_);
+      SystemState xi0(
+          opts.state_options_,
+          std::make_pair(SystemStateElementName::T, createSystemStateElement<ExtendedPoseState>(std::make_tuple())),
+          std::make_pair(SystemStateElementName::b, createSystemStateElement<BiasState>(std::make_tuple())));
+
+      MSCEqFState state(opts.state_options_, xi0);
 
       MatrixEquality(state.D().asMatrix(), Matrix5::Identity());
       MatrixEquality(state.delta(), Vector6::Zero());
       MatrixEquality(state.E().asMatrix(), Matrix4::Identity());
-      MatrixEquality(state.L().asMatrix(), Matrix3::Identity());
+      if (opts.state_options_.enable_camera_intrinsics_calibration_)
+      {
+        MatrixEquality(state.L().asMatrix(), Matrix3::Identity());
+      }
 
-      Matrix15 Dd_cov = Matrix15::Zero();
-      Dd_cov.block(0, 0, 9, 9) = opts.state_options_.D_init_cov_;
-      Dd_cov.block(9, 9, 6, 6) = opts.state_options_.delta_init_cov_;
+      Matrix21 test_cov = Matrix21::Zero();
+      test_cov.block(0, 0, 9, 9) = opts.state_options_.D_init_cov_;
+      test_cov.block(9, 9, 6, 6) = opts.state_options_.delta_init_cov_;
+      test_cov.block(15, 15, 6, 6) = opts.state_options_.E_init_cov_;
 
-      MatrixEquality(state.covBlock(MSCEqFStateElementName::Dd), Dd_cov);
-      MatrixEquality(state.covBlock(MSCEqFStateElementName::E), opts.state_options_.E_init_cov_);
-      MatrixEquality(state.covBlock(MSCEqFStateElementName::L), opts.state_options_.L_init_cov_);
+      // Transform covariance to the new origin
+      Matrix6 AdS0inv = xi0.S().invAdjoint();
+      Matrix21 D = Matrix21::Identity();
+      D.block(9, 0, 6, 6) = SE3::adjoint(xi0.b());
+      if (opts.state_options_.enable_camera_extrinsics_calibration_)
+      {
+        D.block(15, 0, 6, 3) = AdS0inv.block<6, 3>(0, 0);
+        D.block(15, 6, 6, 3) = AdS0inv.block<6, 3>(0, 3);
+      }
+      test_cov = D * test_cov * D.transpose();
+
+      MatrixEquality(state.covBlock(MSCEqFStateElementName::Dd), Matrix15(test_cov.block<15, 15>(0, 0)));
+      MatrixEquality(state.covBlock(MSCEqFStateElementName::E), Matrix6(test_cov.block<6, 6>(15, 15)));
+      if (opts.state_options_.enable_camera_intrinsics_calibration_)
+      {
+        MatrixEquality(state.covBlock(MSCEqFStateElementName::L), opts.state_options_.L_init_cov_);
+      }
 
       MSCEqFState state_copy(state);
       MSCEqFStateEquality(state, state_copy);
