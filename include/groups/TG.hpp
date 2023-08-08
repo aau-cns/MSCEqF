@@ -11,8 +11,8 @@
 //
 // You can contact the authors at <alessandro.fornasier@ieee.org>
 
-#ifndef SDB_HPP
-#define SDB_HPP
+#ifndef TG_HPP
+#define TG_HPP
 
 #include "SEn3.hpp"
 
@@ -169,4 +169,4 @@ using TGd = Tangent<double>;  //!< The Tangent group with double precision float
 
 }  // namespace group
 
-#endif  // SDB_HPP
+#endif  // TG_HPP
