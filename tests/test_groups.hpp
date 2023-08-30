@@ -38,7 +38,7 @@ typedef testing::Types<SO3f, SO3d, SOT3f, SOT3d, SE3d, SE3f, SE23f, SE23d> MSCEq
  * @brief Semi Direct Bias group specific tests
  */
 template <typename T>
-class SDBGroupsTest : public testing::Test
+class TGGroupsTest : public testing::Test
 {
 };
 TYPED_TEST_SUITE(TGGroupsTest, TGGroups);
@@ -152,7 +152,7 @@ TYPED_TEST(TGGroupsTest, TestGroupProduct)
     auto Z = X * Y;
 
     MatrixEquality(Z.D().asMatrix(), X.D().asMatrix() * Y.D().asMatrix());
-    MatrixEquality(Z.delta(), X.delta() + X.B().Adjoint() * Y.delta());
+    MatrixEquality(Z.delta(), X.delta() + X.D().Adjoint() * Y.delta());
   }
   {
     auto X = TypeParam::exp(TypeParam::VectorType::Random());

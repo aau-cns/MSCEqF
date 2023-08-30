@@ -1,7 +1,16 @@
 # TEST FILE
 
-# Initial standard deviations
-pitch_roll_std: [0.1, 0.1]
+# Initial standard deviations (attitude, velocity, position, bias, extrinsics, instrinsics)
+extended_pose_std: [0.1, 0.1, 0.0001, 0.1, 0.1, 0.1, 0.0001, 0.0001, 0.0001]
+bias_std: [0.1, 0.1, 0.1, 0.1, 0.1, 0.1]
+extrinsics_std: [0.017453292519943295, 0.017453292519943295, 0.017453292519943295, 0.01, 0.01, 0.01]
+intrinsics_std: [1.0, 1.0, 1.0, 1.0]
+
+# IMU noise statistics
+accelerometer_noise_density: 0.001
+accelerometer_random_walk: 0.0001
+gyroscope_noise_density: 0.0001
+gyroscope_random_walk: 1.0e-5
 
 # Camera calibration
 distortion_coeffs: [0.0, 0.0, 0.0, 0.0]
@@ -13,38 +22,50 @@ T_imu_cam:
  - [0.75952742, -0.15001891, -0.63293951,  0.35648 ]
  - [0.49837182,  0.75952742,  0.41802349, -0.84165 ]
  - [0.0,         0.0,         0.0,         1.0     ]
+timeshift_cam_imu: 0.0
 
-# IMU noise statistics
-accelerometer_noise_density: 0.01   
-accelerometer_random_walk:   0.001
-gyroscope_noise_density: 0.01
-gyroscope_random_walk:   0.001
+static_initializer_imu_window: 2.0
+static_initializer_disparity_window: 0.0
+static_initializer_acc_threshold: 0.1
+static_initializer_disparity_threshold: 0.0
+identity_bias_origin: false
+init_with_given_state: false
 
-# State options
+state_transition_order: -1
+imu_buffer_max_size: 1000
+
+refine_traingulation: true
+feature_min_depth: 0.1
+feature_max_depth: 50
+feature_refinement_max_iterations: 20
+feature_refinement_tollerance: 1e-10
+measurement_projection_method: unit_plane
+feature_representation: anchored_euclidean
+pixel_standerd_deviation: 1.0
+curveture_correction: false
+min_angle_deg: 0.0
+
 enable_camera_extrinsic_calibration: true
 enable_camera_intrinsic_calibration: true
+
 gravity: 9.81
-num_clones: 10
-num_persistent_features: 50
 
-# Other options
-persistent_feature_init_delay: 1.0
-state_transition_order: 1
+num_clones: 11
+num_persistent_features: 0
+min_track_length: 5
 
-# Tracker
 equalization_method: none
 optical_flow_pyramid_levels: 3
+detector_pyramid_levels: 1
 feature_detector: fast
-grid_x_size: 6
+grid_x_size: 4
 grid_y_size: 4
-min_feature_pixel_distance: 5
-min_features: 20
-max_features: 150
-fast_threshold: 5
-shi_tomasi_quality_level: 0.05
-
-# Track Manager
-max_track_length: 25
+min_feature_pixel_distance: 30
+min_features: 100
+max_features: 60
+fast_threshold: 20
+shi_tomasi_quality_level: 0.8
+max_track_length: 400
 
 # Logger level [0: Full, 1: INFO, 2: WARN, 3: ERR, 4: INACTIVE]
 logger_level: 4

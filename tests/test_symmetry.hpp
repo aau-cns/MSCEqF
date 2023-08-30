@@ -19,7 +19,6 @@
 
 namespace msceqf
 {
-
 TEST(SymmetryTest, phi_without_persistent_features)
 {
   // Param parser
@@ -51,7 +50,7 @@ TEST(SymmetryTest, phi_without_persistent_features)
         std::make_pair(SystemStateElementName::b, createSystemStateElement<BiasState>(std::make_tuple())));
 
     // xi = xi0 = phi(I, xi0)
-    MSCEqFState X(opts.state_options_);
+    MSCEqFState X(opts.state_options_, xi0);
     SystemState xi = Symmetry::phi(X, xi0);
     SystemStateEquality(xi, xi0);
 
