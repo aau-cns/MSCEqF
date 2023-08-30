@@ -91,7 +91,7 @@ void MSCEqFRos::callback_feats(const sensor_msgs::PointCloud::ConstPtr &msg)
 
   feats.timestamp_ = msg->header.stamp.toSec();
 
-  for (int i = 0; i < msg->points.size(); ++i)
+  for (size_t i = 0; i < msg->points.size(); ++i)
   {
     const auto &x = msg->points.at(i).x;
     const auto &y = msg->points.at(i).y;
