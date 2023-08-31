@@ -44,8 +44,8 @@ class MSCEqFState
   /**
    * @brief Construct the state of the MSCEqF given the options
    *
-   * @param opts options of the MSCEqF state
-   * @param xi0 origin
+   * @param opts Options of the MSCEqF state
+   * @param xi0 Origin
    *
    * @note The MSCEqF state has not to be confused with the system state. The former is the state of the lifted system,
    * in which the EqF is based on, while latter is the state of the system posed on the homogenous space.
@@ -63,7 +63,7 @@ class MSCEqFState
   /**
    * @brief Get a reference to the SE23 component of the Semi Direct Bias Group element of the MSCEqF state
    *
-   * @return const SE23&
+   * @return SE23 group element of the MSCEqF state
    *
    * @note This function does not introduce any runtime overhead due to casting, because it uses static_pointer_cast
    */
@@ -73,7 +73,7 @@ class MSCEqFState
    * @brief Get a copy of the SE3 component of the Semi Direct Bias Group element of the MSCEqF state that includes
    * the rotational component (R) and the first isometry (v)
    *
-   * @return const SE3
+   * @return SE3 group element representing the rotational component and the first isometry of the MSCEqF state
    *
    * @note This function does not introduce any runtime overhead due to casting, because it uses static_pointer_cast
    */
@@ -83,7 +83,7 @@ class MSCEqFState
    * @brief Get a copy of to the SE3 component of the Semi Direct Bias Group element of the MSCEqF state that includes
    * the rotational component (R) and the second isometry (p)
    *
-   * @return const SE3
+   * @return SE3 group element representing the rotational component and the second isometry of the MSCEqF state
    *
    * @note This function does not introduce any runtime overhead due to casting, because it uses static_pointer_cast
    */
@@ -92,7 +92,7 @@ class MSCEqFState
   /**
    * @brief Get a reference to the R6 component of the Semi Direct Bias Group element of the MSCEqF state
    *
-   * @return const Vector6&
+   * @return R6 group element of the MSCEqF state
    *
    * @note This function does not introduce any runtime overhead due to casting, because it uses static_pointer_cast
    */
@@ -101,7 +101,7 @@ class MSCEqFState
   /**
    * @brief Get a reference to the SE3 element of the MSCEqF state
    *
-   * @return const SE3&
+   * @return SE3 group element of the MSCEqF state representing the element acting on the extrinsic calibration
    *
    * @note This function does not introduce any runtime overhead due to casting, because it uses static_pointer_cast
    */
@@ -110,7 +110,7 @@ class MSCEqFState
   /**
    * @brief Get a reference to the In element of the MSCEqF state
    *
-   * @return const In&
+   * @return In group element of the MSCEqF state representing the element acting on the intrinsic calibration
    *
    * @note This function does not introduce any runtime overhead due to casting, because it uses static_pointer_cast
    */
@@ -119,8 +119,8 @@ class MSCEqFState
   /**
    * @brief Get a reference to the SOT3 element of the MSCEqF state that correspond to the given feature id
    *
-   * @param feat_id feature id
-   * @return const SOT3&
+   * @param feat_id Feature id
+   * @return SOT3 group element of the MSCEqF state representing the element acting on the feature
    *
    * @note This function does not introduce any runtime overhead due to casting, because it uses static_pointer_cast
    */
@@ -129,8 +129,8 @@ class MSCEqFState
   /**
    * @brief Get a reference to the SE3 element of the MSCEqF clones that correspond to the given timestamp
    *
-   * @param timestamp
-   * @return const SE3&
+   * @param timestamp Timestamp
+   * @return SE3 group element of the MSCEqF clones representing the element acting on the extrinsic calibration
    *
    * @note This function does not introduce any runtime overhead due to casting, because it uses static_pointer_cast
    */
@@ -139,23 +139,23 @@ class MSCEqFState
   /**
    * @brief Get a reference to the index of the state element or the clone element corresponding to the given key
    *
-   * @param key
-   * @return const uint&
+   * @param key State element name, feature id or timestamp of clone
+   * @return Index of the state element or the clone element corresponding to the given key
    */
   [[nodiscard]] const uint& index(const MSCEqFKey& key) const;
 
   /**
    * @brief Get a reference to the dof of the state element or the clone element corresponding to the given key
    *
-   * @param key
-   * @return const uint&
+   * @param key State element name, feature id or timestamp of clone
+   * @return Degree of freedom of the state element or the clone element corresponding to the given key
    */
   [[nodiscard]] const uint& dof(const MSCEqFKey& key) const;
 
   /**
    * @brief Get the amount of clones
    *
-   * @return const size_t
+   * @return Number of clones
    */
   [[nodiscard]] inline size_t clonesSize() const { return clones_.size(); }
 
@@ -163,14 +163,14 @@ class MSCEqFState
    * @brief Get the timestamp of the clone to marginalize.
    * We implement our keyframing strategy here. So far we simply marginalize the oldest clone.
    *
-   * @return const fp&
+   * @return Timestamp of the clone to marginalize
    */
   [[nodiscard]] const fp& cloneTimestampToMarginalize() const;
 
   /**
    * @brief Get a reference to the covariance matrix
    *
-   * @return const MatrixX&
+   * @return Covariance matrix
    */
   [[nodiscard]] const MatrixX& cov() const;
 
@@ -178,8 +178,8 @@ class MSCEqFState
    * @brief get a constant copy of the covariance block relative to the elements (states or clones) corresponding to the
    * given keys.
    *
-   * @param key state element name or feature id
-   * @return const MatrixX
+   * @param key State element name, feature id or timestamp of clone
+   * @return Block of the covariance matrix corresponding to the given key
    */
   [[nodiscard]] const MatrixX covBlock(const MSCEqFKey& key) const;
 
@@ -188,8 +188,8 @@ class MSCEqFState
    * covariance blocks relative to the elements (states or clones) corresponding to the given keys.
    * *The ordering of the covariance returned follows the ordering of the given keys.*
    *
-   * @param keys
-   * @return const MatrixX
+   * @param keys Vector of state elements name, feature id or timestamp of clone
+   * @return Stacked blocks of the covariance matrix corresponding to the given keys including cross-correlations
    */
   [[nodiscard]] const MatrixX subCov(const std::vector<MSCEqFKey>& keys) const;
 
@@ -198,23 +198,23 @@ class MSCEqFState
    * covariance columns relative to the elements (states or clones) corresponding to the given keys.
    * *The ordering of the covariance returned follows the ordering of the given keys.*
    *
-   * @param keys
-   * @return const MatrixX
+   * @param keys Vector of state elements name, feature id or timestamp of clone
+   * @return Stacked columns of the covariance matrix corresponding to the given keys including cross-correlations
    */
   [[nodiscard]] const MatrixX subCovCols(const std::vector<MSCEqFKey>& keys) const;
 
   /**
    * @brief Get the state options
    *
-   * @return const StateOptions&
+   * @return State options
    */
   [[nodiscard]] inline const StateOptions& opts() const { return opts_; }
 
   /**
    * @brief Initialize MSCEqF state element into the state map, and the relative covariance block.
    *
-   * @param key state element name or feature id
-   * @param cov_block corresponding element of the covariance matrix
+   * @param key State element name or feature id
+   * @param cov_block Corresponding blcok of the covariance matrix
    *
    * @note Note that the MSCEqF states are always initialized at the identity. This is correct since is xi0 that
    * "controls" how close to ground truth these are.
@@ -225,22 +225,22 @@ class MSCEqFState
    * @brief Augment the MSCEqF clones map with a new clone of the actual E element of the MSCEqF state.
    * The new clone is mapped via the given timestamp
    *
-   * @param timestamp
+   * @param timestamp Timestamp of the new clone
    */
   void stochasticCloning(const fp& timestamp);
 
   /**
    * @brief Marginalize out clone at a given timestamp
    *
-   * @param timestamp
+   * @param timestamp Timestamp of the clone to marginalize
    */
   void marginalizeCloneAt(const fp& timestamp);
 
   /**
    * @brief Get a string describing the given MSCEqFStateKey
    *
-   * @param key
-   * @return std::string
+   * @param key State element name or feature id
+   * @return Key as string
    */
   static std::string toString(const MSCEqFStateKey& key);
 
@@ -252,7 +252,7 @@ class MSCEqFState
    *
    * *THIS IS MEANT TO BE AN HELPER FUNCTION FOR DEBUG/TESTING*
    *
-   * @return const MSCEqFState
+   * @return MSCEqF state
    */
   [[nodiscard]] const MSCEqFState Random() const;
 
@@ -263,8 +263,8 @@ class MSCEqFState
    *
    * *THIS IS MEANT TO BE AN HELPER FUNCTION FOR DEBUG/TESTING*
    *
-   * @param other MSCEqFState
-   * @return const MSCEqFState
+   * @param other MSCEqF state
+   * @return MSCEqF state
    */
   [[nodiscard]] const MSCEqFState operator*(const MSCEqFState& other) const;
 
@@ -278,8 +278,8 @@ class MSCEqFState
   /**
    * @brief Insert given pointer into the MSCEqF state map and check that the pointer is not null.
    *
-   * @param key state element name or feature id
-   * @param ptr pointer to MSCEqF state element
+   * @param key State element name or feature id
+   * @param ptr Pointer to MSCEqF state element
    * @return true if the element has been succesfully inserted, false if a corresponding key existed already
    */
   [[nodiscard]] bool insertStateElement(const MSCEqFStateKey& key, MSCEqFStateElementUniquePtr ptr);
@@ -287,8 +287,8 @@ class MSCEqFState
   /**
    * @brief Insert given pointer into the MSCEqF clones map and check that the pointer is not null.
    *
-   * @param timestamp clone timestamp
-   * @param ptr pointer to MSCEqF clone element
+   * @param timestamp Clone timestamp
+   * @param ptr Pointer to MSCEqF clone element
    * @return true if the element has been succesfully inserted, false if a corresponding key existed already
    */
   [[nodiscard]] bool insertCloneElement(const fp& timestamp, MSCEqFStateElementUniquePtr ptr);
@@ -296,8 +296,8 @@ class MSCEqFState
   /**
    * @brief Get the MSCEqF element (state or clone) pointer (base) given the key
    *
-   * @param key
-   * @return const MSCEqFStateElementSharedPtr&
+   * @param key State element name, feature id or timestamp of clone
+   * @return Pointer to state element
    */
   [[nodiscard]] const MSCEqFStateElementSharedPtr& getPtr(const MSCEqFKey& key) const;
 

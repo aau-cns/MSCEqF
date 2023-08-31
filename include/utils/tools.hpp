@@ -23,7 +23,6 @@
 
 namespace utils
 {
-
 /**
  * @brief This calss define a map that keeps the insertion order.
  *
@@ -37,8 +36,8 @@ class InsertionOrderedMap
   /**
    * @brief Insert a key-value pair into the map if the key does not exists.
    *
-   * @param key key
-   * @param value value
+   * @param key Key
+   * @param value Value
    */
   void insert(const Key& key, const Value& value)
   {
@@ -53,7 +52,7 @@ class InsertionOrderedMap
    * @brief Return the value associated with the key.
    *
    * @param key
-   * @return const Value&
+   * @return Value
    */
   const Value& at(const Key& key) const
   {
@@ -65,7 +64,7 @@ class InsertionOrderedMap
    * @brief Return the value associated with the key.
    *
    * @param key
-   * @return Value&
+   * @return Value
    */
   Value& at(const Key& key)
   {
@@ -76,7 +75,7 @@ class InsertionOrderedMap
   /**
    * @brief Return a vector containing the keys
    *
-   * @return const std::vector<Key>
+   * @return Vector of keys
    */
   const std::vector<Key> keys() const
   {
@@ -91,7 +90,7 @@ class InsertionOrderedMap
   /**
    * @brief Return a vector containing the values
    *
-   * @return const std::vector<Value>
+   * @return Vector of values
    */
   const std::vector<Value> values() const
   {
@@ -122,10 +121,10 @@ class InsertionOrderedMap
  * @brief Very simple Eigen compatible central difference numerical differentiation function.
  *
  * @tparam FPType floating point type
- * @param x linearization point
- * @param f function
- * @param h delta
- * @return Eigen::Matrix<FPType, Eigen::Dynamic, 1>
+ * @param x Linearization point
+ * @param f Function
+ * @param h Delta
+ * @return Jacobian matrix
  */
 template <typename FPType>
 static Eigen::Matrix<FPType, Eigen::Dynamic, 1> diff(
@@ -150,8 +149,8 @@ static Eigen::Matrix<FPType, Eigen::Dynamic, 1> diff(
  *
  * @tparam Numeric type of random number generated
  * @tparam Generator random number generator
- * @param from lower bound
- * @param to upper bound
+ * @param from Lower bound
+ * @param to Upper bound
  * @return Numeric
  *
  * @note Modified from:
@@ -170,7 +169,7 @@ static Numeric random(Numeric from, Numeric to)
 /**
  * @brief Trim a string, remove leading and trailing spaces
  *
- * @param s string to be trimmed
+ * @param s String to be trimmed
  */
 static inline void trimString(std::string& s)
 {
@@ -181,9 +180,9 @@ static inline void trimString(std::string& s)
 /**
  * @brief Flatten a vector of vectors
  *
- * @tparam T
- * @param vector_of_vectors
- * @return std::vector<T>
+ * @tparam Type of data in vector
+ * @param vector_of_vectors Vector of vectors
+ * @return Flatten vector
  */
 template <typename T>
 static std::vector<T> flatten(const std::vector<std::vector<T>>& vector_of_vectors)
@@ -202,11 +201,11 @@ static std::vector<T> flatten(const std::vector<std::vector<T>>& vector_of_vecto
 // /**
 //  * @brief Flatten a vector of vectors and insert in given vector (append if the given vector in non empty)
 //  *
-//  * @tparam T
-//  * @param vector_of_vectors
-//  * @return std::vector<T>
+//  * @tparam Type of data in vector
+//  * @param vector_of_vectors Vector of vectors
+//  * @return Flatten vector
 //  *
-//  * @note the vector of vectors is moved into flat so it becames unusable
+//  * @note The vector of vectors is moved into flat so it becames unusable
 //  */
 // template <typename T>
 // static void flattenInto(const std::vector<std::vector<T>>& vector_of_vectors, std::vector<T>& flat)
@@ -224,8 +223,8 @@ static std::vector<T> flatten(const std::vector<std::vector<T>>& vector_of_vecto
 /**
  * @brief Perform 2^n with an integer n
  *
- * @param n
- * @return int
+ * @param n Power value
+ * @return Result
  */
 static inline int pow2(const int& n) { return static_cast<int>(std::ldexp(1.0f, n)); }
 
@@ -235,8 +234,8 @@ static inline int pow2(const int& n) { return static_cast<int>(std::ldexp(1.0f, 
  * @brief Stream a std::vector
  *
  * @tparam T type of data to be streamed
- * @param stream (reference to std::ostream)
- * @param x data to be streamed (const reference to T)
+ * @param stream Stream
+ * @param x Data to be streamed
  */
 template <typename T>
 std::ostream& operator<<(std::ostream& stream, const std::vector<T>& v)
@@ -260,8 +259,8 @@ std::ostream& operator<<(std::ostream& stream, const std::vector<T>& v)
  * @brief Stream a std::array
  *
  * @tparam T type of data to be streamed
- * @param stream (reference to std::ostream)
- * @param x data to be streamed (const reference to T)
+ * @param stream Stream
+ * @param x Data to be streamed
  */
 template <typename T, std::size_t N>
 std::ostream& operator<<(std::ostream& stream, const std::array<T, N>& v)
@@ -285,8 +284,8 @@ std::ostream& operator<<(std::ostream& stream, const std::array<T, N>& v)
  * @brief Stream a std::deque
  *
  * @tparam T type of data to be streamed
- * @param stream (reference to std::ostream)
- * @param x data to be streamed (const reference to T)
+ * @param stream Stream
+ * @param x Data to be streamed
  */
 template <typename T>
 std::ostream& operator<<(std::ostream& stream, const std::deque<T>& v)
@@ -310,8 +309,8 @@ std::ostream& operator<<(std::ostream& stream, const std::deque<T>& v)
  * @brief Stream an enum
  *
  * @tparam T type of data to be streamed (enum)
- * @param stream (reference to std::ostream)
- * @param x data to be streamed (const reference to T)
+ * @param stream Stream
+ * @param x Data to be streamed
  */
 template <typename T, typename std::enable_if<std::is_enum<T>::value, T>::type* = nullptr>
 std::ostream& operator<<(std::ostream& stream, const T& e)

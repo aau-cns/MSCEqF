@@ -51,31 +51,31 @@ class SEn3
   /**
    * @brief Construct a SEn3 object from a given normalized quaternion, and an array of vectors.
    *
-   * @param q const Eigen::Quaternion<FPType>&
-   * @param t const std::array<Eigen::Matrix<FPType, 3, 1>, n>&
+   * @param q Quaternion
+   * @param t Array of R3 vectors
    */
   SEn3(const typename SO3Type::QuaternionType& q, const IsometriesType& t) : C_(q), t_(t) {}
 
   /**
    * @brief Construct a SEn3 object from a given rotation matrix, and an array of vectors.
    *
-   * @param R const Eigen::Matrix<FPType, 3, 1>&
-   * @param t const std::array<Eigen::Matrix<FPType, 3, 1>, n>&
+   * @param R Rotation matrix
+   * @param t Array of R3 vectors
    */
   SEn3(const typename SO3Type::MatrixType& R, const IsometriesType& t) : C_(R), t_(t) {}
 
   /**
    * @brief Construct a SEn3 object from a given SO3 object, and an array of vectors.
    *
-   * @param C const SO3<FPType>&
-   * @param t const std::array<Eigen::Matrix<FPType, 3, 1>, n>&
+   * @param C SO3 group element
+   * @param t Array of R3 vectors
    */
   SEn3(const SO3Type& C, const IsometriesType& t) : C_(C), t_(t) {}
 
   /**
    * @brief Construct a SEn3 object from a given matrix
    *
-   * @param T const Eigen::Matrix<FPType, 3 + n, 3 + n>&
+   * @param T SEn3 group element in matrix form
    */
   SEn3(const MatrixType& T) : C_(T.template block<3, 3>(0, 0)), t_()
   {
@@ -88,9 +88,9 @@ class SEn3
   /**
    * @brief wedge operator, transform a vector in R(3+3n) to a matrix in sen3
    *
-   * @param u const Eigen::Matrix<FPType, 3 + 3 * n, 1>&
+   * @param u R(3+3n) vector
    *
-   * @return const Eigen::Matrix<FPType, 3 + n, 3 + n>
+   * @return SEn3 Lie algebra element in matrix form
    */
   [[nodiscard]] static const MatrixType wedge(const VectorType& u)
   {
@@ -104,11 +104,11 @@ class SEn3
   }
 
   /**
-   * @brief transform a matrix in sen3 to a vector in R(3+3n)
+   * @brief Transform a matrix in sen3 to a vector in R(3+3n)
    *
-   * @param U const Eigen::Matrix<FPType, 3 + n, 3 + n>&
+   * @param U SEn3 Lie algebra element in matrix form
    *
-   * @return const Eigen::Matrix<FPType, 3 + 3 * n, 1>
+   * @return R(3+3n) vector
    */
   [[nodiscard]] static const VectorType vee(const MatrixType& U)
   {
@@ -124,9 +124,9 @@ class SEn3
   /**
    * @brief sen3 adjoint matrix
    *
-   * @param u const Eigen::Matrix<FPType, 3 + 3 * n, 1>&
+   * @param u R(3+3n) vector
    *
-   * @return const Eigen::Matrix<FPType, 3 + 3 * n, 3 + 3 * n>
+   * @return SEn3 Lie algebra adjoint matrix
    */
   [[nodiscard]] static const TMatrixType adjoint(const VectorType& u)
   {
@@ -144,9 +144,9 @@ class SEn3
   /**
    * @brief SEn3 left Jacobian matrix
    *
-   * @param u const Eigen::Matrix<FPType, 3 + 3 * n, 1>&
+   * @param u R(3+3n) vector
    *
-   * @return const Eigen::Matrix<FPType, 3 + 3 * n, 3 + 3 * n>
+   * @return SEn3 left Jacobian matrix
    */
   [[nodiscard]] static const TMatrixType leftJacobian(const VectorType& u)
   {
@@ -171,9 +171,9 @@ class SEn3
   /**
    * @brief SEn3 right Jacobian matrix
    *
-   * @param u const Eigen::Matrix<FPType, 3 + 3 * n, 1>&
+   * @param u R(3+3n) vector
    *
-   * @return const Eigen::Matrix<FPType, 3 + 3 * n, 3 + 3 * n>
+   * @return SEn3 right Jacobian matrix
    */
   [[nodiscard]] static const TMatrixType rightJacobian(const VectorType& u) { return leftJacobian(-u); }
 
@@ -181,9 +181,9 @@ class SEn3
    * @brief The exponential map for SEn3.
    * Returns a SEn3 object given a vector u in R(3+3n) (equivalent to exp(wedge(u)))
    *
-   * @param u const Eigen::Matrix<FPType, 3 + 3 * n, 1>&
+   * @param u R(3+3n) vector
    *
-   * @return const SEn3<FPType, n>
+   * @return SEn3 group element
    */
   [[nodiscard]] static const SEn3 exp(const VectorType& u)
   {
@@ -199,11 +199,11 @@ class SEn3
 
   // /**
   //  * @brief The exponential map for SEn3.
-  //  * Returns a SEn3 object given a vector U in se3
+  //  * Returns a SEn3 object given a matrix U in sen3
   //  *
-  //  * @param U const Eigen::Matrix<FPType, 3 + n, 3 + n>&
+  //  * @param U SEn3 Lie algebra element in matrix form
   //  *
-  //  * @return const SEn3<FPType, n>
+  //  * @return SEn3 group element
   //  */
   // [[nodiscard]] static SEn3 exp(const MatrixType& U) { return exp(vee(U)); }
 
@@ -211,9 +211,9 @@ class SEn3
    * @brief The logarithmic map for SEn3.
    * Return a vector given a SEn3 object (equivalent to vee(log(X)))
    *
-   * @param X const SEn3<FPType, n>&
+   * @param X SEn3 group element
    *
-   * @return const Eigen::Matrix<FPType, 3 + 3 * n, 1>
+   * @return R(3+3n) vector
    */
   [[nodiscard]] static const VectorType log(const SEn3& X)
   {
@@ -231,9 +231,9 @@ class SEn3
   //  * @brief The logarithmic map for SEn3.
   //  * Return a se3 matrix given a SEn3 object
   //  *
-  //  * @param X const SEn3<FPType, n>&
+  //  * @param X SEn3 group element
   //  *
-  //  * @return const Eigen::Matrix<FPType, 3 + n, 3 + n>
+  //  * @return SEn3 Lie algebra element in matrix form
   //  */
   // [[nodiscard]] static MatrixType log(const SEn3& X) { return wedge(log(X)); }
 
@@ -241,9 +241,9 @@ class SEn3
    * @brief Operator * overloading.
    * Implements the SEn3 composition this * other
    *
-   * @param other const SEn3<FPType, n>&
+   * @param other SEn3 group element
    *
-   * @return const SEn3<FPType, n>
+   * @return SEn3 group element
    *
    * @note usage: z = x * y
    */
@@ -261,9 +261,9 @@ class SEn3
    * @brief Operator * overloading.
    * Implements the SEn3 composition with a se3 element this * other
    *
-   * @param other const Eigen::Matrix<FPType, 3 + n, 3 + n>&
+   * @param other SE3 Lie algebra element in matrix form
    *
-   * @return const Eigen::Matrix<FPType, 3 + n, 3 + n>
+   * @return SEn3 Lie algebra element in matrix form
    *
    * @note usage: z = x * y
    */
@@ -282,9 +282,9 @@ class SEn3
    * @brief Operator * overloading.
    * Implements the SE3 action on a R3 vector
    *
-   * @param other const Eigen::Matrix<FPType, 3, 1>&
+   * @param other R3 vector
    *
-   * @return const Eigen::Matrix<FPType, 3, 1>
+   * @return R3 vector
    */
   [[nodiscard]] const typename SO3Type::VectorType operator*(const typename SO3Type::VectorType& other) const
   {
@@ -295,9 +295,9 @@ class SEn3
   /**
    * @brief Implements the SEn3 composition this = this * other
    *
-   * @param other const SEn3<FPType, n>&
+   * @param other SEn3 group element
    *
-   * @return const SEn3<FPType, n>&
+   * @return SEn3 group element
    */
   const SEn3& multiplyRight(const SEn3& other)
   {
@@ -312,9 +312,9 @@ class SEn3
   /**
    * @brief Implements the SEn3 composition this = other * this
    *
-   * @param other const SEn3<FPType, n>&
+   * @param other SEn3 group element
    *
-   * @return const SEn3<FPType, n>&
+   * @return SEn3 group element
    */
   const SEn3& multiplyLeft(const SEn3& other)
   {
@@ -327,9 +327,9 @@ class SEn3
   }
 
   /**
-   * @brief get a constant copy of the inverse of the SEn3 object
+   * @brief Get a constant copy of the inverse of the SEn3 object
    *
-   * @return const SEn3<FPType, n>
+   * @return SEn3 group element
    */
   [[nodiscard]] const SEn3 inv() const
   {
@@ -344,7 +344,7 @@ class SEn3
   /**
    * @brief Get a constant copy of the SEn3 object as a matrix
    *
-   * @return const Eigen::Matrix<FPType, 3 + n, 3 + n>
+   * @return SEn3 group element in matrix form
    */
   [[nodiscard]] const MatrixType T() const
   {
@@ -360,30 +360,30 @@ class SEn3
   /**
    * @brief Get a constant reference to the SEn3 rotation matrix
    *
-   * @return const Eigen::Matrix<FPType, 3, 3>
+   * @return Rotation matrix
    */
   [[nodiscard]] const typename SO3Type::MatrixType& R() const { return C_.R(); }
 
   /**
    * @brief Get a constant reference to the SEn3 normalized quaternion
    *
-   * @return const Eigen::Quaternion<FPType>
+   * @return Quaternion
    */
   [[nodiscard]] const typename SO3Type::QuaternionType& q() const { return C_.q(); }
 
   /**
    * @brief Get a constant reference to the SEn3 translation vectors (isometries)
    *
-   * @return const std::array<Eigen::Matrix<FPType, 3, 1>, n>
+   * @return Array of R3 vectors
    */
   [[nodiscard]] const IsometriesType& t() const { return t_; }
 
   /**
-   * @brief get a constant referece to the first isometry of SE3
+   * @brief Get a constant referece to the first isometry of SE3
    *
    * @note Method available only for n = 1, thus SE3
    *
-   * @return const Eigen::Matrix<FPType, 3, 1>
+   * @return R3 vector
    */
   [[nodiscard]] const typename SO3Type::VectorType& x() const
   {
@@ -392,11 +392,11 @@ class SEn3
   }
 
   /**
-   * @brief get a constant referece to the first isometry (velocity) of SEn3 with n > 1
+   * @brief Get a constant referece to the first isometry (velocity) of SEn3 with n > 1
    *
    * @note Method available only for n > 1
    *
-   * @return const Eigen::Matrix<FPType, 3, 1>
+   * @return R3 vector
    */
   [[nodiscard]] const typename SO3Type::VectorType& v() const
   {
@@ -405,11 +405,11 @@ class SEn3
   }
 
   /**
-   * @brief get a constant referece to the second isometry (position) of SEn3 with n > 1
+   * @brief Get a constant referece to the second isometry (position) of SEn3 with n > 1
    *
    * @note Method available only for n > 1
    *
-   * @return const Eigen::Matrix<FPType, 3, 1>
+   * @return R3 vector
    */
   [[nodiscard]] const typename SO3Type::VectorType& p() const
   {
@@ -420,14 +420,14 @@ class SEn3
   /**
    * @brief Get a constant copy of the SEn3 object as a matrix
    *
-   * @return const Eigen::Matrix<FPType, 3 + n, 3 + n>
+   * @return SEn3 group element in matrix form
    */
   [[nodiscard]] const MatrixType asMatrix() const { return T(); }
 
   /**
    * @brief Set SEn3 object value from given matrix
    *
-   * @param T const Eigen::Matrix<FPType, 3 + n, 3 + n>
+   * @param T SEn3 group element in matrix form
    */
   void fromT(const MatrixType& T)
   {
@@ -441,7 +441,7 @@ class SEn3
   /**
    * @brief SEn3 Adjoint matrix
    *
-   * @return const Eigen::Matrix<FPType, 3 + 3 * n, 3 + 3 * n>
+   * @return SEn3 group Adjoint matrix
    */
   [[nodiscard]] const TMatrixType Adjoint() const
   {
@@ -458,7 +458,7 @@ class SEn3
   /**
    * @brief SEn3 Inverse Adjoint matrix
    *
-   * @return const Eigen::Matrix<FPType, 3 + 3 * n, 3 + 3 * n>
+   * @return SEn3 group inverse Adjoint matrix
    */
   [[nodiscard]] const TMatrixType invAdjoint() const
   {
@@ -476,10 +476,10 @@ class SEn3
   /**
    * @brief SE3 left Jacobian Q matrix
    *
-   * @param w const Eigen::Matrix<FPType, 3, 1>&
-   * @param v const Eigen::Matrix<FPType, 3, 1>&
+   * @param w R3 vector
+   * @param v R3 vector
    *
-   * @return const Eigen::Matrix<FPType, 3, 3>
+   * @return SE3 left Jacobian Q matrix
    */
   [[nodiscard]] static const typename SO3Type::MatrixType SE3leftJacobianQ(const typename SO3Type::VectorType& w,
                                                                            const typename SO3Type::VectorType& v)

@@ -42,18 +42,18 @@ class Tangent
   /**
    * @brief Construct a Tangent Group object from a given SE23 object, and a vector
    *
-   * @param D const SE23<FPType>&
-   * @param delta const Eigen::Matrix<FPType, 9, 1>&
+   * @param D SE23 group element
+   * @param delta R9 vector
    */
   Tangent(const SE23Type& D, const Vector9Type& delta) : D_(D), delta_(delta){};
 
   /**
-   * @brief The exponential map for the Tangent Group.
+   * @brief The exponential map for the Tangent Group TG.
    * Returns a Tangent object given a vector u in R18 (equivalent to exp(wedge(u)))
    *
-   * @param u const Eigen::Matrix<FPType, 18, 1>&
+   * @param u R18 vector
    *
-   * @return Tangent
+   * @return TG group element
    *
    */
   [[nodiscard]] static const Tangent exp(const VectorType& u)
@@ -66,10 +66,9 @@ class Tangent
    * @brief The logarithmic map for the Tangent Group.
    * Return a vector given a Tangent object (equivalent to vee(log(X)))
    *
-   * @param X const Tangent
-   *&
+   * @param X TG Group element
    *
-   * @return Eigen::Matrix<FPType, 18, 1>
+   * @return R18 vector
    */
   [[nodiscard]] static const VectorType log(const Tangent& X)
   {
@@ -83,7 +82,7 @@ class Tangent
    * @brief Get a constant copy of B (the SE3 subgroup of SE23 composed by the rotational component (R) and the first
    * isometry (v))
    *
-   * @return SE3<FPType>
+   * @return SE3 group element
    */
   [[nodiscard]] const SE3Type B() const { return SE3Type(D_.q(), {D_.v()}); }
 
@@ -91,28 +90,28 @@ class Tangent
    * @brief Get a constant copy of C (the SE3 subgroup of SE23 composed by the rotational component (R) and the
    * second isometry (p))
    *
-   * @return SE3<FPType>
+   * @return SE3 group element
    */
   [[nodiscard]] const SE3Type C() const { return SE3Type(D_.q(), {D_.p()}); }
 
   /**
    * @brief Get a constant reference to D (the SE23 element)
    *
-   * @return const SE23<FPType>&
+   * @return SE23 group element
    */
   [[nodiscard]] const SE23Type& D() const { return D_; }
 
   /**
    * @brief Get a constant reference to delta (the R9 element)
    *
-   * @return const Eigen::Matrix<FPType, 9, 1>&
+   * @return R9 vector
    */
   [[nodiscard]] const Vector9Type& delta() const { return delta_; }
 
   /**
-   * @brief get a constant copy of the inverse of the Tangent object
+   * @brief Get a constant copy of the inverse of the Tangent object
    *
-   * @return const Tangent
+   * @return TG group element
    */
   [[nodiscard]] const Tangent inv() const { return Tangent(D_.inv(), -D_.invAdjoint() * delta_); }
 
@@ -120,9 +119,9 @@ class Tangent
    * @brief Operator * overloading.
    * Implements the Tangent composition this * other
    *
-   * @param other const Tangent&
+   * @param other TG group element
    *
-   * @return const Tangent
+   * @return TG group element
    *
    * @note usage: z = x * y
    */
@@ -134,9 +133,9 @@ class Tangent
   /**
    * @brief Implements the Tangent composition this = this * other
    *
-   * @param other const Tangent&
+   * @param other TG group element
    *
-   * @return const Tangent&
+   * @return TG group element
    */
   const Tangent& multiplyRight(const Tangent& other)
   {
@@ -148,9 +147,9 @@ class Tangent
   /**
    * @brief Implements the Tangent composition this = other * this
    *
-   * @param other const Tangent&
+   * @param other TG group element
    *
-   * @return const Tangent&
+   * @return TG group element
    */
   const Tangent& multiplyLeft(const Tangent& other)
   {

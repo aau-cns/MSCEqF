@@ -19,34 +19,33 @@
 
 namespace msceqf
 {
-
 class Symmetry
 {
  public:
   /**
    * @brief Implement the right group action phi of the symmetry group, acting on the homogenous space (phi(X, xi))
    *
-   * @param X MSCEqFState
-   * @param xi SystemState
-   * @return const SystemState
+   * @param X MSCEqF state (symmetry group element)
+   * @param xi System state (homogenous space element)
+   * @return System state (homogenous space element)
    */
   [[nodiscard]] static const SystemState phi(const MSCEqFState& X, const SystemState& xi);
 
   /**
    * @brief Implement the lift function. Lift the actual dynamics onto the symmetry group
    *
-   * @param xi SystemState
+   * @param xi System state (homogenous space element)
    * @param u Input (Imu)
-   * @return const SystemState::SystemStateAlgebraMap
+   * @return Input for the lifted system (Symmetry group Lie algebra element)
    */
   [[nodiscard]] static const SystemState::SystemStateAlgebraMap lift(const SystemState& xi, const Imu& u);
 
   /**
    * @brief Return the Gamma matrix for the reset / curvature correction
    *
-   * @param X MSCEqFState
-   * @param inn VectorX
-   * @return const MatrixX
+   * @param X MSCEqF state (symmetry group element)
+   * @param inn Innovatiation vector
+   * @return Gamma matrix
    */
   [[nodiscard]] static const MatrixX curvatureCorrection(const MSCEqFState& X, const VectorX& inn);
 

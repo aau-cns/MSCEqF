@@ -31,7 +31,7 @@ class OptionParser
   /**
    * @brief Option parser constructor
    *
-   * @param filepath parameter file
+   * @param filepath Parameter file
    */
   OptionParser(const std::string& filepath);
 
@@ -52,7 +52,7 @@ class OptionParser
    * @tparam Rows
    * @tparam Cols
    * @param x The matrix to be filled with read values
-   * @param param parameter to be read
+   * @param param Parameter to be read
    * @return true if parameter correctly parsed, false otherwise
    */
   template <typename Scalar, int Rows, int Cols>
@@ -119,7 +119,7 @@ class OptionParser
    *
    * @tparam Scalar
    * @param q The quaternion to be filled with read values
-   * @param parameter to be read
+   * @param parameter Parameter to be read
    * @return true if parameter correctly parsed, false otherwise
    */
   template <typename Scalar>

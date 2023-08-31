@@ -22,7 +22,6 @@
 
 namespace msceqf
 {
-
 /**
  * @brief Updater class. This class implements the Multi State Constraint update step of the MSCEqF filter.
  *
@@ -36,8 +35,8 @@ class Updater
    * @brief Perform a Multi State Constraint update
    *
    * @param X MSCEqF state
-   * @param tracks tracks to update
-   * @param ids ids of the tracks that are evaluated for an update
+   * @param tracks Tracks to update
+   * @param ids Indices of the tracks that are evaluated for an update
    *
    * @note Not all the tracks corresponding to the given ids will be used for the update. Tracks that do not contains at
    * least two views, tracks for which the triangulation fails, and tracks that fail the chi2 test are discarded. The
@@ -51,9 +50,9 @@ class Updater
    * seen from.
    *
    * @param X MSCEqF state
-   * @param track track of the feature to triangulate
+   * @param track Track of the feature to triangulate
    * @param A_E Anchor E element
-   * @param A_f triangulated feature
+   * @param A_f Triangulated feature
    * @return true if the triangulation was succesful, false otherwise
    */
   [[nodiscard]] bool linearTriangulation(const MSCEqFState& X, const Track& track, const SE3& A_E, Vector3& A_f) const;
@@ -67,9 +66,9 @@ class Updater
    *
    *
    * @param X MSCEqF state
-   * @param track track of the feature to triangulate
+   * @param track Track of the feature to triangulate
    * @param A_E Anchor E element
-   * @param A_f triangulated feature
+   * @param A_f Triangulated feature
    */
   void nonlinearTriangulation(const MSCEqFState& X, const Track& track, const SE3& A_E, Vector3& A_f) const;
 
@@ -77,10 +76,10 @@ class Updater
    * @brief Compute the residual for the nonlinear optimization
    *
    * @param X MSCEqF state
-   * @param track track of the feature to triangulate
+   * @param track Track of the feature to triangulate
    * @param A_E Anchor E element
    * @param A_f Pre-triangulated feature
-   * @param res residual
+   * @param res Residual
    * @param J Jacobian
    */
   void nonlinearTriangulationResidualJacobian(
@@ -91,7 +90,7 @@ class Updater
    *
    * @param X MSCEqF state
    * @param C Ouput matrix
-   * @param delta residual delta
+   * @param delta Residual delta
    * @param R Measurement noise covariance
    */
   void UpdateMSCEqF(MSCEqFState& X, const MatrixX& C, const VectorX& delta, const MatrixX& R) const;

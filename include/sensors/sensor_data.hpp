@@ -19,7 +19,6 @@
 
 namespace msceqf
 {
-
 /**
  * @brief Struct for one IMU reading.
  * It includes timestamp, angular velocity and linear acceleration.
@@ -31,14 +30,14 @@ struct Imu
   /**
    * @brief Get the IMU measurement as a 6 vector (ang, acc)
    *
-   * @return const Vector6
+   * @return R6 vector representing the IMU measurement as stacked angular velocity and linear acceleration
    */
   const Vector6 w() const { return (Vector6() << ang_, acc_).finished(); }
 
   /**
    * @brief get the IMU measurement as an extended matrix (ang, acc, 0)^ (SE23 lie algebra element)
    *
-   * @return const Matrix5
+   * @return IMU measurement as a SE23 lie algebra element
    */
   const Matrix5 W() const
   {

@@ -20,7 +20,6 @@
 
 namespace msceqf
 {
-
 class StaticInitializer
 {
  public:
@@ -36,14 +35,14 @@ class StaticInitializer
   /**
    * @brief Populate imu internal buffer used for acceleration check
    *
-   * @param imu actual imu measurement
+   * @param imu Actual imu measurement
    */
   void insertImu(const Imu& imu);
 
   /**
    * @brief This function detects if the platform is moving based on acceleration measurements and image disparity
    *
-   * @param tracks tracks up to date used for disparity check
+   * @param tracks Tracks up to date used for disparity check
    * @return true if motion is detected, flase otherwise
    */
 
@@ -52,14 +51,14 @@ class StaticInitializer
   /**
    * @brief This function returns the initial Extended pose of the platform, to be used as origin
    *
-   * @return const SE23&
+   * @return Initial extended pose of the platform (orientation, velocity and position)
    */
   [[nodiscard]] const SE23& T0() const;
 
   /**
    * @brief This function returns the initial IMU bias, to be used as origin
    *
-   * @return const Vector6&
+   * @return Initial IMU bias (gyroscope bias and accelerometer bias)
    */
   [[nodiscard]] const Vector6& b0() const;
 

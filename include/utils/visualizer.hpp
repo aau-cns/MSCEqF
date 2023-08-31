@@ -25,6 +25,7 @@ class Visualizer
   /**
    * @brief Construct a new Visualizer object
    *
+   * @param track_manager
    */
   Visualizer(const TrackManager& track_manager) : track_manager_(track_manager), colors_(), delay_(1)
   {
@@ -45,7 +46,6 @@ class Visualizer
    * @brief Camera image with overlayed tracks
    *
    * @param cam
-   * @return cv::Mat3b
    */
   cv::Mat3b imageWithTracks(const Camera& cam) const
   {
@@ -89,7 +89,6 @@ class Visualizer
    * @brief Camera image with overlayed keypoints
    *
    * @param cam
-   * @return cv::Mat
    */
   cv::Mat imageWithKeypoints(const Camera& cam) const
   {

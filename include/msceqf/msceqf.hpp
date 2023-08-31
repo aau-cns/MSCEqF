@@ -38,7 +38,7 @@ class MSCEqF
    * @brief This function provide a simple interface for processing measurements of different kind.
    *
    * @tparam T Type of the measurement
-   * @param meas measurement
+   * @param meas Measurement
    */
   void processMeasurement(const Imu& meas) { processImuMeasurement(meas); }
   void processMeasurement(Camera& meas) { processCameraMeasurement(meas); }
@@ -47,64 +47,64 @@ class MSCEqF
   /**
    * @brief Get a constant reference to the MSCEqF options
    *
-   * @return const MSCEqFOptions&
+   * @return Options
    */
   const MSCEqFOptions& options() const;
 
   /**
    * @brief Get a constant reference to the MSCEqF state options
    *
-   * @return const StateOptions&
+   * @return State options
    */
   const StateOptions& stateOptions() const;
 
   /**
    * @brief Get a constant reference to the covariance matrix of the MSCEqF state
    *
-   * @return const MatrixX&
+   * @return Covariance matrix
    */
   const MatrixX& covariance() const;
 
   /**
    * @brief Get the covariance of the navigation states (D, delta)
    *
-   * @return const MatrixX
+   * @return Covariance matrix of the navigation states
    */
   const MatrixX coreCovariance() const;
 
   /**
    * @brief Get a constant copy of the estimated state
    *
-   * @return const SystemState
+   * @return System state (homogeneous space element) reperesenting the state estimate
    */
   const SystemState stateEstimate() const;
 
   /**
    * @brief Get a constant reference to the origin state
    *
-   * @return const SystemState&
+   * @return System state (homogeneous space element) reperesenting the state origin
    */
   const SystemState& stateOrigin() const;
 
   /**
    * @brief Set origin xi0 with given state programatically
    *
-   * @param T0
-   * @param b0
+   * @param T0 Origin extended pose
+   * @param b0 Origin bias
    */
   void setGivenOrigin(const SE23& T0, const Vector6& b0);
 
   /**
    * @brief Get the processed image with overlayed tracks
    *
-   * @return const cv::Mat3b
+   * @return OpenCV matrix representing the image with overlayed tracks
    */
   const cv::Mat3b imageWithTracks(const Camera& cam) const;
 
   /**
    * @brief Visualize the processed image with overlayed tracks
    *
-   * @param cam
+   * @param cam Camera measurement
    */
   void visualizeImageWithTracks(const Camera& cam) const;
 
@@ -120,21 +120,21 @@ class MSCEqF
    * @brief Process a single IMU measurement. This method will fill the internal IMU measurement buffer, that will
    * be used for propagation upon receiveing a camera measurement.
    *
-   * @param imu
+   * @param imu IMU measurement
    */
   void processImuMeasurement(const Imu& imu);
 
   /**
    * @brief Process a single Camera measurement.
    *
-   * @param cam
+   * @param cam Camera measurement
    */
   void processCameraMeasurement(Camera& cam);
 
   /**
    * @brief Process triangulated features measurement.
    *
-   * @param features
+   * @param features Triangulated features measurement
    */
   void processFeaturesMeasurement(TriangulatedFeatures& features);
 

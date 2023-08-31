@@ -20,7 +20,6 @@
 
 namespace msceqf
 {
-
 /**
  * @brief This class manages the multiple tracks of feature traked in time
  *
@@ -31,29 +30,29 @@ class TrackManager
   /**
    * @brief TrackManager constructor
    *
-   * @param opts
-   * @param intrinsics
+   * @param opts Tracker options
+   * @param intrinsics Camera intrinsics as R4 vector (fx, fy, cx, cy)
    */
   TrackManager(const TrackManagerOptions& opts, const Vector4& intrinsics);
 
   /**
    * @brief Process a single camera measurement. Forward camera measurement to tracker, and update tracks
    *
-   * @param cam
+   * @param cam Camera measurement
    */
   void processCamera(Camera& cam);
 
   /**
    * @brief Process a single features measurement. update tracks
    *
-   * @param imu
+   * @param features Features measurement
    */
   void processFeatures(const TriangulatedFeatures& features);
 
   /**
-   * @brief get all the tracks
+   * @brief Get all the tracks
    *
-   * @return const Tracks&
+   * @return Tracks
    */
   const Tracks& tracks() const;
 
@@ -62,9 +61,9 @@ class TrackManager
    * tracks that have are actively tracked at a given timestamp. Lost tracks are defined as tracks that are not being
    * tracked at a given timestamp and thus they do not have coordinates at a given timestamp.
    *
-   * @param timestamp
-   * @param active_ids
-   * @param lost_ids
+   * @param timestamp Timestamp
+   * @param active_ids Active tracks ids
+   * @param lost_ids Lost tracks ids
    */
   void tracksIds(const fp& timestamp, std::unordered_set<uint>& active_ids, std::unordered_set<uint>& lost_ids) const;
 
@@ -72,8 +71,8 @@ class TrackManager
    * @brief Get all the ids corresponding to active tracks at a given timestamp. Active tracks are defined as
    * tracks that have are actively tracked at a given timestamp.
    *
-   * @param timestamp
-   * @param active_ids
+   * @param timestamp Timestamp
+   * @param active_ids Active tracks ids
    */
   void activeTracksIds(const fp& timestamp, std::unordered_set<uint>& active_ids) const;
 
@@ -81,15 +80,15 @@ class TrackManager
    * @brief Get all the ids corresponding to lost tracks at a given timestamp. Lost tracks are defined as tracks that
    * are not being tracked at a given timestamp and thus they do not have coordinates at a given timestamp.
    *
-   * @param timestamp
-   * @param lost_ids
+   * @param timestamp Timestamp
+   * @param lost_ids Lost tracks ids
    */
   void lostTracksIds(const fp& timestamp, std::unordered_set<uint>& lost_ids) const;
 
   /**
    * @brief Remove all the tracks corresponding to given ids
    *
-   * @param ids
+   * @param ids Ids of tracks to be removed
    *
    * @note The use of unordered_set as a hash set improves performance compared to a std::vector<uint>
    */
@@ -99,7 +98,7 @@ class TrackManager
    * @brief Remove the tail of tracks. This method remove from each track all the coordinates as well as the
    * timestamps that are older or equal to the given timestamp.
    *
-   * @param timestamp
+   * @param timestamp Timestamp
    */
   void removeTracksTail(const fp& timestamp);
 
@@ -112,7 +111,7 @@ class TrackManager
   /**
    * @brief Get the camera pointer
    *
-   * @return const PinholeCameraUniquePtr&
+   * @return Pointer to the camera object
    */
   const PinholeCameraUniquePtr& cam() const;
 

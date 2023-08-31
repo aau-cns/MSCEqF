@@ -44,40 +44,40 @@ class SOT3
   /**
    * @brief Construct a SOT3 object from a given normalized quaternion, and scale.
    *
-   * @param q const Eigen::Quaternion<FPType>&
-   * @param s const FPType&
+   * @param q Quaternion
+   * @param s Scale
    */
   SOT3(const typename SO3Type::QuaternionType& q, const ScaleType& s) : C_(q), s_(s) { checkScale(); }
 
   /**
    * @brief Construct a SOT3 object from a given rotation matrix, and scale.
    *
-   * @param R const Eigen::Matrix<FPType, 3, 3>&
-   * @param s const FPType&
+   * @param R Rotation matrix
+   * @param s Scale
    */
   SOT3(const typename SO3Type::MatrixType& R, const ScaleType& s) : C_(R), s_(s) { checkScale(); }
 
   /**
    * @brief Construct a SOT3 object from a given SO3 object, and scale.
    *
-   * @param C const SO3<FPType>&
-   * @param s const FPType&
+   * @param C SO3 group element
+   * @param s Scale
    */
   SOT3(const SO3Type& C, const ScaleType& s) : C_(C), s_(s) { checkScale(); }
 
   /**
    * @brief Construct a SOT3 object from a given matrix.
    *
-   * @param Q const Eigen::Matrix<FPType, 4, 4>&
+   * @param Q SOT3 group element in matrix form
    */
   SOT3(const MatrixType& Q) : C_(Q.template block<3, 3>(0, 0)), s_(Q(3, 3)) { checkScale(); }
 
   /**
    * @brief wedge operator, transform a vector in R4 to a matrix in sot3
    *
-   * @param u const Eigen::Matrix<FPType, 4, 1>&
+   * @param u R4 vector
    *
-   * @return const Eigen::Matrix<FPType, 4, 4>
+   * @return SOT3 Lie algebra element in matrix form
    */
   [[nodiscard]] static const MatrixType wedge(const VectorType& u)
   {
@@ -90,9 +90,9 @@ class SOT3
   /**
    * @brief transform a matrix in sot3 to a vector in R4
    *
-   * @param U const Eigen::Matrix<FPType, 4, 4>&
+   * @param U SOT3 Lie algebra element in matrix form
    *
-   * @return const Eigen::Matrix<FPType, 4, 1>
+   * @return R4 vector
    */
   [[nodiscard]] static const VectorType vee(const MatrixType& U)
   {
@@ -105,9 +105,9 @@ class SOT3
   /**
    * @brief sot3 adjoint matrix
    *
-   * @param u const Eigen::Matrix<FPType, 4, 1>&
+   * @param u R4 vector
    *
-   * @return const Eigen::Matrix<FPType, 4, 4>
+   * @return SOT3 Lie algebra adjoint matrix
    */
   [[nodiscard]] static const TMatrixType adjoint(const VectorType& u)
   {
@@ -119,9 +119,9 @@ class SOT3
   /**
    * @brief SOT3 left Jacobian matrix
    *
-   * @param u const Eigen::Matrix<FPType, 4, 1>&
+   * @param u R4 vector
    *
-   * @return const Eigen::Matrix<FPType, 4, 4>
+   * @return SOT3 left Jacobian matrix
    */
   [[nodiscard]] static const TMatrixType leftJacobian(const VectorType& u)
   {
@@ -133,9 +133,9 @@ class SOT3
   /**
    * @brief SOT3 right Jacobian matrix
    *
-   * @param u const Eigen::Matrix<FPType, 4, 1>&
+   * @param u R4 vector
    *
-   * @return const Eigen::Matrix<FPType, 4, 4>
+   * @return SOT3 right Jacobian matrix
    */
   [[nodiscard]] static const TMatrixType rightJacobian(const VectorType& u) { return leftJacobian(-u); }
 
@@ -143,9 +143,9 @@ class SOT3
    * @brief The exponential map for SOT3.
    * Returns a SOT3 object given a vector u in R4 (equivalent to exp(wedge(u)))
    *
-   * @param u const Eigen::Matrix<FPType, 4, 1>&
+   * @param u R4 vector
    *
-   * @return const SOT3<FPType>
+   * @return SOT3 group element
    */
   [[nodiscard]] static const SOT3 exp(const VectorType& u)
   {
@@ -161,11 +161,11 @@ class SOT3
 
   // /**
   //  * @brief The exponential map for SOT3.
-  //  * Returns a SOT3 object given a vector U in sot3
+  //  * Returns a SOT3 object given a matrix U in sot3
   //  *
-  //  * @param U const Eigen::Matrix<FPType, 4, 4>&
+  //  * @param U SOT3 Lie algebra element in matrix form
   //  *
-  //  * @return const SOT3<FPType>
+  //  * @return SOT3 group element
   //  */
   // [[nodiscard]]  static const SOT3 exp(const MatrixType& U) { return exp(vee(U)); }
 
@@ -173,9 +173,9 @@ class SOT3
    * @brief The logarithmic map for SOT3.
    * Return a vector given a SOT3 object (equivalent to vee(log(X)))
    *
-   * @param X const SOT3<FPType>&
+   * @param X SOT3 group element
    *
-   * @return const Eigen::Matrix<FPType, 4, 1>
+   * @return R4 vector
    */
   [[nodiscard]] static const VectorType log(const SOT3& X)
   {
@@ -189,9 +189,9 @@ class SOT3
   //  * @brief The logarithmic map for SOT3.
   //  * Return a sot3 matrix given a SOT3 object
   //  *
-  //  * @param X const SOT3<FPType>&
+  //  * @param X SOT3 group element
   //  *
-  //  * @return const Eigen::Matrix<FPType, 4, 4>
+  //  * @return SO3 Lie algebra element in matrix form
   //  */
   // [[nodiscard]]  static const MatrixType log(const SOT3& X) { return wedge(log(X)); }
 
@@ -199,9 +199,9 @@ class SOT3
    * @brief Operator * overloading.
    * Implements the SOT3 composition this * other
    *
-   * @param other const SOT3<FPType>&
+   * @param other SOT3 group element
    *
-   * @return const SOT3<FPType>
+   * @return SOT3 group element
    *
    * @note usage: z = x * y
    */
@@ -211,9 +211,9 @@ class SOT3
    * @brief Operator * overloading.
    * Implements the SOT3 composition with a sot3 element this * other
    *
-   * @param other const Eigen::Matrix<FPType, 4, 4>&
+   * @param other SOT3 Lie algebra element in matrix form
    *
-   * @return const Eigen::Matrix<FPType, 4, 4>
+   * @return SOT3 Lie algebra element in matrix form
    *
    * @note usage: z = x * y
    */
@@ -229,9 +229,9 @@ class SOT3
    * @brief Operator * overloading.
    * Implements the SOT3 action on a R3 vector
    *
-   * @param other const Eigen::Matrix<FPType, 3, 1>&
+   * @param other R3 vector
    *
-   * @return const Eigen::Matrix<FPType, 3, 1>
+   * @return R3 vector
    */
   [[nodiscard]] const typename SO3Type::VectorType operator*(const typename SO3Type::VectorType& other) const
   {
@@ -241,9 +241,9 @@ class SOT3
   /**
    * @brief Implements the SOT3 composition this = this * other
    *
-   * @param other const SOT3<FPType>&
+   * @param other SOT3 group element
    *
-   * @return const SOT3<FPType>&
+   * @return SOT3 group element
    */
   const SOT3& multiplyRight(const SOT3& other)
   {
@@ -255,9 +255,9 @@ class SOT3
   /**
    * @brief Implements the SOT3 composition this = other * this
    *
-   * @param other const SOT3<FPType>&
+   * @param other SOT3 group element
    *
-   * @return const SOT3<FPType>&
+   * @return SOT3 group element
    */
   const SOT3& multiplyLeft(const SOT3& other)
   {
@@ -267,14 +267,14 @@ class SOT3
   }
 
   /**
-   * @brief get a constant copy of the inverse of the SOT3 object
+   * @brief Get a constant copy of the inverse of the SOT3 object
    */
   [[nodiscard]] const SOT3 inv() const { return SOT3(C_.R().transpose(), 1 / s_); }
 
   /**
    * @brief Get a constant copy of the SOT3 object as a matrix
    *
-   * @return const Eigen::Matrix<FPType, 4, 4>
+   * @return SOT3 group element in matrix form
    */
   [[nodiscard]] const MatrixType Q() const
   {
@@ -287,35 +287,35 @@ class SOT3
   /**
    * @brief Get a constant reference to the SOT3 rotation matrix
    *
-   * @return const Eigen::Matrix<FPType, 3, 3>&
+   * @return Rotation matrix
    */
   [[nodiscard]] const typename SO3Type::MatrixType& R() const { return C_.R(); }
 
   /**
    * @brief Get a constant reference to the SOT3 normalized quaternion
    *
-   * @return const Eigen::Quaternion<FPType>&
+   * @return Quaternion
    */
   [[nodiscard]] const typename SO3Type::QuaternionType& q() const { return C_.q(); }
 
   /**
    * @brief Get a constant reference to the SOT3 scale
    *
-   * @return const FPType&
+   * @return scale
    */
   [[nodiscard]] const ScaleType& s() const { return s_; }
 
   /**
    * @brief Get a constant copy of the SOT3 object as a matrix
    *
-   * @return const Eigen::Matrix<FPType, 4, 4>
+   * @return SOT3 group element in matrix form
    */
   [[nodiscard]] const MatrixType asMatrix() const { return Q(); }
 
   /**
    * @brief Set SOT3 object value from given matrix
    *
-   * @param Q const Eigen::Matrix<FPType, 4, 4>&
+   * @param Q SOT3 group element in matrix form
    */
   void fromQ(const MatrixType& Q)
   {
@@ -327,7 +327,7 @@ class SOT3
   /**
    * @brief SOT3 Adjoint matrix
    *
-   * @return const Eigen::Matrix<FPType, 4, 4>
+   * @return SOT3 group Adjoint matrix
    */
   [[nodiscard]] const TMatrixType Adjoint() const
   {
@@ -339,7 +339,7 @@ class SOT3
   /**
    * @brief SOT3 Inverse Adjoint matrix
    *
-   * @return const Eigen::Matrix<FPType, 4, 4>
+   * @return SOT3 group inverse Adjoint matrix
    */
   [[nodiscard]] const TMatrixType invAdjoint() const
   {
