@@ -18,7 +18,6 @@
 
 namespace msceqf
 {
-
 /**
  * @brief This enum class define the names of the system state elements.
  * This is used to create a map of state element mapped by the name,
@@ -46,7 +45,7 @@ class SystemStateElement
   /**
    * @brief Clone
    *
-   * @return std::unique_ptr<SystemStateElement>
+   * @return Clone of the system state element
    */
   virtual std::unique_ptr<SystemStateElement> clone() const = 0;
 
@@ -71,7 +70,7 @@ struct ExtendedPoseState final : public SystemStateElement
   /**
    * @brief Clone the extended pose state element of the system
    *
-   * @return std::unique_ptr<SystemStateElement>
+   * @return Clone of the extended pose state element
    */
   std::unique_ptr<SystemStateElement> clone() const override { return std::make_unique<ExtendedPoseState>(*this); }
 
@@ -90,7 +89,7 @@ struct BiasState final : public SystemStateElement
   /**
    * @brief Clone the bias state element of the system
    *
-   * @return std::unique_ptr<SystemStateElement>
+   * @return Clone of the bias state element
    */
   std::unique_ptr<SystemStateElement> clone() const override { return std::make_unique<BiasState>(*this); }
 
@@ -112,7 +111,7 @@ struct CameraExtrinsicState final : public SystemStateElement
   /**
    * @brief Clone the camera extrinsics state element of the system
    *
-   * @return std::unique_ptr<SystemStateElement>
+   * @return Clone of the camera extrinsics state element
    */
   std::unique_ptr<SystemStateElement> clone() const override { return std::make_unique<CameraExtrinsicState>(*this); }
 
@@ -134,7 +133,7 @@ struct CameraIntrinsicState final : public SystemStateElement
   /**
    * @brief Clone the camera instirnsic state element of the system
    *
-   * @return std::unique_ptr<SystemStateElement>
+   * @return Clone of the camera instirnsic state element
    */
   std::unique_ptr<SystemStateElement> clone() const override { return std::make_unique<CameraIntrinsicState>(*this); }
 
@@ -155,7 +154,7 @@ struct FeatureState final : public SystemStateElement
   /**
    * @brief Clone the persistent feature state element of the system
    *
-   * @return std::unique_ptr<SystemStateElement>
+   * @return Clone of the persistent feature state element
    */
   std::unique_ptr<SystemStateElement> clone() const override { return std::make_unique<FeatureState>(*this); }
 
@@ -181,9 +180,9 @@ using FeatureStateStateStateUniquePtr = std::unique_ptr<FeatureState>;
  * system state elements, given the possible multiple constructors for each state element.
  *
  * @tparam Args variadic arguments
- * @param name name of the system state element (see SystemStateElementName enum)
- * @param args arguments for state creation, argument used in the constructor of system state elements
- * @return std::unique_ptr<SystemStateElement>
+ * @param name Name of the system state element (see SystemStateElementName enum)
+ * @param args Arguments for state creation, argument used in the constructor of system state elements
+ * @return Pointer to the system state element
  *
  * @note The function return a nullptr if the provided arguments do not fit any constructor
  */
@@ -191,8 +190,7 @@ template <typename T, typename... Args>
 [[nodiscard]] static SystemStateElementUniquePtr createSystemStateElement(const std::tuple<Args...>& args)
 {
   return std::apply(
-      [](const auto&... args)
-      {
+      [](const auto&... args) {
         if constexpr (std::is_base_of_v<SystemStateElement, T> && std::is_constructible_v<T, decltype(args)...>)
         {
           return std::make_unique<T>(args...);

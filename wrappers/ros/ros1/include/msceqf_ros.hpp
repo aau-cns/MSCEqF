@@ -31,18 +31,18 @@ class MSCEqFRos
  public:
   /**
    * @brief Constructor
-   * @param Ros NodeHandle
-   * @param msceqf_config_filepath path of configuration yaml file for the msceqf
-   * @param imu_topic
-   * @param cam_topic
-   * @param features_topic
-   * @param pose_topic
-   * @param path_topic
-   * @param image_topic
-   * @param extrinsics_topic
-   * @param intrinsics_topic
-   * @param record
-   * @param bagfile
+   * @param Ros ROS node handle
+   * @param msceqf_config_filepath Path of configuration yaml file for the msceqf
+   * @param imu_topic IMU topic
+   * @param cam_topic Camera topic
+   * @param features_topic Features topic
+   * @param pose_topic Pose topic
+   * @param path_topic Path topic
+   * @param image_topic Image topic
+   * @param extrinsics_topic Extrinsics topic
+   * @param intrinsics_topic Intrinsics topic
+   * @param record Flag to decide wether record a bagfile or not
+   * @param bagfile Bagfile name
    */
   MSCEqFRos(const ros::NodeHandle &nh,
             const std::string &msceqf_config_filepath,
@@ -70,49 +70,42 @@ class MSCEqFRos
   /**
    * @brief Publish pose, images and path messages
    *
-   * @param cam
+   * @param cam Camera measurement
    */
   void publish(const msceqf::Camera &cam);
 
   /**
    * @brief Publish pose, images and path messages
    *
-   * @param feats
+   * @param feats Features measurement
    */
   void publish(const msceqf::TriangulatedFeatures &feats);
 
-  /// Ros node handler
-  ros::NodeHandle nh_;
+  ros::NodeHandle nh_;  //!< ROS node handler
 
-  /// MSCEqF
-  msceqf::MSCEqF sys_;
+  msceqf::MSCEqF sys_;  //!< MSCEqF system
 
-  /// Subscribers
-  ros::Subscriber sub_cam_;
-  ros::Subscriber sub_imu_;
-  ros::Subscriber sub_feats_;
+  ros::Subscriber sub_cam_;    //!< Camera subscriber
+  ros::Subscriber sub_imu_;    //!< IMU subscriber
+  ros::Subscriber sub_feats_;  //!< Features subscriber
 
-  /// Publishers
-  ros::Publisher pub_pose_;
-  ros::Publisher pub_image_;
-  ros::Publisher pub_path_;
-  ros::Publisher pub_extrinsics_;
-  ros::Publisher pub_intrinsics_;
-  ros::Publisher pub_origin_;
+  ros::Publisher pub_pose_;        //!< Pose publisher
+  ros::Publisher pub_image_;       //!< Image publisher
+  ros::Publisher pub_path_;        //!< Path publisher
+  ros::Publisher pub_extrinsics_;  //!< Extrinsics publisher
+  ros::Publisher pub_intrinsics_;  //!< Intrinsics publisher
+  ros::Publisher pub_origin_;      //!< Origin publisher
 
-  /// Messages
-  geometry_msgs::PoseWithCovarianceStamped pose_;
-  nav_msgs::Path path_;
-  geometry_msgs::PoseStamped extrinsics_;
-  sensor_msgs::CameraInfo intrinsics_;
-  geometry_msgs::PoseStamped origin_;
+  geometry_msgs::PoseWithCovarianceStamped pose_;  //!< Pose message
+  nav_msgs::Path path_;                            //!< Path message
+  geometry_msgs::PoseStamped extrinsics_;          //!< Extrinsics message
+  sensor_msgs::CameraInfo intrinsics_;             //!< Intrinsics message
+  geometry_msgs::PoseStamped origin_;              //!< Origin message
 
-  /// Record bagfile
-  bool record_;
-  rosbag::Bag bag_;
+  bool record_;      //!< Record flag
+  rosbag::Bag bag_;  //!< Bagfile
 
-  /// Sequence number
-  uint seq_ = 0;
+  uint seq_ = 0;  //!< Sequence number
 };
 
 #endif  // MSCEQF_ROS_H

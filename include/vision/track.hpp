@@ -40,7 +40,7 @@ struct Track
   /**
    * @brief Return the amount of features (size of uvs_)
    *
-   * @return size_t
+   * @return Amount of features
    */
   inline size_t size() const noexcept
   {
@@ -53,7 +53,7 @@ struct Track
    * @brief Remove invalid features coordinates, normalized feature coordinates and ids given a vector of boolean flags
    * indicating invalid features
    *
-   * @param invalid
+   * @param invalid Vector of boolean flags indicating invalid features
    */
   void removeInvalid(std::vector<bool>& invalid)
   {
@@ -85,7 +85,7 @@ struct Track
    * @brief Remove the tail of the track. this method removes coordinates and timestamps that are older or equal than
    * the given timestamp
    *
-   * @param timestamp
+   * @param timestamp Timestamp
    */
   void removeTail(const fp& timestamp)
   {

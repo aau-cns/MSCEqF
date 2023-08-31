@@ -18,7 +18,6 @@
 
 namespace msceqf
 {
-
 using FeaturesCoordinates = std::vector<cv::Point2f>;  //!< The features coordinates
 
 /**
@@ -41,7 +40,7 @@ struct Features
   /**
    * @brief Return the amount of features (size of uvs_)
    *
-   * @return size_t
+   * @return Number of features
    */
   inline size_t size() const noexcept
   {
@@ -55,7 +54,7 @@ struct Features
    * @brief Remove invalid features coordinates, normalized feature coordinates and ids given a vector of boolean flags
    * indicating invalid features
    *
-   * @param invalid
+   * @param invalid Vector of boolean flags indicating invalid features
    */
   void removeInvalid(std::vector<bool>& invalid)
   {

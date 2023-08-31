@@ -36,8 +36,8 @@ class Tracker
   /**
    * @brief Tracker constructor
    *
-   * @param opts tracker options
-   * @param intrinsics camera intrinsics
+   * @param opts Tracker options
+   * @param intrinsics Camera intrinsics as R4 vector (fx, fy, cx, cy)
    */
   Tracker(const TrackerOptions& opts, const Vector4& intrinsics);
 
@@ -45,33 +45,33 @@ class Tracker
    * @brief This method process the input camera measurement.
    * If first pre-process the camera image, and then it tracks features.
    *
-   * @param cam
+   * @param cam Camera measurement
    */
   void processCamera(Camera& cam);
 
   /**
    * @brief Get the current detected/tracked features
    *
-   * @return const TimedFeatures&
+   * @return Current detected/tracked features
    */
   const TimedFeatures& currentFeatures() const;
 
   /**
    * @brief Get the camera pointer
    *
-   * @return const PinholeCameraUniquePtr&
+   * @return Pointer to the camera object
    */
   const PinholeCameraUniquePtr& cam() const;
 
  private:
   /**
    * @brief Detect/Tracks feature in the given camera measurement.
-   * If there are no previously detected features than this method simply detect features in hte given image.
+   * If there are no previously detected features than this method simply detect features in the given image.
    * If there are previously detected features than this method tracks temporally these previously detected/tracked
    * features. Moreover if the number of previously detected/tracked falls under a defined threshold these method
    * performs re-detection in the previous image.
    *
-   * @param cam
+   * @param cam Camera measurement
    */
   void track(Camera& cam);
 
@@ -84,10 +84,9 @@ class Tracker
    * Detected features are stored in original distorted, undistorted, and normalized coordinates.
    * An id is assigned to each feature.
    *
-   * @param pyramids
-   * @param mask
-   * @param features
-   * @param timestamp
+   * @param pyramids Vector of pyramids
+   * @param mask Mask for the given image
+   * @param features Detected features
    *
    */
   void detect(std::vector<cv::Mat>& pyramids, cv::Mat& mask, Features& features);
@@ -96,7 +95,7 @@ class Tracker
    * @brief Match features between consecutive images using Lukas-Kanade Optical Flow.
    * This methods returns a mask with valid tracked/matched features
    *
-   * @param mask
+   * @param mask Mask with valid tracked/matched features
    */
   void matchKLT(std::vector<uchar>& mask);
 
@@ -104,7 +103,7 @@ class Tracker
    * @brief Reject outlier using RANSAC
    * This methods returns a mask with valid (inlier) features
    *
-   * @param mask
+   * @param mask Mask with valid tracked/matched features
    */
   void ransac(std::vector<uchar>& mask);
 
@@ -112,10 +111,10 @@ class Tracker
    * @brief Extract keypoints for the given cell. Extracted keypoints are limited to a maximum number given by the
    * difference between the max number of features allowed and the number of previous features.
    *
-   * @param idx
-   * @param cell
-   * @param mask
-   * @param cell_kpts
+   * @param idx Index of the cell
+   * @param cell Cell of the grid
+   * @param mask Mask for the given cell
+   * @param cell_kpts Extracted keypoints for the given cell
    */
   void extractCellKeypoints(const uint& idx, const cv::Mat& cell, const cv::Mat& mask, Keypoints& cell_kpts);
 
@@ -124,8 +123,8 @@ class Tracker
    * Given an existing mask, this method mask out given existing features points, as well as a small neighborhood to
    * ensure a minimum pixel distance between features
    *
-   * @param mask
-   * @param points
+   * @param mask Mask for the given image
+   * @param points Features points to be masked out
    */
   void maskGivenFeatures(cv::Mat& mask, const FeaturesCoordinates& points);
 

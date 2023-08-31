@@ -41,14 +41,17 @@ class In
   /**
    * @brief Construct a In Group object given the intrinsics
    *
-   * @param L const Eigen::Matrix<FPType, 4, 1>&
+   * @param fx Focal length in x-direction
+   * @param fy Focal length in y-direction
+   * @param cx Center in x-direction
+   * @param cy Center in y-direction
    */
   In(const FPType& fx, const FPType& fy, const FPType& cx, const FPType& cy) : fx_(fx), fy_(fy), cx_(cx), cy_(cy){};
 
   /**
    * @brief Construct a In Group object given a matrix (camera intrinsic matrix)
    *
-   * @param L const Eigen::Matrix<FPType, 3, 3>&
+   * @param L Intrinsic matrix
    */
   In(const MatrixType& L) : fx_(1.0), fy_(1.0), cx_(0.0), cy_(0.0)
   {
@@ -61,7 +64,7 @@ class In
   /**
    * @brief Construct a In Group object given a vector <fx, fy, cx, cy>
    *
-   * @param L const Eigen::Matrix<FPType, 4, 1>&
+   * @param L Vector of intrinsic parameters (fx, fy, cx, cy)
    */
   In(const VectorType& l) : fx_(1.0), fy_(1.0), cx_(0.0), cy_(0.0)
   {
@@ -74,8 +77,9 @@ class In
   /**
    * @brief wedge operator, transform a vector in R4 to a matrix in the Lie Algebra of In
    *
-   * @param u const Eigen::Matrix<FPType, 4, 1>&
-   * @return const Eigen::Matrix<FPType, 3, 3>
+   * @param u R4 vector
+   *
+   * @return In Lie algebra element in matrix form
    */
   [[nodiscard]] static const MatrixType wedge(const VectorType& u)
   {
@@ -85,11 +89,11 @@ class In
   }
 
   /**
-   * @brief transform a matrix in the Lie Algebra of In to a vector in R4
+   * @brief Transform a matrix in the Lie Algebra of In to a vector in R4
    *
-   * @param U const Eigen::Matrix<FPType, 3, 3>&
+   * @param U In Lie algebra element in matrix form
    *
-   * @return const Eigen::Matrix<FPType, 4, 1>
+   * @return R4 vector
    */
   [[nodiscard]] static const VectorType vee(const MatrixType& U)
   {
@@ -101,9 +105,9 @@ class In
   /**
    * @brief so3 adjoint matrix
    *
-   * @param u const Eigen::Matrix<FPType, 4, 1>&
+   * @param u R4 vector
    *
-   * @return const Eigen::Matrix<FPType, 4, 4>
+   * @return In Lie algebra adjoint matrix
    */
   [[nodiscard]] static const TMatrixType adjoint(const VectorType& u)
   {
@@ -116,9 +120,9 @@ class In
    * @brief The exponential map for the In Group.
    * Returns a In object given a vector u in R4 (equivalent to exp(wedge(u)))
    *
-   * @param u const Eigen::Matrix<FPType, 4, 1>&
+   * @param u Vector in R4
    *
-   * @return const In
+   * @return In group element
    */
   [[nodiscard]] static const In exp(const VectorType& u)
   {
@@ -130,16 +134,16 @@ class In
    * @brief The logarithmic map for the In Group.
    * Return a vector given a In object (equivalent to vee(log(X)))
    *
-   * @param X const In&
+   * @param X In group element
    *
-   * @return const Eigen::Matrix<FPType, 4, 1>
+   * @return Vector in R4
    */
   [[nodiscard]] static const VectorType log(const In& X) { return vee(X.K().log()); }
 
   /**
-   * @brief get a constant copy of the inverse of the In object
+   * @brief Get a constant copy of the inverse of the In object
    *
-   * @return const In
+   * @return In group element
    */
   [[nodiscard]] const In inv() const
   {
@@ -149,7 +153,7 @@ class In
   /**
    * @brief Get the matrix representation of In
    *
-   * @return const Eigen::Matrix<FPType, 3, 3>&
+   * @return In group element in matrix form
    */
   [[nodiscard]] const MatrixType K() const
   {
@@ -161,7 +165,7 @@ class In
   /**
    * @brief Get the vector representation of In
    *
-   * @return const Eigen::Matrix<FPType, 4, 1>&
+   * @return In group element in vector form (fx, fy, cx, cy)
    */
   [[nodiscard]] const VectorType k() const
   {
@@ -173,14 +177,14 @@ class In
   /**
    * @brief Get the matrix representation of In
    *
-   * @return const Eigen::Matrix<FPType, 3, 3>&
+   * @return In group element in matrix form
    */
   [[nodiscard]] const MatrixType asMatrix() const { return K(); }
 
   /**
    * @brief In Adjoint matrix
    *
-   * @return const Eigen::Matrix<FPType, 4, 4>
+   * @return In group Adjoint matrix
    */
   [[nodiscard]] const TMatrixType Adjoint() const
   {
@@ -192,7 +196,7 @@ class In
   /**
    * @brief In Inverse Adjoint matrix
    *
-   * @return const Eigen::Matrix<FPType, 4, 4>
+   * @return In group inverse Adjoint matrix
    */
   [[nodiscard]] const TMatrixType invAdjoint() const
   {
@@ -205,9 +209,9 @@ class In
    * @brief Operator * overloading.
    * Implements the In composition this * other
    *
-   * @param other const In&
+   * @param other In group element
    *
-   * @return const In
+   * @return In group element
    *
    * @note usage: z = x * y
    */
@@ -220,9 +224,9 @@ class In
    * @brief Operator * overloading.
    * Implements the In composition with a Lie algebra of In element this * other
    *
-   * @param other Eigen::Matrix<FPType, 3, 3>
+   * @param other In Lie algebra element in matrix form
    *
-   * @return const Eigen::Matrix<FPType, 3, 3>
+   * @return In Lie algebra element in matrix form
    */
   [[nodiscard]] const MatrixType operator*(const MatrixType& other) const { return K() * other; }
 
@@ -230,9 +234,9 @@ class In
    * @brief Operator * overloading.
    * Implements the In action on a R3 vector
    *
-   * @param other const Eigen__Matrix<FPType, 3, 1>&
+   * @param other R3 vector
    *
-   * @return const Eigen__Matrix<FPType, 3, 1>
+   * @return R3 vector
    */
   [[nodiscard]] const Vector3Type operator*(const Vector3Type& other) const
   {
@@ -244,9 +248,9 @@ class In
   /**
    * @brief Implements the In composition this = this * other
    *
-   * @param other const In&
+   * @param other In group element
    *
-   * @return const In&
+   * @return In group element
    */
   const In& multiplyRight(const In& other)
   {
@@ -260,9 +264,9 @@ class In
   /**
    * @brief Implements the In composition this = other * this
    *
-   * @param other const In&
+   * @param other In group element
    *
-   * @return const In&
+   * @return In group element
    */
   const In& multiplyLeft(const In& other)
   {

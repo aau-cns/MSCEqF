@@ -17,7 +17,6 @@
 
 namespace utils
 {
-
 template <class S, class C, typename = void>
 struct is_streamable : ::std::false_type
 {
@@ -37,6 +36,10 @@ enum class LoggerLevel
   INACTIVE,
 };
 
+/**
+ * @brief Logger
+ *
+ */
 class Logger
 {
  public:

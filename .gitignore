@@ -85,6 +85,9 @@
 # Codechecker
 .codechecker
 
+# Docs
+**/docs/*
+
 # Other
 CMakeFiles
 TODO

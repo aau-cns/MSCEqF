@@ -18,6 +18,10 @@
 
 namespace msceqf
 {
+/**
+ * @brief The feature representations
+ *
+ */
 enum class FeatureRepresentation
 {
   ANCHORED_EUCLIDEAN,
@@ -25,18 +29,30 @@ enum class FeatureRepresentation
   ANCHORED_INVERSE_DEPTH,
 };
 
+/**
+ * @brief The projection methods
+ *
+ */
 enum class ProjectionMethod
 {
   UNIT_SPHERE,
   UNIT_PLANE,
 };
 
+/**
+ * @brief The distortion models
+ *
+ */
 enum class DistortionModel
 {
   RADTAN,
   EQUIDISTANT,
 };
 
+/**
+ * @brief The equalization methods
+ *
+ */
 enum class EqualizationMethod
 {
   HISTOGRAM,
@@ -44,6 +60,10 @@ enum class EqualizationMethod
   NONE,
 };
 
+/**
+ * @brief The feature detectors
+ *
+ */
 enum class FeatureDetector
 {
   FAST,
@@ -130,14 +150,14 @@ struct TrackerOptions
   DistortionModel distortion_model_;  //!< Distortion Model
   EqualizationMethod equalizer_;      //!< The image equalization method
   FeatureDetector detector_;          //!< The feature detector
-  uint max_features_;                 //!< maximum feature to track/detect
+  uint max_features_;                 //!< Maximum feature to track/detect
   uint min_features_;                 //!< Minimum feature to track/detect
   uint grid_x_size_;                  //!< x size of the grid
   uint grid_y_size_;                  //!< y size of the grid
-  uint min_px_dist_;                  //!< minimum pixel distance between features
-  uint optical_flow_pyramid_levels_;  //!< pyramids levels for optical flow (1-based)
-  uint detector_pyramid_levels_;      //!< pyramids levels for feature detection (1-based)
-  uint optical_flow_win_size_;        //!< window size for optical flow
+  uint min_px_dist_;                  //!< Minimum pixel distance between features
+  uint optical_flow_pyramid_levels_;  //!< Pyramids levels for optical flow (1-based)
+  uint detector_pyramid_levels_;      //!< Pyramids levels for feature detection (1-based)
+  uint optical_flow_win_size_;        //!< Window size for optical flow
   fp ransac_reprojection_;            //!< RANSAC reprojection threshold
   FastOptions fast_opts_;             //!< Fast feature detector options
   GFTTOptions gftt_opts_;             //!< Shi-Tomasi feature detector options

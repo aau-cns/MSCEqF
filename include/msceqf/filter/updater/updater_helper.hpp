@@ -59,7 +59,7 @@ class ProjectionHelper
    * @brief Projection function. This function projects a 3D point.
    *
    * @param f
-   * @return Vector3
+   * @return R3 vector representing a 3D point
    */
   [[nodiscard]] virtual Vector3 pi(const Vector3& f) = 0;
 
@@ -67,7 +67,7 @@ class ProjectionHelper
    * @brief Projection differential function. This function computes the differential of the projection function.
    *
    * @param f
-   * @return MatrixX
+   * @return Differential of the projection function
    */
   [[nodiscard]] virtual MatrixX dpi(const Vector3& f) = 0;
 
@@ -80,7 +80,7 @@ class ProjectionHelper
    * @param C_block_row Block row of the C matrix
    * @param delta_block_row Block of the residual delta
    * @param Cf_block_row Block of the Cf matrix
-   * @param cols_map map of indices for the C matrix and the residual delta
+   * @param cols_map Map of indices for the C matrix and the residual delta
    */
   virtual void residualJacobianBlock(const MSCEqFState& X,
                                      const SystemState& xi0,
@@ -93,14 +93,14 @@ class ProjectionHelper
   /**
    * @brief Get the number of rows of a C matrix block and a residual block
    *
-   * @return const size_t&
+   * @return rows of a single block of the C matrix and the residual
    */
   [[nodiscard]] const size_t& block_rows() const { return block_rows_; }
 
   /**
    * @brief Get the dimension lost due to nullspace projection
    *
-   * @return const size_t&
+   * @return dimension lost due to nullspace projection
    */
   [[nodiscard]] const size_t& dim_loss() const { return dim_loss_; }
 
@@ -120,7 +120,7 @@ class ProjectionHelper
 
 /**
  * @brief ProjectionHelperS2 class.
- * This class provides an implementation of the projection on hte unit sphere as well as its differential.
+ * This class provides an implementation of the projection on the unit sphere as well as its differential.
  *
  */
 class ProjectionHelperS2 : public ProjectionHelper
@@ -135,7 +135,7 @@ class ProjectionHelperS2 : public ProjectionHelper
    * @brief Projection function. This function projects a 3D point on the unit sphere.
    *
    * @param f
-   * @return Vector3
+   * @return R3 vector representing a 3D point on the unit sphere
    */
   [[nodiscard]] Vector3 pi(const Vector3& f) override;
 
@@ -143,7 +143,7 @@ class ProjectionHelperS2 : public ProjectionHelper
    * @brief Projection differential function. This function computes the differential of the projection function.
    *
    * @param f
-   * @return MatrixX
+   * @return Differential of the S2 projection function
    */
   [[nodiscard]] MatrixX dpi(const Vector3& f) override;
 
@@ -156,7 +156,7 @@ class ProjectionHelperS2 : public ProjectionHelper
    * @param C_block_row Block row of the C matrix
    * @param delta_block_row Block of the residual delta
    * @param Cf_block_row Block of the Cf matrix
-   * @param cols_map map of indices for the C matrix and the residual delta
+   * @param cols_map Map of indices for the C matrix and the residual delta
    */
   void residualJacobianBlock(const MSCEqFState& X,
                              const SystemState& xi0,
@@ -184,7 +184,7 @@ class ProjectionHelperZ1 : public ProjectionHelper
    * @brief Projection function. This function projects a 3D point on the unit plane.
    *
    * @param f
-   * @return Vector3
+   * @return R2 vector representing a 3D point on the unit plane
    */
   [[nodiscard]] Vector3 pi(const Vector3& f) override;
 
@@ -192,7 +192,7 @@ class ProjectionHelperZ1 : public ProjectionHelper
    * @brief Projection differential function. This function computes the differential of the projection function.
    *
    * @param f
-   * @return MatrixX
+   * @return Differential of the Z1 projection function
    */
   [[nodiscard]] MatrixX dpi(const Vector3& f) override;
 
@@ -205,7 +205,7 @@ class ProjectionHelperZ1 : public ProjectionHelper
    * @param C_block_row Block row of the C matrix
    * @param delta_block_row Block of the residual delta
    * @param Cf_block_row Block of the Cf matrix
-   * @param cols_map map of indices for the C matrix and the residual delta
+   * @param cols_map Map of indices for the C matrix and the residual delta
    */
   void residualJacobianBlock(const MSCEqFState& X,
                              const SystemState& xi0,
@@ -254,7 +254,7 @@ struct UpdaterHelper
    * @brief Xi operator R^3 -> R^2x4
    *
    * @param f
-   * @return Eigen::Matrix<fp, 2, 4>
+   * @return Matrix representing the Xi operator
    */
   [[nodiscard]] static Eigen::Matrix<fp, 2, 4> Xi(const Vector3& f);
 
@@ -262,7 +262,7 @@ struct UpdaterHelper
    * @brief Compute the Jacobian for inverse depth parametrization, used in the Cf matrix
    *
    * @param A_f Given feature in the anchor frame
-   * @return Matrix3
+   * @return Jacobian matrix for inverse depth parametrization
    */
   [[nodiscard]] static Matrix3 inverseDepthJacobian(const Vector3& A_f);
 
@@ -271,7 +271,7 @@ struct UpdaterHelper
    * decomposition
    *
    * @param Ct C matrix
-   * @param delta residual
+   * @param delta Residual
    * @param Cf Cf matrix
    */
   static void nullspaceProjection(Eigen::Ref<MatrixX> Cf, MatrixXBlockRowRef Ct, VectorXBlockRowRef delta);
@@ -280,7 +280,7 @@ struct UpdaterHelper
    * @brief Perform in-place compression of the C matrix and the residual using QR decomposition
    *
    * @param C C matrix
-   * @param delta residual
+   * @param delta Residual
    * @param R R matrix
    */
   static void updateQRCompression(MatrixX& C, VectorX& delta, MatrixX& R);
@@ -288,9 +288,9 @@ struct UpdaterHelper
   /**
    * @brief Perform chi2 test (based on precomputed table) on the given block of the residual
    *
-   * @param chi2 chi2 value
-   * @param dof degrees of freedom
-   * @param chi2_table precomputed chi2 table
+   * @param chi2 Chi2 value
+   * @param dof Degrees of freedom
+   * @param chi2_table Precomputed chi2 table
    * @return true if test passed, false otherwise
    */
   [[nodiscard]] static bool chi2Test(const fp& chi2, const size_t& dof, const std::map<uint, fp>& chi2_table);

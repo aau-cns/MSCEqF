@@ -16,7 +16,7 @@
 
 #include "SEn3.hpp"
 
-    namespace group
+namespace group
 {
 /**
  * @brief The Semi Direct Bias group. This represent the core components of the symmetry group for Inertial Navigation
@@ -39,10 +39,10 @@ class SemiDirectBias
   SemiDirectBias() : D_(), delta_(Vector6Type::Zero()){};
 
   /**
-   * @brief Construct a Semi Direct Bias Group object from a given SE23 object, and a vector
+   * @brief Construct a Semi Direct Bias Group object from a given SE23 object, and a R6 vector
    *
-   * @param D const SE23<FPType>&
-   * @param delta const Eigen::Matrix<FPType, 6, 1>&
+   * @param D SE23 group element
+   * @param delta R6 vector
    */
   SemiDirectBias(const SE23Type& D, const Vector6Type& delta) : D_(D), delta_(delta){};
 
@@ -50,9 +50,9 @@ class SemiDirectBias
    * @brief The exponential map for the Semi Direct Bias Group.
    * Returns a SemiDirectBias object given a vector u in R15 (equivalent to exp(wedge(u)))
    *
-   * @param u const Eigen::Matrix<FPType, 15, 1>&
+   * @param u R15 vector
    *
-   * @return SemiDirectBias
+   * @return SemiDirectBias group element
    */
   [[nodiscard]] static const SemiDirectBias exp(const VectorType& u)
   {
@@ -64,9 +64,9 @@ class SemiDirectBias
    * @brief The logarithmic map for the Semi Direct Bias Group.
    * Return a vector given a SemiDirectBias object (equivalent to vee(log(X)))
    *
-   * @param X const SemiDirectBias&
+   * @param X SemiDirectBias group element
    *
-   * @return Eigen::Matrix<FPType, 15, 1>
+   * @return R15 vector
    */
   [[nodiscard]] static const VectorType log(const SemiDirectBias& X)
   {
@@ -80,7 +80,7 @@ class SemiDirectBias
    * @brief Get a constant copy of B (the SE3 subgroup of SE23 composed by the rotational component (R) and the first
    * isometry (v))
    *
-   * @return SE3<FPType>
+   * @return SE3 group element
    */
   [[nodiscard]] const SE3Type B() const { return SE3Type(D_.q(), {D_.v()}); }
 
@@ -88,28 +88,28 @@ class SemiDirectBias
    * @brief Get a constant copy of C (the SE3 subgroup of SE23 composed by the rotational component (R) and the
    * second isometry (p))
    *
-   * @return SE3<FPType>
+   * @return SE3 group element
    */
   [[nodiscard]] const SE3Type C() const { return SE3Type(D_.q(), {D_.p()}); }
 
   /**
    * @brief Get a constant reference to D (the SE23 element)
    *
-   * @return const SE23<FPType>&
+   * @return SE23 group element
    */
   [[nodiscard]] const SE23Type& D() const { return D_; }
 
   /**
    * @brief Get a constant reference to delta (the R6 element)
    *
-   * @return const Eigen::Matrix<FPType, 6, 1>&
+   * @return R6 vector
    */
   [[nodiscard]] const Vector6Type& delta() const { return delta_; }
 
   /**
-   * @brief get a constant copy of the inverse of the SemiDirectBias object
+   * @brief Get a constant copy of the inverse of the SemiDirectBias object
    *
-   * @return const SemiDirectBias
+   * @return SemiDirectBias group element
    */
   [[nodiscard]] const SemiDirectBias inv() const { return SemiDirectBias(D_.inv(), -B().invAdjoint() * delta_); }
 
@@ -117,9 +117,9 @@ class SemiDirectBias
    * @brief Operator * overloading.
    * Implements the SemiDirectBias composition this * other
    *
-   * @param other const SemiDirectBias&
+   * @param other SemiDirectBias group element
    *
-   * @return const SemiDirectBias
+   * @return SemiDirectBias group element
    *
    * @note usage: z = x * y
    */
@@ -131,9 +131,9 @@ class SemiDirectBias
   /**
    * @brief Implements the SemiDirectBias composition this = this * other
    *
-   * @param other const SemiDirectBias&
+   * @param other SemiDirectBias group element
    *
-   * @return const SemiDirectBias&
+   * @return SemiDirectBias group element
    */
   const SemiDirectBias& multiplyRight(const SemiDirectBias& other)
   {
@@ -145,9 +145,9 @@ class SemiDirectBias
   /**
    * @brief Implements the SemiDirectBias composition this = other * this
    *
-   * @param other const SemiDirectBias&
+   * @param other SemiDirectBias group element
    *
-   * @return const SemiDirectBias&
+   * @return SemiDirectBias group element
    */
   const SemiDirectBias& multiplyLeft(const SemiDirectBias& other)
   {

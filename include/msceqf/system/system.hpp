@@ -56,7 +56,7 @@ class SystemState
    *
    * @tparam Args
    * @param opts State options
-   * @param keys_args multiple pairs of key-ptr where each pointer is pointing to a state elements
+   * @param keys_args Multiple pairs of key-ptr where each pointer is pointing to a state elements
    *
    * @note Examples of call:
    * @note 1) SystemState(opts, pair(key1, ptr1), pair(key2, ptr2), pair(key3, ptr3))
@@ -95,28 +95,28 @@ class SystemState
   /**
    * @brief return a constant reference to the extended pose element (R,v,p) of the system state as a SE23-torsor
    *
-   * @return const SE23&
+   * @return Extended pose element (R,v,p) of the system state as a SE23-torsor
    */
   [[nodiscard]] const SE23& T() const;
 
   /**
    * @brief return a copy of the pose element (R,p) of the system state as a SE3-torsor
    *
-   * @return const SE3&
+   * @return Pose element (R,p) of the system state as a SE3-torsor
    */
   [[nodiscard]] const SE3 P() const;
 
   /**
    * @brief return a copy of the pose element (R,v) of the system state as a SE3-torsor
    *
-   * @return const SE3&
+   * @return Homogeneous galilean element (R,v) of the system state as a SE3-torsor
    */
   [[nodiscard]] const SE3 V() const;
 
   /**
    * @brief return a constant reference to the bias element of the system state as a vector
    *
-   * @return const Vector6&
+   * @return R6 vector representing the bias element of the system state
    */
   [[nodiscard]] const Vector6& b() const;
 
@@ -125,7 +125,7 @@ class SystemState
    * If the camera extrinsics are not estimated online then the fixed calibration value provided in the options is
    * returned
    *
-   * @return const SE3&
+   * @return Pose/Transformation element of the system state as a SE3-torsor representing the camera extrinsics
    */
   [[nodiscard]] const SE3& S() const;
 
@@ -134,7 +134,7 @@ class SystemState
    * If the camera intrinsics are not are not estimated online then the fixed calibration value provided in the options
    * is returned
    *
-   * @return const In&
+   * @return Intrinsic element of the system state as a In-torsor representing the camera intrinsics
    */
   [[nodiscard]] const In& K() const;
 
@@ -143,7 +143,7 @@ class SystemState
    * If the camera intrinsics are not are not estimated online then the fixed calibration value provided in the options
    * is returned
    *
-   * @return const Vector4
+   * @return R4 vector representing the camera intrinsics
    */
   [[nodiscard]] const Vector4 k() const;
 
@@ -151,30 +151,30 @@ class SystemState
    * @brief return a constant reference to a persistent feature element of the system state as a vector, given the
    * feature id
    *
-   * @param feat_id id of the persistent feature
-   * @return const Vector3&
+   * @param feat_id Id of the persistent feature
+   * @return R3 vector representing the feature element of the system state
    */
   [[nodiscard]] const Vector3& f(const uint& feat_id) const;
 
   /**
    * @brief return a copy of g*e3 as a vector
    *
-   * @return const Vector3
+   * @return R3 vector representing the gravity vector in a gravity-aligned frame of reference
    */
   [[nodiscard]] const Vector3 ge3() const;
 
   /**
    * @brief Get the state options
    *
-   * @return const StateOptions&
+   * @return State options
    */
   [[nodiscard]] inline const StateOptions& opts() const { return opts_; }
 
   /**
    * @brief Get a string describing the given SystemStateKey
    *
-   * @param key
-   * @return std::string
+   * @param key System state element name or feature id
+   * @return String describing the given key
    */
   static std::string toString(const SystemStateKey& key);
 
@@ -187,17 +187,17 @@ class SystemState
 
   /**
    * @brief Insert a single element into the state map given a pair of key-ptr. Each pointer points to a state
-   * element ot be inserted into the state_ map
+   * element to be inserted into the state_ map
    *
-   * @param key_ptr pair of key-ptr
+   * @param key_ptr Pair of key-ptr
    */
   void insertSystemStateElement(std::pair<SystemStateKey, SystemStateElementUniquePtr>&& key_ptr);
 
   /**
    * @brief Insert a multi element into the state map given a vector of pairs of key-ptr. Each pointer points to a
-   * state element ot be inserted into the state_ map
+   * state element to be inserted into the state_ map
    *
-   * @param keys_ptrs vector of pairs of key-ptr.
+   * @param keys_ptrs Vector of pairs of key-ptr.
    */
   void insertSystemStateElement(std::vector<std::pair<SystemStateKey, SystemStateElementUniquePtr>>& keys_ptrs);
 

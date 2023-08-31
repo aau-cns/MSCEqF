@@ -38,9 +38,9 @@ class Propagator
    * the last measurement in the buffer.
    *
    * @param X Actual state estimate
-   * @param xi0 origin
-   * @param imu
-   * @param timestamp the actual timestamp. If a propagation is triggered than the timestamp is updated
+   * @param xi0 Origin
+   * @param imu IMU measurement
+   * @param timestamp The actual timestamp. If a propagation is triggered than the timestamp is updated
    *
    * @note This function triggers a propagation if the imu buffer reaches its max size.
    * In such case all the entries of the imu buffer except the last one are deleted to avoid unbounded memory growth.
@@ -51,9 +51,9 @@ class Propagator
    * @brief This function implements the mean and covariance propagation from timestamp to new_timestamp for the MSCEqF.
    *
    * @param X Actual state estimate
-   * @param xi0 origin
-   * @param timestamp integration period start time (actual state timestamp). *This will be modified by the propagation*
-   * @param new_timestamp integration period end time (new state timestamp)
+   * @param xi0 Origin
+   * @param timestamp Integration period start time (actual state timestamp). *This will be modified by the propagation*
+   * @param new_timestamp Integration period end time (new state timestamp)
    * @return true if propagation succeeded, false otherwise
    */
   bool propagate(MSCEqFState& X, const SystemState& xi0, fp& timestamp, const fp& new_timestamp);
@@ -66,9 +66,9 @@ class Propagator
    * This method will also perform linear interpolation at t1 time if no IMU readings exist with timestamp equal t1 and
    * at least one IMU reading exist with timestamp grater than t1.
    *
-   * @param t0 start time
-   * @param t1 end time
-   * @return ImuBuffer
+   * @param t0 Start time
+   * @param t1 End time
+   * @return IMU buffer
    *
    * @note This method reqires that the IMU buffer is sorted. This should be enforced by the checks in insertion.
    * @note This method has been written with specific care to avoid iterator invalidation.
@@ -78,10 +78,10 @@ class Propagator
   /**
    * @brief Perform linear interpolation. (1 - alpha) * pre + alpha * post
    *
-   * @param pre pre imu measurment
-   * @param post post imu measurement
-   * @param alpha interpolation coefficient [0, 1]
-   * @return Imu
+   * @param pre Pre imu measurment (at t0)
+   * @param post Post imu measurement (at t1)
+   * @param alpha Interpolation coefficient [0, 1]
+   * @return Interpolated IMU measurement
    */
   Imu lerp(const Imu& pre, const Imu& post, const fp& alpha);
 
@@ -89,9 +89,9 @@ class Propagator
    * @brief Mean propagation for the MSCEqF
    *
    * @param X Actual state estimate
-   * @param xi0 origin
-   * @param u imu measurement to propagate with
-   * @param dt delta time between input measurements
+   * @param xi0 Origin
+   * @param u IMU measurement to propagate with
+   * @param dt Delta time between input measurements
    */
   void propagateMean(MSCEqFState& X, const SystemState& xi0, const Imu& u, const fp& dt);
 
@@ -99,9 +99,9 @@ class Propagator
    * @brief Covariance propagation for the MSCEqF
    *
    * @param X Actual state estimate
-   * @param xi0 origin
-   * @param u imu measurement to propagate the covariance with (used to compute state matrix)
-   * @param dt delta time between input measurements
+   * @param xi0 Origin
+   * @param u IMU measurement to propagate the covariance with (used to compute state matrix)
+   * @param dt Delta time between input measurements
    */
   void propagateCovariance(MSCEqFState& X, const SystemState& xi0, const Imu& u, const fp& dt);
 
@@ -111,9 +111,9 @@ class Propagator
    * E element if extrinsic calibration is enabled.
    *
    * @param X Actual state estimate
-   * @param xi0 origin
-   * @param u imu measurement to propagate the covariance with (used to compute state matrix)
-   * @return MatrixX The state matrix A
+   * @param xi0 Origin
+   * @param u IMU measurement to propagate the covariance with (used to compute state matrix)
+   * @return The state matrix A
    */
   const MatrixX stateMatrix(MSCEqFState& X, const SystemState& xi0, const Imu& u) const;
 
@@ -121,8 +121,8 @@ class Propagator
    * @brief This function computes the continuous-time input matrix B.
    *
    * @param X Actual state estimate
-   * @param xi0 origin
-   * @return MatrixX Discrete time process noise covariance matrix
+   * @param xi0 Origin
+   * @return Discrete time process noise covariance matrix
    */
   const MatrixX inputMatrix(MSCEqFState& X, const SystemState& xi0) const;
 
@@ -136,8 +136,12 @@ class Propagator
    *
    * @param A Continuous time state matrix A
    * @param B Continuous time input matrix B
-   * @param dt delta time between input measurements
-   * @return MatrixX The H matrix
+   * @param dt Delta time between input measurements
+   * @return The H matrix which include the core state transition matrix and the discrete time input matrix
+   *
+   * @note This function is based on the following paper: Axelsson, Patrik. (2015). Discrete-Time Solutions to the
+   * Continuous-Time Differential Lyapunov Equation With Applications to Kalman Filtering. Automatic Control, IEEE
+   * Transactions on. 60. 632-643. 10.1109/TAC.2014.2353112.
    */
   const MatrixX discreteTimeMatrix(const MatrixX& A, const MatrixX& B, const fp& dt) const;
 
