@@ -67,20 +67,23 @@ $ catkin build -DCMAKE_BUILD_TYPE=<build_type> -DBUILD_ROS=ON
 ```
 
 ### ROS2 setup
-Coming soon
-<!-- ```sh
+```sh
 $ cd ws/src
 $ git clone <url> msceqf
 $ cd msceqf
 $ colcon build --event-handlers console_cohesion+ --cmake-args " -DBUILD_ROS=ON" --cmake-args " -DCMAKE_BUILD_TYPE=<build_type>"
-``` -->
+```
 
 ### Docker setup
-Coming soon
-<!-- ```sh
-docker build --network=host -t msceqf:ros<ros_version> -f docker/Dockerfile_ros<ros_version>
-docker run --net=host -ti msceqf:ros<ros_version>
-``` -->
+```sh
+$ sudo apt update
+$ sudo apt install -y nvidia-docker2
+$ sudo systemctl restart docker
+$ cd <path_to_msceqf_folder>
+$ docker build --network=host -t msceqf:ros<ros_version> -f docker/Dockerfile_ros<ros_version>
+$ xhost +
+$ docker run --net=host -it --gpus all --env="NVIDIA_DRIVER_CAPABILITIES=all" --env="DISPLAY" --env="QT_X11_NO_MITSHM=1" --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" msceqf:ros<ros_version>
+```
 
 ## License
 
