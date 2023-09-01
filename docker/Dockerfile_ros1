@@ -1,0 +1,7 @@
+FROM osrf/ros:noetic-desktop-full
+
+RUN apt-get update && apt-get install -y nano git
+RUN sudo apt-get install -y python3-catkin-tools python3-osrf-pycommon
+
+RUN mkdir -p /root/catkin_ws/src/msceqf
+COPY . /root/catkin_ws/src/msceqf/
