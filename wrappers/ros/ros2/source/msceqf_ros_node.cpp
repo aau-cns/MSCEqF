@@ -25,11 +25,8 @@ int main(int argc, char **argv)
   auto node = rclcpp::Node("msceqf_ros", options);
 
   // Parameters from launchfile
-  std::string config_filepath, imu_topic, cam_topic, features_topic, pose_topic, path_topic, image_topic,
-      extrinsics_topic, intrinsics_topic, origin_topic;
-
-  bool exist_cam_topic = false;
-  bool exist_features_topic = false;
+  std::string config_filepath, imu_topic, cam_topic, pose_topic, path_topic, image_topic, extrinsics_topic,
+      intrinsics_topic, origin_topic;
 
   if (!node.get_parameter<std::string>("config_filepath", config_filepath))
   {
@@ -41,11 +38,9 @@ int main(int argc, char **argv)
     ROS_ERROR("Imu topic not defined");
     std::exit(EXIT_FAILURE);
   }
-  exist_cam_topic = node.get_parameter<std::string>("cam_topic", cam_topic);
-  exist_features_topic = node.get_parameter<std::string>("features_topic", features_topic);
-  if (!exist_cam_topic && !exist_features_topic)
+  if (!node.get_parameter<std::string>("cam_topic", cam_topic))
   {
-    ROS_ERROR("Neither camera nor features topics defined");
+    ROS_ERROR("Camera topic not defined");
     std::exit(EXIT_FAILURE);
   }
   if (!node.get_parameter<std::string>("pose_topic", pose_topic))
@@ -90,8 +85,8 @@ int main(int argc, char **argv)
   }
 
   // Instanciate MSCEqFRos
-  MSCEqFRos MSCEqFRos(nh, config_filepath, imu_topic, cam_topic, features_topic, pose_topic, path_topic, image_topic,
-                      extrinsics_topic, intrinsics_topic, origin_topic, record, outbagfile);
+  MSCEqFRos MSCEqFRos(nh, config_filepath, imu_topic, cam_topic, pose_topic, path_topic, image_topic, extrinsics_topic,
+                      intrinsics_topic, origin_topic, record, outbagfile);
 
   // ROS Spin
   ros::spin();

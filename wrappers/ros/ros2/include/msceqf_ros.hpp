@@ -22,7 +22,7 @@
 #include <nav_msgs/msg/Path.h>
 #include <opencv2/opencv.hpp>
 #include <cv_bridge/cv_bridge.h>
-#include <rosbag/bag.h>
+#include <rosbag2_cpp/writer.hpp>
 
 #include "msceqf/msceqf.hpp"
 
@@ -35,7 +35,6 @@ class MSCEqFRos
    * @param msceqf_config_filepath Path of configuration yaml file for the msceqf
    * @param imu_topic IMU topic
    * @param cam_topic Camera topic
-   * @param features_topic Features topic
    * @param pose_topic Pose topic
    * @param path_topic Path topic
    * @param image_topic Image topic
@@ -48,7 +47,6 @@ class MSCEqFRos
             const std::string &msceqf_config_filepath,
             const std::string &imu_topic,
             const std::string &cam_topic,
-            const std::string &features_topic,
             const std::string &pose_topic,
             const std::string &path_topic,
             const std::string &image_topic,
@@ -59,12 +57,16 @@ class MSCEqFRos
             const std::string &bagfile);
 
   /**
-   * @brief Callbacks
-   * @param Message const pointer
+   * @brief Camera callback
+   * @param Message message constant pointer
    */
   void callback_image(const sensor_msgs::msg::Image::ConstSharedPtr &msg);
+
+  /**
+   * @brief IMU callback
+   * @param Message message constant pointer
+   */
   void callback_imu(const sensor_msgs::msg::Imu::ConstSharedPtr &msg);
-  void callback_feats(const sensor_msgs::msg::PointCloud::ConstSharedPtr &msg);
 
  private:
   /**
@@ -73,13 +75,6 @@ class MSCEqFRos
    * @param cam Camera measurement
    */
   void publish(const msceqf::Camera &cam);
-
-  /**
-   * @brief Publish pose, images and path messages
-   *
-   * @param feats Features measurement
-   */
-  void publish(const msceqf::TriangulatedFeatures &feats);
 
   /**
    * @brief Convert time in seconds to rclcpp::Time
@@ -105,9 +100,8 @@ class MSCEqFRos
 
   msceqf::MSCEqF sys_;  //<! MSCEqF system
 
-  rclcpp::Subscription<sensor_msgs::msg::Image> sub_cam_;         //<! Camera subscriber
-  rclcpp::Subscription<sensor_msgs::msg::Imu> sub_imu_;           //<! IMU subscriber
-  rclcpp::Subscription<sensor_msgs::msg::PointCloud> sub_feats_;  //<! Features subscriber
+  rclcpp::Subscription<sensor_msgs::msg::Image> sub_cam_;  //<! Camera subscriber
+  rclcpp::Subscription<sensor_msgs::msg::Imu> sub_imu_;    //<! IMU subscriber
 
   rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped> pub_pose_;  //<! Pose publisher
   rclcpp::Publisher<sensor_msgs::msg::Image> pub_image_;                       //<! Image publisher
@@ -122,8 +116,8 @@ class MSCEqFRos
   sensor_msgs::msg::CameraInfo intrinsics_;             //<! Intrinsics message
   geometry_msgs::msg::PoseStamped origin_;              //<! Origin message
 
-  bool record_;      //<! Flag to record a bagfile
-  rosbag::Bag bag_;  //<! Bagfile
+  bool record_;              //<! Flag to record a bagfile
+  rosbag2_cpp::Writer bag_;  //<! Bagfile writer
 
   uint seq_ = 0;  //<! Sequence number
 };
