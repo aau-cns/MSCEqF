@@ -76,13 +76,6 @@ class MSCEqFRos
    */
   void publish(const msceqf::Camera &cam);
 
-  /**
-   * @brief Publish pose, images and path messages
-   *
-   * @param feats Features measurement
-   */
-  void publish(const msceqf::TriangulatedFeatures &feats);
-
   ros::NodeHandle nh_;  //!< ROS node handler
 
   msceqf::MSCEqF sys_;  //!< MSCEqF system
