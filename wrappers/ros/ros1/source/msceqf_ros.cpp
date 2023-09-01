@@ -19,7 +19,6 @@ MSCEqFRos::MSCEqFRos(const ros::NodeHandle &nh,
                      const std::string &msceqf_config_filepath,
                      const std::string &imu_topic,
                      const std::string &cam_topic,
-                     const std::string &features_topic,
                      const std::string &pose_topic,
                      const std::string &path_topic,
                      const std::string &image_topic,
@@ -32,11 +31,9 @@ MSCEqFRos::MSCEqFRos(const ros::NodeHandle &nh,
 {
   sub_cam_ = nh_.subscribe(cam_topic, 10, &MSCEqFRos::callback_image, this);
   sub_imu_ = nh_.subscribe(imu_topic, 1000, &MSCEqFRos::callback_imu, this);
-  sub_feats_ = nh_.subscribe(features_topic, 10, &MSCEqFRos::callback_feats, this);
 
   utils::Logger::info("Subscribing: " + std::string(sub_cam_.getTopic().c_str()));
   utils::Logger::info("Subscribing: " + std::string(sub_imu_.getTopic().c_str()));
-  utils::Logger::info("Subscribing: " + std::string(sub_feats_.getTopic().c_str()));
 
   // Publishers
   pub_pose_ = nh_.advertise<geometry_msgs::PoseWithCovarianceStamped>(pose_topic, 1);
@@ -83,29 +80,6 @@ void MSCEqFRos::callback_image(const sensor_msgs::Image::ConstPtr &msg)
   sys_.processMeasurement(cam);
 
   publish(cam);
-}
-
-void MSCEqFRos::callback_feats(const sensor_msgs::PointCloud::ConstPtr &msg)
-{
-  msceqf::TriangulatedFeatures feats;
-
-  feats.timestamp_ = msg->header.stamp.toSec();
-
-  for (size_t i = 0; i < msg->points.size(); ++i)
-  {
-    const auto &x = msg->points.at(i).x;
-    const auto &y = msg->points.at(i).y;
-    const auto &id = msg->channels.at(i).values.at(0);
-
-    feats.features_.distorted_uvs_.emplace_back(x, y);
-    feats.features_.uvs_.emplace_back(x, y);
-    feats.features_.normalized_uvs_.emplace_back(x, y);
-    feats.features_.ids_.emplace_back(id);
-  }
-
-  sys_.processMeasurement(feats);
-
-  publish(feats);
 }
 
 void MSCEqFRos::callback_imu(const sensor_msgs::Imu::ConstPtr &msg)

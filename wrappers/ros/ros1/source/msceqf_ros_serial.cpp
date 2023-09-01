@@ -23,11 +23,8 @@ int main(int argc, char **argv)
   ros::init(argc, argv, "msceqf_ros");
   ros::NodeHandle nh("~");
 
-  std::string config_filepath, imu_topic, cam_topic, features_topic, pose_topic, path_topic, image_topic,
-      extrinsics_topic, intrinsics_topic, origin_topic, bagfile;
-
-  bool exist_cam_topic = false;
-  bool exist_features_topic = false;
+  std::string config_filepath, imu_topic, cam_topic, pose_topic, path_topic, image_topic, extrinsics_topic,
+      intrinsics_topic, origin_topic, bagfile;
 
   if (!nh.getParam("config_filepath", config_filepath))
   {
@@ -39,11 +36,9 @@ int main(int argc, char **argv)
     ROS_ERROR("Imu topic not defined");
     std::exit(EXIT_FAILURE);
   }
-  exist_cam_topic = nh.getParam("cam_topic", cam_topic);
-  exist_features_topic = nh.getParam("features_topic", features_topic);
-  if (!exist_cam_topic && !exist_features_topic)
+  if (!nh.getParam("cam_topic", cam_topic))
   {
-    ROS_ERROR("Neither camera nor features topics defined");
+    ROS_ERROR("Camera topic not defined");
     std::exit(EXIT_FAILURE);
   }
   if (!nh.getParam("pose_topic", pose_topic))
@@ -106,8 +101,8 @@ int main(int argc, char **argv)
   }
 
   // Instanciate MSCEqFRos
-  MSCEqFRos MSCEqFRos(nh, config_filepath, imu_topic, cam_topic, features_topic, pose_topic, path_topic, image_topic,
-                      extrinsics_topic, intrinsics_topic, origin_topic, record, outbagfile);
+  MSCEqFRos MSCEqFRos(nh, config_filepath, imu_topic, cam_topic, pose_topic, path_topic, image_topic, extrinsics_topic,
+                      intrinsics_topic, origin_topic, record, outbagfile);
 
   // Load rosbag
   rosbag::Bag bag;
@@ -184,12 +179,6 @@ int main(int argc, char **argv)
     if (msgs.at(m).getTopic() == cam_topic)
     {
       MSCEqFRos.callback_image(msgs.at(m).instantiate<sensor_msgs::Image>());
-    }
-
-    // Features processing
-    if (msgs.at(m).getTopic() == features_topic)
-    {
-      MSCEqFRos.callback_feats(msgs.at(m).instantiate<sensor_msgs::PointCloud>());
     }
   }
 
