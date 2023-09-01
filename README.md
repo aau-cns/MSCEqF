@@ -1,4 +1,6 @@
-# MSCEqF
+<p align="center"> <img src="https://drive.google.com/uc?id=1y8wuUhLBD60TJ7D8N30FmNNyNzEH3MY6"/></p>
+
+> MSCEqF: Multi State Constraint Equivariant Filter
 
 MSCEqF is an equivariant filter for visual-inertial navigation. 
 It is based on the recent advances in equivaraint inertial navigation systems [[1](#1), [2](#2), [3](#3)], and it is the first ever presented multi-state constraint equivaraint filter.
@@ -23,13 +25,10 @@ It is based on the recent advances in equivaraint inertial navigation systems [[
 - Supports a grid-based multi-thread parallel feature extraction 
 - Supports different features detector including FAST and Shi-Tomasi
 - Supports different image enhancment tecniques, including Histogram and CLAHE
-- Includes a completely independednt Lie group library
-- Includes a completely independednt Lie group library
-- Includes a completely independednt Lie group library
 
 ## Dependencies
 
-*MSCEqF* has the following dependencies which are automatically downloaded and linked against:
+MSCEqF has the following dependencies which are automatically downloaded and linked against:
 
 - Eigen
 - yaml-cpp
@@ -38,7 +37,7 @@ It is based on the recent advances in equivaraint inertial navigation systems [[
 - OpenCV
 
 ## Getting started
-### Setup
+### ROS free setup
 ```sh
 $ git clone <url> msceqf                                                                # Get the code
 $ cd msceqf                                                                             # Move into msceqf folder
@@ -59,11 +58,29 @@ $ cd msceqf/build/<build_type>                                                  
 $ ./msceqf_euroc <sequence_name> <euroc_dataset_folder> <euroc_example_folder>  # Run Euroc example
 ```
 
+### ROS1 setup
+```sh
+$ cd ws/src                                                                             # Move into ROS workspace
+$ git clone <url> msceqf                                                                # Get the code
+$ cd msceqf                                                                             # Move into msceqf folder
+$ catkin build -DCMAKE_BUILD_TYPE=<build_type> -DBUILD_ROS=ON                           # ROS1 build
+```
+
+### ROS2 setup
+```sh
+$ cd ws/src                                                                             # Move into ROS workspace
+$ git clone <url> msceqf                                                                # Get the code
+$ cd msceqf                                                                             # Move into msceqf folder
+$ colcon build -DCMAKE_BUILD_TYPE=<build_type> -DBUILD_ROS=ON                           # ROS2 build
+```
+
 ## License
 
 This software is made available to the public to use (source-available), licensed under the terms of the BSD-2-Clause-License with no commercial use allowed, the full terms of which are made available in the [LICENSE](LICENSE) file. 
 
 ## References
 <a id="1">[1]</a> van Goor, Pieter, Tarek Hamel, and Robert Mahony. "Equivariant filter (eqf)." IEEE Transactions on Automatic Control (2022).
+
 <a id="2">[2]</a> Fornasier, Alessandro, et al. "Equivariant filter design for inertial navigation systems with input measurement biases." 2022 International Conference on Robotics and Automation (ICRA). IEEE, 2022.
+
 <a id="3">[3]</a> Fornasier, Alessandro, et al. "Overcoming Bias: Equivariant Filter Design for Biased Attitude Estimation with Online Calibration." IEEE Robotics and Automation Letters 7.4 (2022): 12118-12125.
