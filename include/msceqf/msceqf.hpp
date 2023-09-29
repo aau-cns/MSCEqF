@@ -35,13 +35,24 @@ class MSCEqF
   MSCEqF(const std::string& params_filepath);
 
   /**
-   * @brief This function provide a simple interface for processing measurements of different kind.
+   * @brief Process IMU measurement.
    *
-   * @tparam T Type of the measurement
-   * @param meas Measurement
+   * @param meas IMU measurement
    */
   void processMeasurement(const Imu& meas) { processImuMeasurement(meas); }
+
+  /**
+   * @brief Process camera measurement.
+   *
+   * @param meas Camera measurement
+   */
   void processMeasurement(Camera& meas) { processCameraMeasurement(meas); }
+
+  /**
+   * @brief Process triangulated features measurement.
+   *
+   * @param meas Triangulated features measurement
+   */
   void processMeasurement(TriangulatedFeatures& meas) { processFeaturesMeasurement(meas); }
 
   /**

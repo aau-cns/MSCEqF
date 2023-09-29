@@ -39,23 +39,50 @@ MSCEqF has the following dependencies which are automatically downloaded and lin
 ## Getting started
 ### ROS free setup
 ```sh
-$ git clone <url> msceqf                                                                # Get the code
-$ cd msceqf                                                                             # Move into msceqf folder
-$ mkdir -p build/<build_type>                                                           # Create folder for build
-$ cd build/<build_type> && cmake -DCMAKE_BUILD_TYPE=<build_type> -DBUILD_TESTS=ON ../.. # Configure build
-$ cmake --build . --config Debug --target all -j && cd ../..                            # Build
+$ git clone <url> msceqf
+$ cd msceqf
+$ mkdir -p build/<build_type>
+$ cd build/<build_type> && cmake -DCMAKE_BUILD_TYPE=<build_type> -DBUILD_TESTS=ON ../..
+$ cmake --build . --config Debug --target all -j && cd ../..
 ```
 
 ### Run tests
 ```sh
-$ cd msceqf/build/<build_type>  # Move into build folder
-$ ./msceqf_tests                # Run tests
+$ cd msceqf/build/<build_type>
+$ ./msceqf_tests
 ```
 
 ### Run example
 ```sh
-$ cd msceqf/build/<build_type>                                                  # Move into build folder
-$ ./msceqf_euroc <sequence_name> <euroc_dataset_folder> <euroc_example_folder>  # Run Euroc example
+$ cd msceqf/build/<build_type>
+$ ./msceqf_euroc <sequence_name> <euroc_dataset_folder> <euroc_example_folder>
+```
+
+### ROS1 setup
+```sh
+$ cd ws/src
+$ git clone <url> msceqf
+$ cd msceqf
+$ catkin build -DCMAKE_BUILD_TYPE=<build_type> -DBUILD_ROS=ON
+```
+
+### ROS2 setup
+```sh
+$ cd ws/src
+$ git clone <url> msceqf
+$ cd msceqf
+$ colcon build --event-handlers console_cohesion+ --cmake-args " -DBUILD_ROS=ON" --cmake-args " -DCMAKE_BUILD_TYPE=<build_type>"
+```
+
+### Docker setup
+```sh
+$ sudo apt update
+$ sudo apt install -y nvidia-docker2
+$ sudo systemctl restart docker
+$ cd <path_to_msceqf_folder>
+$ docker build --network=host -t msceqf:ros<ros_version> -f docker/Dockerfile_ros<ros_version>
+$ xhost +
+$ docker run --net=host -it --gpus all --env="NVIDIA_DRIVER_CAPABILITIES=all" --env="DISPLAY" --env="QT_X11_NO_MITSHM=1" --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" msceqf:ros<ros_version>
 ```
 
 ### ROS1 setup

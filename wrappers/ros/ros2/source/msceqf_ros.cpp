@@ -15,7 +15,7 @@
 #include "msceqf_ros.hpp"
 #include "utils/logger.hpp"
 
-MSCEqFRos::MSCEqFRos(const ros::NodeHandle &nh,
+MSCEqFRos::MSCEqFRos(const rclcpp::Node &node,
                      const std::string &msceqf_config_filepath,
                      const std::string &imu_topic,
                      const std::string &cam_topic,
@@ -27,44 +27,46 @@ MSCEqFRos::MSCEqFRos(const ros::NodeHandle &nh,
                      const std::string &origin_topic,
                      const bool &record,
                      const std::string &bagfile)
-    : nh_(nh), sys_(msceqf_config_filepath)
+    : node_(node), sys_(msceqf_config_filepath)
 {
-  sub_cam_ = nh_.subscribe(cam_topic, 10, &MSCEqFRos::callback_image, this);
-  sub_imu_ = nh_.subscribe(imu_topic, 1000, &MSCEqFRos::callback_imu, this);
+  sub_cam_ = node_.create_subscription<sensor_msgs::msg::Image>(
+      cam_topic, 10, std::bind(&MSCEqFRos::callback_cam, this, std::placeholders::_1));
+  sub_imu_ = node_.create_subscription<sensor_msgs::msg::Image>(
+      imu_topic, rclcpp::SensorDataQoS(), std::bind(&MSCEqFRos::callback_imu, this, std::placeholders::_1));
 
-  utils::Logger::info("Subscribing: " + std::string(sub_cam_.getTopic().c_str()));
-  utils::Logger::info("Subscribing: " + std::string(sub_imu_.getTopic().c_str()));
+  utils::Logger::info("Subscribing: " + std::string(sub_cam_.get_topic_name()));
+  utils::Logger::info("Subscribing: " + std::string(sub_imu_.get_topic_name()));
 
   // Publishers
-  pub_pose_ = nh_.advertise<geometry_msgs::PoseWithCovarianceStamped>(pose_topic, 1);
-  pub_path_ = nh_.advertise<nav_msgs::Path>(path_topic, 1);
-  pub_image_ = nh_.advertise<sensor_msgs::Image>(image_topic, 1);
-  pub_extrinsics_ = nh_.advertise<geometry_msgs::PoseStamped>(extrinsics_topic, 1);
-  pub_intrinsics_ = nh_.advertise<sensor_msgs::CameraInfo>(intrinsics_topic, 1);
-  pub_origin_ = nh_.advertise<geometry_msgs::PoseStamped>(origin_topic, 1);
+  pub_pose_ = node_.create_publisher<geometry_msgs::PoseWithCovarianceStamped>(pose_topic, 1);
+  pub_path_ = node_.create_publisher<nav_msgs::Path>(path_topic, 1);
+  pub_image_ = node_.create_publisher<sensor_msgs::Image>(image_topic, 1);
+  pub_extrinsics_ = node_.create_publisher<geometry_msgs::PoseStamped>(extrinsics_topic, 1);
+  pub_intrinsics_ = node_.create_publisher<sensor_msgs::CameraInfo>(intrinsics_topic, 1);
+  pub_origin_ = node_.create_publisher<geometry_msgs::PoseStamped>(origin_topic, 1);
 
   // Print topics where we are publishing on
-  utils::Logger::info("Publishing: " + std::string(pub_pose_.getTopic().c_str()));
-  utils::Logger::info("Publishing: " + std::string(pub_path_.getTopic().c_str()));
-  utils::Logger::info("Publishing: " + std::string(pub_image_.getTopic().c_str()));
-  utils::Logger::info("Publishing: " + std::string(pub_extrinsics_.getTopic().c_str()));
-  utils::Logger::info("Publishing: " + std::string(pub_intrinsics_.getTopic().c_str()));
-  utils::Logger::info("Publishing: " + std::string(pub_origin_.getTopic().c_str()));
+  utils::Logger::info("Publishing: " + std::string(pub_pose_.get_topic_name()));
+  utils::Logger::info("Publishing: " + std::string(pub_path_.get_topic_name()));
+  utils::Logger::info("Publishing: " + std::string(pub_image_.get_topic_name()));
+  utils::Logger::info("Publishing: " + std::string(pub_extrinsics_.get_topic_name()));
+  utils::Logger::info("Publishing: " + std::string(pub_intrinsics_.get_topic_name()));
+  utils::Logger::info("Publishing: " + std::string(pub_origin_.get_topic_name()));
 
   // record
   record_ = record;
   if (record_)
   {
-    bag_.open(bagfile, rosbag::bagmode::Write);
+    bag_.open(bagfile);
   }
 }
 
-void MSCEqFRos::callback_image(const sensor_msgs::Image::ConstPtr &msg)
+void MSCEqFRos::callback_image(const sensor_msgs::msg::Image::ConstSharedPtr &msg)
 {
   cv_bridge::CvImageConstPtr cv_ptr;
   try
   {
-    cv_ptr = cv_bridge::toCvShare(msg, sensor_msgs::image_encodings::MONO8);
+    cv_ptr = cv_bridge::toCvShare(msg, sensor_msgs::msg::image_encodings::MONO8);
   }
   catch (cv_bridge::Exception &e)
   {
@@ -74,7 +76,7 @@ void MSCEqFRos::callback_image(const sensor_msgs::Image::ConstPtr &msg)
 
   msceqf::Camera cam;
 
-  cam.timestamp_ = cv_ptr->header.stamp.toSec();
+  cam.timestamp_ = cv_ptr->header.stamp.sec + 1.0e9 * cv_ptr->header.stamp.nanosec;
   cam.image_ = cv_ptr->image.clone();
 
   sys_.processMeasurement(cam);
@@ -82,11 +84,11 @@ void MSCEqFRos::callback_image(const sensor_msgs::Image::ConstPtr &msg)
   publish(cam);
 }
 
-void MSCEqFRos::callback_imu(const sensor_msgs::Imu::ConstPtr &msg)
+void MSCEqFRos::callback_imu(const sensor_msgs::msg::Imu::ConstSharedPtr &msg)
 {
   msceqf::Imu imu;
 
-  imu.timestamp_ = msg->header.stamp.toSec();
+  imu.timestamp_ = msg->header.stamp.sec + 1.0e9 * msg->header.stamp.nanosec;
   imu.ang_ << msg->angular_velocity.x, msg->angular_velocity.y, msg->angular_velocity.z;
   imu.acc_ << msg->linear_acceleration.x, msg->linear_acceleration.y, msg->linear_acceleration.z;
 
@@ -134,7 +136,7 @@ void MSCEqFRos::publish(const msceqf::Camera &cam)
 
   if (record_)
   {
-    bag_.write(pub_pose_.getTopic().c_str(), pose_.header.stamp, pose_);
+    bag_.write(pose_, pub_pose_.get_topic_name(), pose_.header.stamp);
   }
 
   if (pub_origin_.getNumSubscribers() != 0)
@@ -156,17 +158,17 @@ void MSCEqFRos::publish(const msceqf::Camera &cam)
 
     if (record_)
     {
-      bag_.write(pub_origin_.getTopic().c_str(), origin_.header.stamp, origin_);
+      bag_.write(origin_, pub_origin_.get_topic_name(), origin_.header.stamp);
     }
   }
 
   if (pub_path_.getNumSubscribers() != 0)
   {
-    geometry_msgs::PoseStamped pose;
+    geometry_msgs::msgs::PoseStamped pose;
     pose.header = pose_.header;
     pose.pose = pose_.pose.pose;
 
-    path_.header.stamp = ros::Time::now();
+    path_.header.stamp = node_.now();
     path_.header.seq = seq_;
     path_.header.frame_id = "global";
     path_.poses.push_back(pose);
@@ -176,10 +178,10 @@ void MSCEqFRos::publish(const msceqf::Camera &cam)
 
   if (pub_image_.getNumSubscribers() != 0)
   {
-    std_msgs::Header header;
-    header.stamp = ros::Time::now();
+    std_msgs::msgs::Header header;
+    header.stamp = node_.now();
     header.frame_id = "cam0";
-    sensor_msgs::ImagePtr img = cv_bridge::CvImage(header, "bgr8", sys_.imageWithTracks(cam)).toImageMsg();
+    sensor_msgs::msgs::SharedPtr img = cv_bridge::CvImage(header, "bgr8", sys_.imageWithTracks(cam)).toImageMsg();
     pub_image_.publish(img);
   }
 
@@ -200,7 +202,7 @@ void MSCEqFRos::publish(const msceqf::Camera &cam)
 
     if (record_)
     {
-      bag_.write(pub_extrinsics_.getTopic().c_str(), extrinsics_.header.stamp, extrinsics_);
+      bag_.write(extrinsics_, pub_extrinsics_.get_topic_name(), extrinsics_.header.stamp);
     }
   }
 
@@ -223,7 +225,7 @@ void MSCEqFRos::publish(const msceqf::Camera &cam)
 
     if (record_)
     {
-      bag_.write(pub_intrinsics_.getTopic().c_str(), intrinsics_.header.stamp, intrinsics_);
+      bag_.write(intrinsics_, pub_intrinsics_.get_topic_name(), intrinsics_.header.stamp);
     }
   }
 

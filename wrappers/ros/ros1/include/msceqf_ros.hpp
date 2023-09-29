@@ -35,7 +35,6 @@ class MSCEqFRos
    * @param msceqf_config_filepath Path of configuration yaml file for the msceqf
    * @param imu_topic IMU topic
    * @param cam_topic Camera topic
-   * @param features_topic Features topic
    * @param pose_topic Pose topic
    * @param path_topic Path topic
    * @param image_topic Image topic
@@ -48,7 +47,6 @@ class MSCEqFRos
             const std::string &msceqf_config_filepath,
             const std::string &imu_topic,
             const std::string &cam_topic,
-            const std::string &features_topic,
             const std::string &pose_topic,
             const std::string &path_topic,
             const std::string &image_topic,
@@ -59,12 +57,16 @@ class MSCEqFRos
             const std::string &bagfile);
 
   /**
-   * @brief Callbacks
-   * @param Message const pointer
+   * @brief Image callback
+   * @param Message message constant pointer
    */
   void callback_image(const sensor_msgs::Image::ConstPtr &msg);
+
+  /**
+   * @brief IMU callback
+   * @param Message message constant pointer
+   */
   void callback_imu(const sensor_msgs::Imu::ConstPtr &msg);
-  void callback_feats(const sensor_msgs::PointCloud::ConstPtr &msg);
 
  private:
   /**
@@ -74,20 +76,12 @@ class MSCEqFRos
    */
   void publish(const msceqf::Camera &cam);
 
-  /**
-   * @brief Publish pose, images and path messages
-   *
-   * @param feats Features measurement
-   */
-  void publish(const msceqf::TriangulatedFeatures &feats);
-
   ros::NodeHandle nh_;  //!< ROS node handler
 
   msceqf::MSCEqF sys_;  //!< MSCEqF system
 
-  ros::Subscriber sub_cam_;    //!< Camera subscriber
-  ros::Subscriber sub_imu_;    //!< IMU subscriber
-  ros::Subscriber sub_feats_;  //!< Features subscriber
+  ros::Subscriber sub_cam_;  //!< Camera subscriber
+  ros::Subscriber sub_imu_;  //!< IMU subscriber
 
   ros::Publisher pub_pose_;        //!< Pose publisher
   ros::Publisher pub_image_;       //!< Image publisher

@@ -1,0 +1,6 @@
+FROM osrf/ros:galactic-desktop
+
+RUN apt-get update && apt-get install -y nano git
+
+RUN mkdir -p /root/catkin_ws/src/msceqf
+COPY . /root/catkin_ws/src/msceqf/
