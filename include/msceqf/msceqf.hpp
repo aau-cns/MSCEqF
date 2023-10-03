@@ -136,18 +136,48 @@ class MSCEqF
   void processImuMeasurement(const Imu& imu);
 
   /**
-   * @brief Process a single Camera measurement.
+   * @brief Process a single Camera measurement. This method first perform propagation of the filter state from the
+   * previous timestamp to the actual timestamp using the IMU measurement collected in between camera images. After
+   * propagation stochastic cloning is performed. Then ids of the feature that either went out of the field-of-view or
+   * that are active once the window of clone has been filled are collected and used to perform a filter update.
+   * Finally, tracks associated with features used in the update are removed and past clones are marginalized.
+   *
+   * @note Propagation of the filter, stochastic cloning and image processing are parallelized.
    *
    * @param cam Camera measurement
    */
   void processCameraMeasurement(Camera& cam);
 
   /**
-   * @brief Process triangulated features measurement.
+   * @brief Process triangulated features measurement. This method first perform propagation of the filter state from
+   * the previous timestamp to the actual timestamp using the IMU measurement collected in between camera images. After
+   * propagation stochastic cloning is performed. Then ids of the feature that either went out of the field-of-view or
+   * that are active once the window of clone has been filled are collected and used to perform a filter update.
+   * Finally, tracks associated with features used in the update are removed and past clones are marginalized.
+   *
+   * @note Propagation of the filter, stochastic cloning and image processing are parallelized.
    *
    * @param features Triangulated features measurement
    */
   void processFeaturesMeasurement(TriangulatedFeatures& features);
+
+  /**
+   * @brief Try to initialize the origin at the time of the given features measurement.
+   * This method either perform static initialization waiting for motion to be detected or dircetly initialize origin
+   * and filter if zero velocity update is enabled.
+   *
+   * @param cam Camera measurement
+   */
+  void initialize(Camera& cam);
+
+  /**
+   * @brief Try to initialize the origin at the time of the given camera measurement.
+   * This method either perform static initialization waiting for motion to be detected or dircetly initialize origin
+   * and filter if zero velocity update is enabled.
+   *
+   * @param features features measurement
+   */
+  void initialize(TriangulatedFeatures& features);
 
   /**
    * @brief Set origin xi0 with given state from parameters file

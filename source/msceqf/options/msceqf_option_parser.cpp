@@ -69,7 +69,8 @@ MSCEqFOptions OptionParser::parseOptions()
                         opts.track_manager_options_.tracker_options_.cam_options_.distortion_coefficients_,
                         opts.track_manager_options_.tracker_options_.cam_options_.resolution_,
                         opts.track_manager_options_.tracker_options_.cam_options_.timeshift_cam_imu_,
-                        opts.track_manager_options_.tracker_options_.cam_options_.mask_);
+                        opts.track_manager_options_.tracker_options_.cam_options_.static_mask_,
+                        opts.track_manager_options_.tracker_options_.cam_options_.mask_type_);
 
   // Parse equalization method
   parseEqualizationMethod(opts.track_manager_options_.tracker_options_.equalizer_);
@@ -147,6 +148,7 @@ MSCEqFOptions OptionParser::parseOptions()
   ///
   /// Parse other options
   ///
+  parseZeroVelocityUpdate(opts.updater_options_.zero_velocity_update_);
 
   // Parse non state options
   // readDefault(opts.persistent_feature_init_delay_, 1.0, "persistent_feature_init_delay");
@@ -160,7 +162,8 @@ void OptionParser::parseCameraParameters(SE3& extrinsics,
                                          VectorX& distortion_coefficients,
                                          Vector2& resolution,
                                          fp& timeshift_cam_imu,
-                                         cv::Mat& mask)
+                                         cv::Mat& mask,
+                                         MaskType& mask_type)
 {
   Matrix4 extrinsics_mat;
   if (!read(extrinsics_mat, "T_imu_cam"))
@@ -232,6 +235,22 @@ void OptionParser::parseCameraParameters(SE3& extrinsics,
   }
 
   readDefault(timeshift_cam_imu, 0.0, "timeshift_cam_imu");
+
+  std::string mask_type_str;
+  readDefault(mask_type_str, "static", "mask_type");
+
+  if (mask_type_str.compare("static") == 0)
+  {
+    mask_type = MaskType::STATIC;
+  }
+  else if (mask_type_str.compare("dynamic") == 0)
+  {
+    mask_type = MaskType::DYNAMIC;
+  }
+  else
+  {
+    throw std::runtime_error(mask_type_str + " mask type not supported.");
+  }
 
   std::string maskpath;
   if (read(maskpath, "mask"))
@@ -456,6 +475,30 @@ void OptionParser::parseProcessNoise(fp& w_std, fp& a_std, fp& bw_std, fp& ba_st
     throw std::runtime_error(
         "Wrong or missing accelerometer random walk. Please provide accelerometer random walk "
         "(accelerometer_random_walk) in the configuration file according to Kalibr convention.");
+  }
+}
+
+void OptionParser::parseZeroVelocityUpdate(ZeroVelocityUpdate& zvu)
+{
+  std::string method;
+  readDefault(method, "disabled", "zero_velocity_update");
+
+  if (method.compare("disabled") == 0)
+  {
+    zvu = ZeroVelocityUpdate::DISABLE;
+  }
+  else if (method.compare("enabled") == 0)
+  {
+    zvu = ZeroVelocityUpdate::ENABLE;
+  }
+  else if (method.compare("beginning") == 0)
+  {
+    zvu = ZeroVelocityUpdate::BEGINNING;
+  }
+  else
+  {
+    throw std::runtime_error(
+        "Wrong or unsupported zero velocity update method. Please use disable, enable or beginning.");
   }
 }
 

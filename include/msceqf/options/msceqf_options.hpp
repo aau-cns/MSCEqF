@@ -70,6 +70,28 @@ enum class FeatureDetector
   GFTT,
 };
 
+/**
+ * @brief The zero velocity update methods
+ *
+ */
+enum class ZeroVelocityUpdate
+{
+  DISABLE,
+  ENABLE,
+  BEGINNING,
+};
+
+/**
+ * @brief The mask type. Static is a fixed non changing mask, dynamic is a mask that is provided together with the image
+ * and changes over time
+ *
+ */
+enum class MaskType
+{
+  STATIC,
+  DYNAMIC,
+};
+
 /// @note The camera extrinsics are interpreted as IC_S, thus IC_S transofrm vectors in camera frame to vectors in imu
 /// frame according to the following equation: I_x = IC_S * C_x
 struct StateOptions
@@ -110,6 +132,7 @@ struct UpdaterOptions
   fp min_angle_;                                       //!< Minimum angle (in degrees) between views for trianglulation
   fp pixel_std_;                                       //!< The pixel standard deviation
   bool curvature_correction_;                          //!< Boolean to enable the curvature correction
+  ZeroVelocityUpdate zero_velocity_update_;            //!< The zero velocity update method
 };
 
 struct InitializerOptions
@@ -131,7 +154,8 @@ struct CameraOptions
   VectorX distortion_coefficients_;  //!< Distortion coefficients
   Vector2 resolution_;               //!< Width, Height
   fp timeshift_cam_imu_;             //!< The time shift between camera and imu (t_imu = t_cam + shift)
-  cv::Mat mask_;                     //!< The image mask
+  cv::Mat static_mask_;              //!< The static image mask
+  MaskType mask_type_;               //!< The mask type
 };
 
 struct FastOptions

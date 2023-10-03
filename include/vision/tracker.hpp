@@ -136,8 +136,9 @@ class Tracker
   std::map<uint, std::atomic<uint>> max_kpts_per_cell_;  //!< Maximum number of keypoints for each cell of the grid
   uint id_;                                              //!< Feature id counter
 
+  cv::Mat feature_mask_;  //!< Maks for existing features
+
   std::vector<cv::Mat> previous_pyramids_;  //!< Pyramids for Optical Flow and feature extraction from previous image
-  cv::Mat previous_mask_;                   //!< Maks from previous image
   TimedFeatures previous_features_;         //!< Features detected in previous image associated to their timestamp
 
   std::vector<cv::Mat> current_pyramids_;  //!< Pyramids for Optical Flow and feature extraction from current image
