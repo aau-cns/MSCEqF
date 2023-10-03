@@ -49,6 +49,14 @@ class StaticInitializer
   [[nodiscard]] bool detectMotion(const Tracks& tracks);
 
   /**
+   * @brief This fnctions collects a predefined window of IMU measurments and compute the roll and pitch fo the platform
+   * togheter with the IMU bias without waiting for motion
+   *
+   * @return true if the initialization of the origin has succeedded, false otherwise
+   */
+  [[nodiscard]] bool initializeOrigin();
+
+  /**
    * @brief This function returns the initial Extended pose of the platform, to be used as origin
    *
    * @return Initial extended pose of the platform (orientation, velocity and position)
@@ -82,6 +90,28 @@ class StaticInitializer
    * detected/tracked features corresponding to temporary objects moving in front of the camera
    */
   [[nodiscard]] bool disparityCheck(const Tracks& tracks) const;
+
+  /**
+   * @brief This function computes the mean acceleration and angular velocity of the IMU measurements in the IMU buffer,
+   * as well as the standard deviation of the acceleration measurements
+   *
+   * @return true if the buffer contains enough measurements and the computation of the means and standard deviation has
+   * succeedded, false otherwise
+   *
+   * @param acc_mean Mean of acceleration measurements
+   * @param ang_mean Mean of angular velocity measurements
+   * @param acc_std Standard deviation of the acceleration measurements
+   */
+  [[nodiscard]] bool imuMeanStd(Vector3& acc_mean, Vector3& ang_mean, fp& acc_std) const;
+
+  /**
+   * @brief This function computes and set the origin of the platform based on the mean acceleration and angular
+   * velocity
+   *
+   * @param acc_mean Mean of acceleration measurements
+   * @param ang_mean Mean of angular velocity measurements
+   */
+  void computeOrigin(Vector3& acc_mean, Vector3& ang_mean);
 
   InitializerOptions opts_;  //!< The initializer options
 

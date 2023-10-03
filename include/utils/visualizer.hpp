@@ -52,7 +52,7 @@ class Visualizer
     cv::Mat undistorted_image;
     track_manager_.cam()->undistortImage(cam.image_, undistorted_image);
 
-    cv::Mat3b color_image;
+    cv::Mat3b color_image = undistorted_image;
     cv::cvtColor(undistorted_image, color_image, cv::COLOR_GRAY2BGR);
 
     cv::Mat mask;
