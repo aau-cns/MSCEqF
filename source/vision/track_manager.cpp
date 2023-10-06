@@ -15,7 +15,6 @@
 
 namespace msceqf
 {
-
 TrackManager::TrackManager(const TrackManagerOptions& opts, const Vector4& intrinsics)
     : tracker_(opts.tracker_options_, intrinsics), tracks_(), max_track_length_(opts.max_track_length_)
 {
@@ -121,17 +120,17 @@ void TrackManager::removeTracksId(const std::unordered_set<uint>& ids)
   }
 }
 
-void TrackManager::removeTracksTail(const fp& timestamp)
+void TrackManager::removeTracksTail(const fp& timestamp, const bool& remove_equal)
 {
   for (auto it = tracks_.begin(); it != tracks_.end();)
   {
-    if (it->second.size() == 1 && it->second.timestamps_.front() == timestamp)
+    if (remove_equal && it->second.size() == 1 && it->second.timestamps_.front() == timestamp)
     {
       it = tracks_.erase(it);
     }
     else
     {
-      it->second.removeTail(timestamp);
+      it->second.removeTail(timestamp, remove_equal);
       ++it;
     }
   }

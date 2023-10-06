@@ -12,11 +12,8 @@
 #ifndef STATIC_INITIALIZER_HPP
 #define STATIC_INITIALIZER_HPP
 
-#include "msceqf/options/msceqf_options.hpp"
+#include "msceqf/filter/checker/checker.hpp"
 #include "sensors/sensor_data.hpp"
-#include "types/fptypes.hpp"
-#include "utils/tools.hpp"
-#include "vision/track.hpp"
 
 namespace msceqf
 {
@@ -29,8 +26,9 @@ class StaticInitializer
    * @brief StaticInitializer constructor
    *
    * @param opts Initializer options
+   * @param checker Refernece to the MSCEqF checker
    */
-  StaticInitializer(const InitializerOptions& opts);
+  StaticInitializer(const InitializerOptions& opts, const Checker& checker);
 
   /**
    * @brief Populate imu internal buffer used for acceleration check
@@ -49,6 +47,14 @@ class StaticInitializer
   [[nodiscard]] bool detectMotion(const Tracks& tracks);
 
   /**
+   * @brief This fnctions collects a predefined window of IMU measurments and compute the roll and pitch fo the platform
+   * togheter with the IMU bias without waiting for motion
+   *
+   * @return true if the initialization of the origin has succeedded, false otherwise
+   */
+  [[nodiscard]] bool initializeOrigin();
+
+  /**
    * @brief This function returns the initial Extended pose of the platform, to be used as origin
    *
    * @return Initial extended pose of the platform (orientation, velocity and position)
@@ -64,26 +70,39 @@ class StaticInitializer
 
  private:
   /**
-   * @brief This function returns true if the standard deviation of the collected acceleration measurements exceeds the
-   * defined threshold. If the check succeed, the initial extended pose and bias are set
+   * @brief This function is used to detect an acceleration spike, corresponding to a state transition from static
+   * condition to motion. The function returns true if the standard deviation of the collected acceleration measurements
+   * exceeds the defined threshold. If motion is detected, the initial extended pose and bias are set
    *
    * @return true if acceleration spike has been detected, false otherwise
    */
-  [[nodiscard]] bool accelerationCheck();
+  [[nodiscard]] bool detectAccelerationSpike();
 
   /**
-   * @brief Perform disparity check
+   * @brief This function computes the mean acceleration and angular velocity of the IMU measurements in the IMU buffer,
+   * as well as the standard deviation of the acceleration measurements
    *
-   * @param tracks tracks up to date used for disparity check
-   * @return true if disparity check succeed (diparity above threshold), false if no disparity is detected (disparity
-   * below threshold)
+   * @return true if the buffer contains enough measurements and the computation of the means and standard deviation has
+   * succeedded, false otherwise
    *
-   * @note This method checks only tracks that are as long as the first track. This ideally should avoid to use newly
-   * detected/tracked features corresponding to temporary objects moving in front of the camera
+   * @param acc_mean Mean of acceleration measurements
+   * @param ang_mean Mean of angular velocity measurements
+   * @param acc_std Standard deviation of the acceleration measurements
    */
-  [[nodiscard]] bool disparityCheck(const Tracks& tracks) const;
+  [[nodiscard]] bool imuMeanStd(Vector3& acc_mean, Vector3& ang_mean, fp& acc_std) const;
+
+  /**
+   * @brief This function computes and set the origin of the platform based on the mean acceleration and angular
+   * velocity
+   *
+   * @param acc_mean Mean of acceleration measurements
+   * @param ang_mean Mean of angular velocity measurements
+   */
+  void computeOrigin(Vector3& acc_mean, Vector3& ang_mean);
 
   InitializerOptions opts_;  //!< The initializer options
+
+  const Checker& checker_;  // The MSCEqF checker
 
   ImuBuffer imu_buffer_;  //!< The imu buffer used to check for acceleration spikes
 

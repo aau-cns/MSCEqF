@@ -183,6 +183,7 @@ class OptionParser
    * @param resolution
    * @param timeshift_cam_imu
    * @param mask
+   * @param mask_type
    */
   void parseCameraParameters(SE3& extrinsics,
                              In& intrinsics,
@@ -190,7 +191,8 @@ class OptionParser
                              VectorX& distortion_coefficients,
                              Vector2& resolution,
                              fp& timeshift_cam_imu,
-                             cv::Mat& mask);
+                             cv::Mat& mask,
+                             MaskType& mask_type);
 
   /**
    * @brief Parse the given origin (initial state) and the initial time
@@ -258,6 +260,13 @@ class OptionParser
    * @param opts State options
    */
   void parsePixStd(fp& pix_std, const StateOptions& opts);
+
+  /**
+   * @brief Parse the zero velocity update method
+   *
+   * @param zvu zero velocity update method
+   */
+  void parseZeroVelocityUpdate(ZeroVelocityUpdate& zvu);
 
   YAML::Node node_;       //!< YAML node
   std::string filepath_;  //!< filepath

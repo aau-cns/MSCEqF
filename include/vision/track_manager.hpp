@@ -96,11 +96,13 @@ class TrackManager
 
   /**
    * @brief Remove the tail of tracks. This method remove from each track all the coordinates as well as the
-   * timestamps that are older or equal to the given timestamp.
+   * timestamps that are older (or equal) to the given timestamp.
    *
    * @param timestamp Timestamp
+   * @param remove_equal Flag to indicate whether to include in the removal also the coordinates and timestamps at the
+   * given timestamp
    */
-  void removeTracksTail(const fp& timestamp);
+  void removeTracksTail(const fp& timestamp, const bool& remove_equal = true);
 
   /**
    * @brief Clear all the tracks

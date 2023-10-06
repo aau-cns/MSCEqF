@@ -69,7 +69,8 @@ MSCEqFOptions OptionParser::parseOptions()
                         opts.track_manager_options_.tracker_options_.cam_options_.distortion_coefficients_,
                         opts.track_manager_options_.tracker_options_.cam_options_.resolution_,
                         opts.track_manager_options_.tracker_options_.cam_options_.timeshift_cam_imu_,
-                        opts.track_manager_options_.tracker_options_.cam_options_.mask_);
+                        opts.track_manager_options_.tracker_options_.cam_options_.static_mask_,
+                        opts.track_manager_options_.tracker_options_.cam_options_.mask_type_);
 
   // Parse equalization method
   parseEqualizationMethod(opts.track_manager_options_.tracker_options_.equalizer_);
@@ -98,6 +99,28 @@ MSCEqFOptions OptionParser::parseOptions()
   readDefault(opts.track_manager_options_.max_track_length_, 250, "max_track_length");
 
   ///
+  /// Parse checker options
+  ///
+
+  readDefault(opts.checker_options_.disparity_window_, 0.5, "checker_disparity_window");
+  readDefault(opts.checker_options_.disparity_threshold_, 1.0, "checker_disparity_threshold");
+
+  ///
+  /// Parse initalizer options
+  ///
+
+  readDefault(opts.init_options_.imu_init_window_, 0.5, "static_initializer_imu_window");
+  readDefault(opts.init_options_.acc_threshold_, 0.0, "static_initializer_acc_threshold");
+  readDefault(opts.init_options_.identity_b0_, false, "identity_bias_origin");
+  readDefault(opts.init_options_.init_with_given_state_, false, "init_with_given_state");
+  if (opts.init_options_.init_with_given_state_)
+  {
+    parseGivenOrigin(opts.init_options_.initial_extended_pose_, opts.init_options_.initial_bias_,
+                     opts.init_options_.initial_timestamp_);
+  }
+  opts.init_options_.gravity_ = opts.state_options_.gravity_;
+
+  ///
   /// Parse propagator options
   ///
 
@@ -123,30 +146,20 @@ MSCEqFOptions OptionParser::parseOptions()
   parseProjectionMethod(opts.updater_options_.projection_method_);
   readDefault(opts.updater_options_.min_track_lenght_, 5, "min_track_length");
   readDefault(opts.updater_options_.min_angle_, 0.0, "min_angle_deg");
-  readDefault(opts.updater_options_.curvature_correction_, false, "curveture_correction");
+  readDefault(opts.updater_options_.curvature_correction_, false, "curvature_correction");
+  readDefault(opts.zvupdater_options_.curvature_correction_, false, "curvature_correction");
   parsePixStd(opts.updater_options_.pixel_std_, opts.state_options_);
 
   ///
-  /// Parse initalizer options
+  /// Parse zero velocity updater options
   ///
 
-  // Initializer options
-  readDefault(opts.init_options_.imu_init_window_, 0.5, "static_initializer_imu_window");
-  readDefault(opts.init_options_.disparity_window_, 0.5, "static_initializer_disparity_window");
-  readDefault(opts.init_options_.acc_threshold_, 0.0, "static_initializer_acc_threshold");
-  readDefault(opts.init_options_.disparity_threshold_, 1.0, "static_initializer_disparity_threshold");
-  readDefault(opts.init_options_.identity_b0_, false, "identity_bias_origin");
-  readDefault(opts.init_options_.init_with_given_state_, false, "init_with_given_state");
-  if (opts.init_options_.init_with_given_state_)
+  parseZeroVelocityUpdate(opts.zvupdater_options_.zero_velocity_update_);
+  if (opts.zvupdater_options_.zero_velocity_update_ != ZeroVelocityUpdate::DISABLE)
   {
-    parseGivenOrigin(opts.init_options_.initial_extended_pose_, opts.init_options_.initial_bias_,
-                     opts.init_options_.initial_timestamp_);
+    opts.checker_options_.disparity_window_ = 0.0;
+    utils::Logger::warn("Parameter: [checker_disparity_window] set to : 0.0 for zero velocity update");
   }
-  opts.init_options_.gravity_ = opts.state_options_.gravity_;
-
-  ///
-  /// Parse other options
-  ///
 
   // Parse non state options
   // readDefault(opts.persistent_feature_init_delay_, 1.0, "persistent_feature_init_delay");
@@ -160,7 +173,8 @@ void OptionParser::parseCameraParameters(SE3& extrinsics,
                                          VectorX& distortion_coefficients,
                                          Vector2& resolution,
                                          fp& timeshift_cam_imu,
-                                         cv::Mat& mask)
+                                         cv::Mat& mask,
+                                         MaskType& mask_type)
 {
   Matrix4 extrinsics_mat;
   if (!read(extrinsics_mat, "T_imu_cam"))
@@ -232,6 +246,22 @@ void OptionParser::parseCameraParameters(SE3& extrinsics,
   }
 
   readDefault(timeshift_cam_imu, 0.0, "timeshift_cam_imu");
+
+  std::string mask_type_str;
+  readDefault(mask_type_str, "static", "mask_type");
+
+  if (mask_type_str.compare("static") == 0)
+  {
+    mask_type = MaskType::STATIC;
+  }
+  else if (mask_type_str.compare("dynamic") == 0)
+  {
+    mask_type = MaskType::DYNAMIC;
+  }
+  else
+  {
+    throw std::runtime_error(mask_type_str + " mask type not supported.");
+  }
 
   std::string maskpath;
   if (read(maskpath, "mask"))
@@ -456,6 +486,30 @@ void OptionParser::parseProcessNoise(fp& w_std, fp& a_std, fp& bw_std, fp& ba_st
     throw std::runtime_error(
         "Wrong or missing accelerometer random walk. Please provide accelerometer random walk "
         "(accelerometer_random_walk) in the configuration file according to Kalibr convention.");
+  }
+}
+
+void OptionParser::parseZeroVelocityUpdate(ZeroVelocityUpdate& zvu)
+{
+  std::string method;
+  readDefault(method, "disabled", "zero_velocity_update");
+
+  if (method.compare("disabled") == 0)
+  {
+    zvu = ZeroVelocityUpdate::DISABLE;
+  }
+  else if (method.compare("enabled") == 0)
+  {
+    zvu = ZeroVelocityUpdate::ENABLE;
+  }
+  else if (method.compare("beginning") == 0)
+  {
+    zvu = ZeroVelocityUpdate::BEGINNING;
+  }
+  else
+  {
+    throw std::runtime_error(
+        "Wrong or unsupported zero velocity update method. Please use disable, enable or beginning.");
   }
 }
 

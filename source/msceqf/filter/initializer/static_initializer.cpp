@@ -9,17 +9,16 @@
 //
 // You can contact the authors at <alessandro.fornasier@ieee.org>
 
-#include "msceqf/filter/initializer/static_initializer.hpp"
-
 #include <algorithm>
 #include <numeric>
 
+#include "msceqf/filter/initializer/static_initializer.hpp"
 #include "utils/logger.hpp"
 
 namespace msceqf
 {
-StaticInitializer::StaticInitializer(const InitializerOptions& opts)
-    : opts_(opts), imu_buffer_(), T0_(), b0_(Vector6::Zero())
+StaticInitializer::StaticInitializer(const InitializerOptions& opts, const Checker& checker)
+    : opts_(opts), checker_(checker), imu_buffer_(), T0_(), b0_(Vector6::Zero())
 {
 }
 
@@ -48,9 +47,29 @@ void StaticInitializer::insertImu(const Imu& imu)
   }
 }
 
-bool StaticInitializer::detectMotion(const Tracks& tracks) { return accelerationCheck() && disparityCheck(tracks); }
+bool StaticInitializer::detectMotion(const Tracks& tracks)
+{
+  return detectAccelerationSpike() && checker_.disparityCheck(tracks);
+}
 
-bool StaticInitializer::accelerationCheck()
+bool StaticInitializer::initializeOrigin()
+{
+  Vector3 acc_mean = Vector3::Zero();
+  Vector3 ang_mean = Vector3::Zero();
+  fp acc_std = 0.0;
+
+  if (!imuMeanStd(acc_mean, ang_mean, acc_std))
+  {
+    utils::Logger::info("Not enough imu measurement for acceleration check in static initializer");
+    return false;
+  }
+
+  computeOrigin(acc_mean, ang_mean);
+
+  return true;
+}
+
+bool StaticInitializer::detectAccelerationSpike()
 {
   if (opts_.acc_threshold_ <= 0 && !imu_buffer_.empty())
   {
@@ -58,15 +77,35 @@ bool StaticInitializer::accelerationCheck()
     return true;
   }
 
-  if (imu_buffer_.size() < 2 ||
-      (imu_buffer_.back().timestamp_ - imu_buffer_.front().timestamp_) < opts_.imu_init_window_)
+  Vector3 acc_mean = Vector3::Zero();
+  Vector3 ang_mean = Vector3::Zero();
+  fp acc_std = 0.0;
+
+  if (!imuMeanStd(acc_mean, ang_mean, acc_std))
   {
     utils::Logger::info("Not enough imu measurement for acceleration check in static initializer");
     return false;
   }
 
-  Vector3 acc_mean = Vector3::Zero();
-  Vector3 ang_mean = Vector3::Zero();
+  if (acc_std < opts_.acc_threshold_)
+  {
+    utils::Logger::info("No accelerometer spike detected");
+    return false;
+  }
+
+  computeOrigin(acc_mean, ang_mean);
+
+  return true;
+}
+
+bool StaticInitializer::imuMeanStd(Vector3& acc_mean, Vector3& ang_mean, fp& acc_std) const
+{
+  if (imu_buffer_.size() < 2 ||
+      (imu_buffer_.back().timestamp_ - imu_buffer_.front().timestamp_) < opts_.imu_init_window_)
+  {
+    return false;
+  }
+
   for (const auto& imu : imu_buffer_)
   {
     acc_mean += imu.acc_;
@@ -79,15 +118,14 @@ bool StaticInitializer::accelerationCheck()
   acc_diff_norm_square.reserve(imu_buffer_.size());
   std::transform(imu_buffer_.begin(), imu_buffer_.end(), std::back_inserter(acc_diff_norm_square),
                  [&acc_mean](const Imu& imu) { return (imu.acc_ - acc_mean).dot(imu.acc_ - acc_mean); });
-  fp acc_std = std::reduce(acc_diff_norm_square.begin(), acc_diff_norm_square.end());
+  acc_std = std::reduce(acc_diff_norm_square.begin(), acc_diff_norm_square.end());
   acc_std = std::sqrt(acc_std / (acc_diff_norm_square.size() - 1));
 
-  if (acc_std < opts_.acc_threshold_)
-  {
-    utils::Logger::info("No accelerometer spike detected");
-    return false;
-  }
+  return true;
+}
 
+void StaticInitializer::computeOrigin(Vector3& acc_mean, Vector3& ang_mean)
+{
   Vector3 z = acc_mean / acc_mean.norm();
 
   Vector3 x = Vector3(1, 0, 0) - z * z.dot(Vector3(1, 0, 0));
@@ -106,43 +144,11 @@ bool StaticInitializer::accelerationCheck()
   if (opts_.identity_b0_)
   {
     utils::Logger::info("Bias origin set to identity");
-    return true;
+    return;
   }
 
   b0_.segment<3>(0) = ang_mean;
   b0_.segment<3>(3) = acc_mean - R0.transpose() * (opts_.gravity_ * Vector3(0, 0, 1));
-
-  return true;
-}
-
-bool StaticInitializer::disparityCheck(const Tracks& tracks) const
-{
-  const auto& longest_track = std::max_element(tracks.begin(), tracks.end(), [](const auto& pre, const auto& post) {
-                                return pre.second.timestamps_.size() < post.second.timestamps_.size();
-                              })->second;
-
-  const fp& longest_track_time = longest_track.timestamps_.back() - longest_track.timestamps_.front();
-
-  if (longest_track_time < opts_.disparity_window_)
-  {
-    utils::Logger::info("feature tracks not long enough for disparity check in static initializer");
-    return false;
-  }
-
-  fp average_disparity = 0;
-  int track_cnt = 0;
-
-  for (const auto& [id, track] : tracks)
-  {
-    if (track.size() == longest_track.size())
-    {
-      average_disparity += cv::norm(track.uvs_.back() - track.uvs_.front());
-      ++track_cnt;
-    }
-  }
-  average_disparity /= track_cnt;
-
-  return average_disparity > opts_.disparity_threshold_ ? true : false;
 }
 
 const SE23& StaticInitializer::T0() const { return T0_; }

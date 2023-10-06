@@ -70,6 +70,28 @@ enum class FeatureDetector
   GFTT,
 };
 
+/**
+ * @brief The zero velocity update methods
+ *
+ */
+enum class ZeroVelocityUpdate
+{
+  DISABLE,
+  ENABLE,
+  BEGINNING,
+};
+
+/**
+ * @brief The mask type. Static is a fixed non changing mask, dynamic is a mask that is provided together with the image
+ * and changes over time
+ *
+ */
+enum class MaskType
+{
+  STATIC,
+  DYNAMIC,
+};
+
 /// @note The camera extrinsics are interpreted as IC_S, thus IC_S transofrm vectors in camera frame to vectors in imu
 /// frame according to the following equation: I_x = IC_S * C_x
 struct StateOptions
@@ -112,12 +134,16 @@ struct UpdaterOptions
   bool curvature_correction_;                          //!< Boolean to enable the curvature correction
 };
 
+struct ZeroVelocityUpdaterOptions
+{
+  ZeroVelocityUpdate zero_velocity_update_;  //!< The zero velocity update method
+  bool curvature_correction_;                //!< Boolean to enable the curvature correction on the zero velocity update
+};
+
 struct InitializerOptions
 {
-  fp disparity_threshold_;      //!< the disparity threshold for the static initializer
   fp acc_threshold_;            //!< The acceleration threshold for the static initializer
   fp imu_init_window_;          //!< The window in seconds used to check for acceleration spikes
-  fp disparity_window_;         //!< The window is seconds used to check disparity
   fp gravity_;                  //!< The magnitude of the gravity vector in m/s^2
   bool identity_b0_;            //!< Boolean to fix identity bias origin (b0)git
   bool init_with_given_state_;  //!< Boolean to initialize the state with the given state
@@ -126,12 +152,19 @@ struct InitializerOptions
   fp initial_timestamp_;        //!< Initial timestamp
 };
 
+struct CheckerOptions
+{
+  fp disparity_threshold_;  //!< the disparity threshold for the disparity check
+  fp disparity_window_;     //!< The window is seconds used to check disparity
+};
+
 struct CameraOptions
 {
   VectorX distortion_coefficients_;  //!< Distortion coefficients
   Vector2 resolution_;               //!< Width, Height
   fp timeshift_cam_imu_;             //!< The time shift between camera and imu (t_imu = t_cam + shift)
-  cv::Mat mask_;                     //!< The image mask
+  cv::Mat static_mask_;              //!< The static image mask
+  MaskType mask_type_;               //!< The mask type
 };
 
 struct FastOptions
@@ -171,11 +204,13 @@ struct TrackManagerOptions
 
 struct MSCEqFOptions
 {
-  StateOptions state_options_;                 //!< The state options
-  PropagatorOptions propagator_options_;       //!< The propagator options
-  UpdaterOptions updater_options_;             //!< The updater options
-  InitializerOptions init_options_;            //!< The initializer options
-  TrackManagerOptions track_manager_options_;  //!< The track manager options
+  TrackManagerOptions track_manager_options_;     //!< The track manager options
+  StateOptions state_options_;                    //!< The state options
+  CheckerOptions checker_options_;                //!< The checker options
+  InitializerOptions init_options_;               //!< The initializer options
+  PropagatorOptions propagator_options_;          //!< The propagator options
+  UpdaterOptions updater_options_;                //!< The updater options
+  ZeroVelocityUpdaterOptions zvupdater_options_;  //!< The zero velocity updater options
 };
 
 }  // namespace msceqf

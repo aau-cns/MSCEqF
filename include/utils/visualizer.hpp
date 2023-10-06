@@ -47,13 +47,16 @@ class Visualizer
    *
    * @param cam
    */
-  cv::Mat3b imageWithTracks(const Camera& cam) const
+  cv::Mat3b imageWithTracks(const Camera& cam, const std::string& text = "") const
   {
     cv::Mat undistorted_image;
     track_manager_.cam()->undistortImage(cam.image_, undistorted_image);
 
-    cv::Mat3b color_image;
-    cv::cvtColor(undistorted_image, color_image, cv::COLOR_GRAY2BGR);
+    cv::Mat3b color_image = undistorted_image;
+    if (undistorted_image.channels() == 1)
+    {
+      cv::cvtColor(undistorted_image, color_image, cv::COLOR_GRAY2BGR, 3);
+    }
 
     cv::Mat mask;
     track_manager_.cam()->undistortImage(cam.mask_, mask);
@@ -63,6 +66,11 @@ class Visualizer
     cv::split(color_image, channels);
     channels[2] = channels[2] + mask;
     cv::merge(channels, color_image);
+
+    if (text.compare("") != 0)
+    {
+      cv::putText(color_image, text, cv::Point(50, 50), cv::FONT_HERSHEY_TRIPLEX, 1, cv::Scalar(255, 0, 0), 2);
+    }
 
     Tracker::Keypoints active_kpts;
     std::unordered_set<uint> active_ids;
@@ -86,58 +94,13 @@ class Visualizer
   }
 
   /**
-   * @brief Camera image with overlayed keypoints
-   *
-   * @param cam
-   */
-  cv::Mat imageWithKeypoints(const Camera& cam) const
-  {
-    cv::Mat undistorted_image;
-    track_manager_.cam()->undistortImage(cam.image_, undistorted_image);
-
-    cv::Mat mask;
-    track_manager_.cam()->undistortImage(cam.mask_, mask);
-    mask = cv::Scalar(255) - mask;
-
-    undistorted_image += mask;
-
-    Tracker::Keypoints active_kpts;
-    std::unordered_set<uint> active_ids;
-
-    track_manager_.activeTracksIds(cam.timestamp_, active_ids);
-    if (!active_ids.empty())
-    {
-      const auto& tracks = track_manager_.tracks();
-      for (auto& id : active_ids)
-      {
-        active_kpts.emplace_back(tracks.at(id).uvs_.back().x, tracks.at(id).uvs_.back().y, 5.0f);
-      }
-      cv::drawKeypoints(undistorted_image, active_kpts, undistorted_image, cv::Scalar(0, 0, 255),
-                        cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
-    }
-
-    return undistorted_image;
-  }
-
-  /**
    * @brief Visualize imge with history of tracks
    *
    * @param cam
    */
-  void visualizeImageWithTracks(const Camera& cam) const
+  void visualizeImageWithTracks(const Camera& cam, const std::string& text = "") const
   {
-    cv::imshow("Undistorted image with tracks", imageWithTracks(cam));
-    cv::waitKey(delay_);
-  }
-
-  /**
-   * @brief Visualize image with keypoints
-   *
-   * @param cam
-   */
-  void visualizeImageWithKeypoints(const Camera& cam) const
-  {
-    cv::imshow("Undistorted image with keypoints", imageWithKeypoints(cam));
+    cv::imshow("Undistorted image with tracks", imageWithTracks(cam, text));
     cv::waitKey(delay_);
   }
 
