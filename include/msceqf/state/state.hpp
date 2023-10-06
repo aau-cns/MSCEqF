@@ -301,9 +301,10 @@ class MSCEqFState
    */
   [[nodiscard]] const MSCEqFStateElementSharedPtr& getPtr(const MSCEqFKey& key) const;
 
-  friend class Symmetry;    //!< Symmetry can access private members of MSCEqFState
-  friend class Propagator;  //!< Propagator can access private members of MSCEqFState
-  friend class Updater;     //!< Updater can access private members of MSCEqFState
+  friend class Symmetry;             //!< Symmetry can access private members of MSCEqFState
+  friend class Propagator;           //!< Propagator can access private members of MSCEqFState
+  friend class Updater;              //!< Updater can access private members of MSCEqFState
+  friend class ZeroVelocityUpdater;  //!< Zero velocity updater can access private members of MSCEqFState
 
   StateOptions opts_;  //!< State Options
 

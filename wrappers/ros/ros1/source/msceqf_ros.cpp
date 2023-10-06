@@ -215,9 +215,9 @@ void MSCEqFRos::publish(const msceqf::Camera &cam)
     intrinsics_.width = cam.image_.cols;
     intrinsics_.distortion_model = "";
     intrinsics_.D = {0.0, 0.0, 0.0, 0.0, 0.0};
-    intrinsics_.K = {intr(0), 0.0, intr(2), 0.0, intr(1), intr(2), 0.0, 0.0, 1.0};
+    intrinsics_.K = {intr(0), 0.0, intr(2), 0.0, intr(1), intr(3), 0.0, 0.0, 1.0};
     intrinsics_.R = {1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0};
-    intrinsics_.P = {intr(0), 0.0, intr(2), 0.0, 0.0, intr(1), intr(2), 0.0, 0.0, 0.0, 1.0, 0.0};
+    intrinsics_.P = {intr(0), 0.0, intr(2), 0.0, 0.0, intr(1), intr(3), 0.0, 0.0, 0.0, 1.0, 0.0};
 
     pub_intrinsics_.publish(intrinsics_);
 

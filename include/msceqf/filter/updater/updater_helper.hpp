@@ -281,9 +281,8 @@ struct UpdaterHelper
    *
    * @param C C matrix
    * @param delta Residual
-   * @param R R matrix
    */
-  static void updateQRCompression(MatrixX& C, VectorX& delta, MatrixX& R);
+  static void updateQRCompression(MatrixX& C, VectorX& delta);
 
   /**
    * @brief Perform chi2 test (based on precomputed table) on the given block of the residual

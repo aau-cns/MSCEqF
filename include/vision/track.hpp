@@ -86,8 +86,10 @@ struct Track
    * the given timestamp
    *
    * @param timestamp Timestamp
+   * @param remove_equal Flag to indicate whether to include in the removal also the coordinates and timestamps at the
+   * given timestamp
    */
-  void removeTail(const fp& timestamp)
+  void removeTail(const fp& timestamp, const bool& remove_equal = true)
   {
     assert(uvs_.size() == normalized_uvs_.size());
     assert(uvs_.size() == timestamps_.size());
@@ -97,7 +99,14 @@ struct Track
 
     while (i < uvs_.size())
     {
-      if (timestamps_[i] > timestamp)
+      if (remove_equal && timestamps_[i] > timestamp)
+      {
+        uvs_[j] = uvs_[i];
+        normalized_uvs_[j] = normalized_uvs_[i];
+        timestamps_[j] = timestamps_[i];
+        ++j;
+      }
+      if (!remove_equal && timestamps_[i] >= timestamp)
       {
         uvs_[j] = uvs_[i];
         normalized_uvs_[j] = normalized_uvs_[i];

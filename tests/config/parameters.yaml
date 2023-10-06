@@ -42,7 +42,7 @@ feature_refinement_tollerance: 1e-10
 measurement_projection_method: unit_plane
 feature_representation: anchored_euclidean
 pixel_standerd_deviation: 1.0
-curveture_correction: false
+curvature_correction: false
 min_angle_deg: 0.0
 
 enable_camera_extrinsic_calibration: true

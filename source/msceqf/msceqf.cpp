@@ -19,18 +19,17 @@ MSCEqF::MSCEqF(const std::string& params_filepath)
     , xi0_(opts_.state_options_)
     , X_(opts_.state_options_, xi0_)
     , track_manager_(opts_.track_manager_options_, opts_.state_options_.initial_camera_intrinsics_.k())
-    , initializer_(opts_.init_options_)
+    , checker_(opts_.checker_options_)
+    , initializer_(opts_.init_options_, checker_)
     , propagator_(opts_.propagator_options_)
     , updater_(opts_.updater_options_, xi0_)
+    , zvupdater_(opts_.zvupdater_options_, checker_)
     , visualizer_(track_manager_)
     , ids_to_update_()
     , timestamp_(-1)
     , is_filter_initialized_(false)
+    , zvu_performed_(false)
 {
-  if (opts_.init_options_.init_with_given_state_)
-  {
-    setGivenOrigin();
-  }
 }
 
 void MSCEqF::processImuMeasurement(const Imu& imu)
@@ -57,25 +56,20 @@ void MSCEqF::processCameraMeasurement(Camera& cam)
 {
   assert(cam.timestamp_ >= 0);
   assert(cam.image_.size() == cam.mask_.size());
+  assert(cam.image_.size() == cv::Size(opts_.track_manager_options_.tracker_options_.cam_options_.resolution_(0),
+                                       opts_.track_manager_options_.tracker_options_.cam_options_.resolution_(1)));
 
   cam.timestamp_ += opts_.track_manager_options_.tracker_options_.cam_options_.timeshift_cam_imu_;
-  opts_.track_manager_options_.tracker_options_.cam_options_.mask_.copyTo(cam.mask_);
+
+  if (opts_.track_manager_options_.tracker_options_.cam_options_.mask_type_ == MaskType::STATIC)
+  {
+    assert(cam.mask_.size() == opts_.track_manager_options_.tracker_options_.cam_options_.static_mask_.size());
+    cam.mask_ = opts_.track_manager_options_.tracker_options_.cam_options_.static_mask_;
+  }
 
   if (!is_filter_initialized_)
   {
-    track_manager_.processCamera(cam);
-    if (initializer_.detectMotion(track_manager_.tracks()))
-    {
-      utils::Logger::info("Static initialization succeeded");
-      track_manager_.clear();
-
-      xi0_ = SystemState(opts_.state_options_, initializer_.T0(), initializer_.b0());
-      X_ = MSCEqFState(opts_.state_options_, xi0_);
-      timestamp_ = cam.timestamp_;
-
-      is_filter_initialized_ = true;
-      logInit();
-    }
+    initialize(cam);
     return;
   }
 
@@ -85,7 +79,6 @@ void MSCEqF::processCameraMeasurement(Camera& cam)
     return;
   }
 
-  // Parallelize propagation and image processing, synchronization is not needed since there are no data races
   auto future_propagation = std::async([&]() { return propagator_.propagate(X_, xi0_, timestamp_, cam.timestamp_); });
   auto future_image_processing = std::async([&]() { track_manager_.processCamera(cam); });
 
@@ -95,11 +88,29 @@ void MSCEqF::processCameraMeasurement(Camera& cam)
     return;
   }
 
-  // Parallelize stochastic cloning and image processing, synchronization is not needed since there are no data races
-  auto future_cloning = std::async([&]() { X_.stochasticCloning(cam.timestamp_); });
+  if (opts_.zvupdater_options_.zero_velocity_update_ != ZeroVelocityUpdate::DISABLE)
+  {
+    future_image_processing.wait();
+    if (zvupdater_.isActive(track_manager_.tracks()))
+    {
+      zvu_performed_ = zvupdater_.zvUpdate(X_, xi0_);
+      utils::Logger::info("Successful zero velocity update");
+      return;
+    }
+    if (zvu_performed_)
+    {
+      zvu_performed_ = false;
+      track_manager_.removeTracksTail(cam.timestamp_, false);
+    }
+    X_.stochasticCloning(cam.timestamp_);
+  }
+  else
+  {
+    auto future_cloning = std::async([&]() { X_.stochasticCloning(cam.timestamp_); });
 
-  future_image_processing.wait();
-  future_cloning.wait();
+    future_image_processing.wait();
+    future_cloning.wait();
+  }
 
   track_manager_.lostTracksIds(cam.timestamp_, ids_to_update_);
 
@@ -112,7 +123,6 @@ void MSCEqF::processCameraMeasurement(Camera& cam)
     marginalize = true;
   }
 
-  // Update
   updater_.mscUpdate(X_, track_manager_.tracks(), ids_to_update_);
   if (!ids_to_update_.empty())
   {
@@ -123,18 +133,15 @@ void MSCEqF::processCameraMeasurement(Camera& cam)
     utils::Logger::warn("Failed update.");
   }
 
-  // Update camera intrinsics if we are doing online camera intrinsic calibration
   if (X_.opts().enable_camera_intrinsics_calibration_)
   {
     SystemState xi = stateEstimate();
     track_manager_.cam()->setIntrinsics(xi.k());
   }
 
-  // Remove tracks used for update and clear ids_to_update_
   track_manager_.removeTracksId(ids_to_update_);
   ids_to_update_.clear();
 
-  // Marginalize
   if (marginalize)
   {
     X_.marginalizeCloneAt(marginalize_timestamp);
@@ -150,23 +157,7 @@ void MSCEqF::processFeaturesMeasurement(TriangulatedFeatures& features)
 
   if (!is_filter_initialized_)
   {
-    track_manager_.processFeatures(features);
-    if (initializer_.detectMotion(track_manager_.tracks()))
-    {
-      utils::Logger::info("Static initialization succeeded");
-      track_manager_.clear();
-
-      if (!opts_.init_options_.init_with_given_state_)
-      {
-        xi0_ = SystemState(opts_.state_options_, initializer_.T0(), initializer_.b0());
-        X_ = MSCEqFState(opts_.state_options_, xi0_);
-      }
-
-      timestamp_ = features.timestamp_;
-
-      is_filter_initialized_ = true;
-      logInit();
-    }
+    initialize(features);
     return;
   }
 
@@ -176,10 +167,40 @@ void MSCEqF::processFeaturesMeasurement(TriangulatedFeatures& features)
     return;
   }
 
-  propagator_.propagate(X_, xi0_, timestamp_, features.timestamp_);
-  X_.stochasticCloning(features.timestamp_);
+  auto future_propagation =
+      std::async([&]() { return propagator_.propagate(X_, xi0_, timestamp_, features.timestamp_); });
+  auto future_feature_processing = std::async([&]() { track_manager_.processFeatures(features); });
 
-  track_manager_.processFeatures(features);
+  if (!future_propagation.get())
+  {
+    utils::Logger::err("Propagation failure");
+    return;
+  }
+
+  if (opts_.zvupdater_options_.zero_velocity_update_ != ZeroVelocityUpdate::DISABLE)
+  {
+    future_feature_processing.wait();
+    if (zvupdater_.isActive(track_manager_.tracks()))
+    {
+      zvu_performed_ = zvupdater_.zvUpdate(X_, xi0_);
+      utils::Logger::info("Successful zero velocity update");
+      return;
+    }
+    if (zvu_performed_)
+    {
+      zvu_performed_ = false;
+      track_manager_.removeTracksTail(features.timestamp_, false);
+    }
+    X_.stochasticCloning(features.timestamp_);
+  }
+  else
+  {
+    auto future_cloning = std::async([&]() { X_.stochasticCloning(features.timestamp_); });
+
+    future_feature_processing.wait();
+    future_cloning.wait();
+  }
+
   track_manager_.lostTracksIds(features.timestamp_, ids_to_update_);
 
   bool marginalize = false;
@@ -217,6 +238,62 @@ void MSCEqF::processFeaturesMeasurement(TriangulatedFeatures& features)
   }
 }
 
+void MSCEqF::initialize(Camera& cam)
+{
+  if (opts_.init_options_.init_with_given_state_)
+  {
+    setGivenOrigin();
+    return;
+  }
+
+  track_manager_.processCamera(cam);
+  if (opts_.zvupdater_options_.zero_velocity_update_ != ZeroVelocityUpdate::DISABLE)
+  {
+    if (initializer_.initializeOrigin())
+    {
+      setGivenOrigin(initializer_.T0(), initializer_.b0());
+    }
+  }
+  else
+  {
+    if (initializer_.detectMotion(track_manager_.tracks()))
+    {
+      utils::Logger::info("Static initialization succeeded");
+      track_manager_.clear();
+      setGivenOrigin(initializer_.T0(), initializer_.b0());
+    }
+  }
+  return;
+}
+
+void MSCEqF::initialize(TriangulatedFeatures& features)
+{
+  if (opts_.init_options_.init_with_given_state_)
+  {
+    setGivenOrigin();
+    return;
+  }
+
+  track_manager_.processFeatures(features);
+  if (opts_.zvupdater_options_.zero_velocity_update_ != ZeroVelocityUpdate::DISABLE)
+  {
+    if (initializer_.initializeOrigin())
+    {
+      setGivenOrigin(initializer_.T0(), initializer_.b0());
+    }
+  }
+  else
+  {
+    if (initializer_.detectMotion(track_manager_.tracks()))
+    {
+      utils::Logger::info("Static initialization succeeded");
+      track_manager_.clear();
+      setGivenOrigin(initializer_.T0(), initializer_.b0());
+    }
+  }
+  return;
+}
+
 void MSCEqF::setGivenOrigin()
 {
   xi0_ = SystemState(
@@ -227,10 +304,10 @@ void MSCEqF::setGivenOrigin()
                      createSystemStateElement<BiasState>(std::make_tuple(opts_.init_options_.initial_bias_))));
 
   X_ = MSCEqFState(opts_.state_options_, xi0_);
-  // timestamp_ = opts_.init_options_.initial_timestamp_;
+  timestamp_ = opts_.init_options_.initial_timestamp_;
 
-  // is_filter_initialized_ = true;
-  // logInit();
+  is_filter_initialized_ = true;
+  logInit();
 }
 
 void MSCEqF::setGivenOrigin(const SE23& T0, const Vector6& b0)
@@ -255,7 +332,9 @@ const MatrixX MSCEqF::coreCovariance() const { return X_.covBlock(MSCEqFStateEle
 
 const SystemState MSCEqF::stateEstimate() const { return Symmetry::phi(X_, xi0_); }
 
-bool MSCEqF::isInit() const { return is_filter_initialized_; }
+const bool& MSCEqF::isInit() const { return is_filter_initialized_; }
+
+const bool& MSCEqF::zvuPerformed() const { return zvu_performed_; }
 
 void MSCEqF::logInit() const
 {
@@ -298,8 +377,32 @@ void MSCEqF::logInit() const
   utils::Logger::info(os.str());
 }
 
-const cv::Mat3b MSCEqF::imageWithTracks(const Camera& cam) const { return visualizer_.imageWithTracks(cam); }
+const cv::Mat3b MSCEqF::imageWithTracks(const Camera& cam) const
+{
+  std::string text = "";
+  if (!is_filter_initialized_)
+  {
+    text = "Initialization";
+  }
+  else if (zvu_performed_)
+  {
+    text = "ZeroVelocityUpdate";
+  }
+  return visualizer_.imageWithTracks(cam, text);
+}
 
-void MSCEqF::visualizeImageWithTracks(const Camera& cam) const { return visualizer_.visualizeImageWithTracks(cam); }
+void MSCEqF::visualizeImageWithTracks(const Camera& cam) const
+{
+  std::string text = "";
+  if (!is_filter_initialized_)
+  {
+    text = "Initialization";
+  }
+  else if (zvu_performed_)
+  {
+    text = "ZeroVelocityUpdate";
+  }
+  return visualizer_.visualizeImageWithTracks(cam, text);
+}
 
 }  // namespace msceqf

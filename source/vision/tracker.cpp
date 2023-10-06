@@ -16,22 +16,25 @@
 
 namespace msceqf
 {
-
 Tracker::Tracker(const TrackerOptions& opts, const Vector4& intrinsics)
     : opts_(opts)
     , cam_()
     , detector_()
     , max_kpts_per_cell_()
     , id_(0)
+    , feature_mask_(opts_.cam_options_.static_mask_)
     , previous_pyramids_()
-    , previous_mask_()
     , previous_features_()
     , current_pyramids_()
     , current_features_()
     , win_(cv::Size(opts_.optical_flow_win_size_, opts_.optical_flow_win_size_))
 {
+  assert(feature_mask_.size() == cv::Size(opts_.cam_options_.resolution_(0), opts_.cam_options_.resolution_(1)));
   assert(opts_.optical_flow_pyramid_levels_ > 0);
   assert(opts_.detector_pyramid_levels_ > 0);
+
+  // Deep copy allocate new memory
+  feature_mask_ = feature_mask_.clone();
 
   if (opts_.optical_flow_pyramid_levels_ > 4)
   {
@@ -123,16 +126,19 @@ void Tracker::track(Camera& cam)
   opts_.optical_flow_pyramid_levels_ =
       cv::buildOpticalFlowPyramid(cam.image_, current_pyramids_, win_, opts_.optical_flow_pyramid_levels_ - 1) + 1;
 
+  // Copy data (do not allocate new memory)
+  cam.mask_.copyTo(feature_mask_);
+
   if (previous_features_.second.empty())
   {
-    detect(current_pyramids_, cam.mask_, current_features_.second);
+    detect(current_pyramids_, feature_mask_, current_features_.second);
   }
   else
   {
     std::vector<uchar> klt_mask;
     std::vector<uchar> ransac_mask;
 
-    detect(previous_pyramids_, previous_mask_, previous_features_.second);
+    detect(previous_pyramids_, feature_mask_, previous_features_.second);
     matchKLT(klt_mask);
     ransac(ransac_mask);
 
@@ -156,7 +162,6 @@ void Tracker::track(Camera& cam)
 
   // Swap pyramids and mask
   previous_pyramids_.swap(current_pyramids_);
-  cv::swap(previous_mask_, cam.mask_);
 
   // Copy features
   previous_features_ = current_features_;
@@ -197,11 +202,15 @@ void Tracker::detect(std::vector<cv::Mat>& pyramids, cv::Mat& mask, Features& fe
     int cell_width = pyramids[pyr_idx].cols / opts_.grid_x_size_;
     int cell_height = pyramids[pyr_idx].rows / opts_.grid_y_size_;
 
-    // Downsample mask
-    cv::Mat resized_mask = mask.clone();
-    for (uint s = 0; s < i; ++s)
+    // Downsample mask if needed
+    cv::Mat resized_mask = mask;
+    if (opts_.detector_pyramid_levels_ > 1)
     {
-      cv::pyrDown(resized_mask, resized_mask, cv::Size(resized_mask.cols / 2.0, resized_mask.rows / 2.0));
+      resized_mask = resized_mask.clone();
+      for (uint s = 0; s < i; ++s)
+      {
+        cv::pyrDown(resized_mask, resized_mask, cv::Size(resized_mask.cols / 2.0, resized_mask.rows / 2.0));
+      }
     }
 
     // Reset value of max keypoints per cell for the given pyramid
@@ -213,41 +222,38 @@ void Tracker::detect(std::vector<cv::Mat>& pyramids, cv::Mat& mask, Features& fe
 
     // Parallel feature extraction for each cell of the grid.
     // Re-computation of max_kpts_per_cell_ based on how many feature have been extracted in previous cells.
-    cv::parallel_for_(cv::Range(0, opts_.grid_x_size_ * opts_.grid_y_size_),
-                      [&](const cv::Range& range)
-                      {
-                        for (int cell_idx = range.start; cell_idx < range.end; ++cell_idx)
-                        {
-                          cell_kpts[cell_idx].clear();
+    cv::parallel_for_(cv::Range(0, opts_.grid_x_size_ * opts_.grid_y_size_), [&](const cv::Range& range) {
+      for (int cell_idx = range.start; cell_idx < range.end; ++cell_idx)
+      {
+        cell_kpts[cell_idx].clear();
 
-                          int y = cell_idx / opts_.grid_x_size_;
-                          int x = cell_idx % opts_.grid_x_size_;
-                          cv::Rect cell(x * cell_width, y * cell_height, cell_width, cell_height);
+        int y = cell_idx / opts_.grid_x_size_;
+        int x = cell_idx % opts_.grid_x_size_;
+        cv::Rect cell(x * cell_width, y * cell_height, cell_width, cell_height);
 
-                          extractCellKeypoints(i, pyramids[pyr_idx](cell), resized_mask(cell), cell_kpts[cell_idx]);
+        extractCellKeypoints(i, pyramids[pyr_idx](cell), resized_mask(cell), cell_kpts[cell_idx]);
 
-                          // Dynamic max keypoints per cell based on the amount of previously extracted keypoints
-                          num_detected += cell_kpts[cell_idx].size();
-                          if (max_kpts_per_cell_.at(i).load() > 1)
-                          {
-                            max_kpts_per_cell_.at(i) = ((ratio_[i] * needed_alpha) - num_detected.load()) /
-                                                       ((opts_.grid_x_size_ * opts_.grid_y_size_) - cell_cnt.load());
-                          }
+        // Dynamic max keypoints per cell based on the amount of previously extracted keypoints
+        num_detected += cell_kpts[cell_idx].size();
+        if (max_kpts_per_cell_.at(i).load() > 1)
+        {
+          max_kpts_per_cell_.at(i) = ((ratio_[i] * needed_alpha) - num_detected.load()) /
+                                     ((opts_.grid_x_size_ * opts_.grid_y_size_) - cell_cnt.load());
+        }
 
-                          ++cell_cnt;
+        ++cell_cnt;
 
-                          // Shift keypoints based on cell and scale
-                          if (x > 0 || y > 0 || scale > 1)
-                          {
-                            std::for_each(cell_kpts[cell_idx].begin(), cell_kpts[cell_idx].end(),
-                                          [&x, &y, &cell_width, &cell_height, &scale](cv::KeyPoint& kpt)
-                                          {
-                                            kpt.pt.x = (kpt.pt.x + (x * cell_width)) * scale;
-                                            kpt.pt.y = (kpt.pt.y + (y * cell_height)) * scale;
-                                          });
-                          }
-                        }
-                      });
+        // Shift keypoints based on cell and scale
+        if (x > 0 || y > 0 || scale > 1)
+        {
+          std::for_each(cell_kpts[cell_idx].begin(), cell_kpts[cell_idx].end(),
+                        [&x, &y, &cell_width, &cell_height, &scale](cv::KeyPoint& kpt) {
+                          kpt.pt.x = (kpt.pt.x + (x * cell_width)) * scale;
+                          kpt.pt.y = (kpt.pt.y + (y * cell_height)) * scale;
+                        });
+        }
+      }
+    });
 
     // Flatten cell keypoints (convert to features)
     for (const auto& kpts : cell_kpts)
@@ -263,9 +269,6 @@ void Tracker::detect(std::vector<cv::Mat>& pyramids, cv::Mat& mask, Features& fe
     {
       cv::cornerSubPix(pyramids[pyr_idx], detected[i], cv::Size(5, 5), cv::Size(-1, -1), criteria);
     }
-
-    // mask already detected features
-    maskGivenFeatures(mask, detected[i]);
   }
 
   // Flatten detected features
