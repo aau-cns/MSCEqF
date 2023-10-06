@@ -1,14 +1,14 @@
 # Euroc Config
 
 # Initial standard deviations (attitude, velocity, position, bias, extrinsics, instrinsics)
-extended_pose_std: [1.0e-1, 1.0e-1, 1.0e-9, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-9, 1.0e-9, 1.0e-9]
-bias_std: [1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1]
-extrinsics_std: [1.0e-2, 1.0e-2, 1.0e-2, 1.0e-2, 1.0e-2, 1.0e-2]
+extended_pose_std: [1.0e-2, 1.0e-2, 1.0e-4, 1.0e-2, 1.0e-2, 1.0e-2, 1.0e-4, 1.0e-4, 1.0e-4]
+bias_std: [1.0e-2, 1.0e-2, 1.0e-2, 1.0e-2, 1.0e-2, 1.0e-2]
+extrinsics_std: [3.0e-2, 3.0e-2, 3.0e-2, 3.0e-2, 3.0e-2, 3.0e-2]
 intrinsics_std: [1.0, 1.0, 1.0, 1.0]
 
 # IMU noise statistics
-accelerometer_noise_density: 2.0000e-3  
-accelerometer_random_walk:   3.0000e-3
+accelerometer_noise_density: 2.0000e-2 #2.0000e-3  
+accelerometer_random_walk:   3.0000e-4 #3.0000e-3
 gyroscope_noise_density: 1.6968e-04
 gyroscope_random_walk:   1.9393e-05
 
@@ -24,10 +24,12 @@ T_imu_cam:
  - [0.0, 0.0, 0.0, 1.0]
 
 # Initializer
-static_initializer_imu_window: 2.0
-static_initializer_disparity_window: 0.5
+static_initializer_imu_window: 0.5
 static_initializer_acc_threshold: 0.05
-static_initializer_disparity_threshold: 2.0
+
+# Checker
+checker_disparity_window: 0.5
+checker_disparity_threshold: 2.0
 
 # Propagator
 state_transition_order: -1
@@ -40,10 +42,11 @@ feature_max_depth: 20
 feature_refinement_max_iterations: 20
 feature_refinement_tollerance: 1e-10
 measurement_projection_method: unit_plane
-feature_representation: anchored_inverse_depth
+feature_representation: anchored_euclidean
 pixel_standerd_deviation: 1.0
-curveture_correction: true
-min_angle_deg: 1.0
+curvature_correction: true
+min_angle_deg: 0.0
+zero_velocity_update: enabled
 
 # State options
 enable_camera_extrinsic_calibration: true
@@ -54,19 +57,19 @@ num_persistent_features: 0
 
 # Tracker
 equalization_method: histogram
-optical_flow_pyramid_levels: 3
-detector_pyramid_levels: 1
-feature_detector: fast
-grid_x_size: 4
-grid_y_size: 4
+optical_flow_pyramid_levels: 4
+detector_pyramid_levels: 2
+feature_detector: shi-tomasi
+grid_x_size: 6
+grid_y_size: 6
 min_feature_pixel_distance: 10
-min_features: 160
-max_features: 200
+min_features: 100
+max_features: 100
 fast_threshold: 20
-shi_tomasi_quality_level: 0.75
+shi_tomasi_quality_level: 0.8
 
 # Track Manager
-max_track_length: 400
+max_track_length: 200
 
 # Logger level [0: Full, 1: INFO, 2: WARN, 3: ERR, 4: INACTIVE]
 logger_level: 1

@@ -25,9 +25,11 @@ T_imu_cam:
 
 # Initializer
 static_initializer_imu_window: 0.0
-static_initializer_disparity_window: 0.0
 static_initializer_acc_threshold: -1.0
-static_initializer_disparity_threshold: -1.0
+
+# Checker
+checker_disparity_window: 0.0
+checker_disparity_threshold: -1.0
 
 # Propagator
 state_transition_order: -1
@@ -42,7 +44,7 @@ feature_refinement_tollerance: 1e-10
 measurement_projection_method: unit_plane
 feature_representation: anchored_inverse_depth
 pixel_standerd_deviation: 1.0
-curveture_correction: false
+curvature_correction: false
 min_angle_deg: 3.0
 
 # State options

@@ -184,14 +184,14 @@ void Updater::mscUpdate(MSCEqFState& X, const Tracks& tracks, std::unordered_set
   delta.conservativeResize(total_size_);
   C.conservativeResize(total_size_, C.cols());
 
-  // Define measurement noise covariance
-  MatrixX R = MatrixX::Identity(C.rows(), C.rows()) * opts_.pixel_std_ * opts_.pixel_std_;
-
   // Update compression
   if (C.rows() > C.cols())
   {
-    UpdaterHelper::updateQRCompression(C, delta, R);
+    UpdaterHelper::updateQRCompression(C, delta);
   }
+
+  // Define measurement noise covariance
+  MatrixX R = MatrixX::Identity(C.rows(), C.rows()) * opts_.pixel_std_ * opts_.pixel_std_;
 
   // MSCEqF Update
   UpdateMSCEqF(X, C, delta, R);

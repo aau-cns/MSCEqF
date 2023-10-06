@@ -13,7 +13,6 @@
 
 namespace msceqf
 {
-
 ProjectionHelper::ProjectionHelper(const FeatureRepresentation& feature_representation)
     : feature_representation_(feature_representation)
 {
@@ -167,7 +166,7 @@ void UpdaterHelper::nullspaceProjection(Eigen::Ref<MatrixX> Cf, MatrixXBlockRowR
   delta.segment(0, Q.rows()) = Q * delta;
 }
 
-void UpdaterHelper::updateQRCompression(MatrixX& C, VectorX& delta, MatrixX& R)
+void UpdaterHelper::updateQRCompression(MatrixX& C, VectorX& delta)
 {
   Eigen::HouseholderQR<MatrixX> QR(C.rows(), C.cols());
   QR.compute(C);
@@ -178,7 +177,6 @@ void UpdaterHelper::updateQRCompression(MatrixX& C, VectorX& delta, MatrixX& R)
 
   C = QR.matrixQR().topRows(Q.cols()).triangularView<Eigen::Upper>();
   delta = Q.transpose() * delta;
-  R = Q.transpose() * R * Q;
 }
 
 bool UpdaterHelper::chi2Test(const fp& chi2, const size_t& dof, const std::map<uint, fp>& chi2_table)

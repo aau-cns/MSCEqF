@@ -12,11 +12,8 @@
 #ifndef STATIC_INITIALIZER_HPP
 #define STATIC_INITIALIZER_HPP
 
-#include "msceqf/options/msceqf_options.hpp"
+#include "msceqf/filter/checker/checker.hpp"
 #include "sensors/sensor_data.hpp"
-#include "types/fptypes.hpp"
-#include "utils/tools.hpp"
-#include "vision/track.hpp"
 
 namespace msceqf
 {
@@ -29,8 +26,9 @@ class StaticInitializer
    * @brief StaticInitializer constructor
    *
    * @param opts Initializer options
+   * @param checker Refernece to the MSCEqF checker
    */
-  StaticInitializer(const InitializerOptions& opts);
+  StaticInitializer(const InitializerOptions& opts, const Checker& checker);
 
   /**
    * @brief Populate imu internal buffer used for acceleration check
@@ -72,24 +70,13 @@ class StaticInitializer
 
  private:
   /**
-   * @brief This function returns true if the standard deviation of the collected acceleration measurements exceeds the
-   * defined threshold. If the check succeed, the initial extended pose and bias are set
+   * @brief This function is used to detect an acceleration spike, corresponding to a state transition from static
+   * condition to motion. The function returns true if the standard deviation of the collected acceleration measurements
+   * exceeds the defined threshold. If motion is detected, the initial extended pose and bias are set
    *
    * @return true if acceleration spike has been detected, false otherwise
    */
-  [[nodiscard]] bool accelerationCheck();
-
-  /**
-   * @brief Perform disparity check
-   *
-   * @param tracks tracks up to date used for disparity check
-   * @return true if disparity check succeed (diparity above threshold), false if no disparity is detected (disparity
-   * below threshold)
-   *
-   * @note This method checks only tracks that are as long as the first track. This ideally should avoid to use newly
-   * detected/tracked features corresponding to temporary objects moving in front of the camera
-   */
-  [[nodiscard]] bool disparityCheck(const Tracks& tracks) const;
+  [[nodiscard]] bool detectAccelerationSpike();
 
   /**
    * @brief This function computes the mean acceleration and angular velocity of the IMU measurements in the IMU buffer,
@@ -114,6 +101,8 @@ class StaticInitializer
   void computeOrigin(Vector3& acc_mean, Vector3& ang_mean);
 
   InitializerOptions opts_;  //!< The initializer options
+
+  const Checker& checker_;  // The MSCEqF checker
 
   ImuBuffer imu_buffer_;  //!< The imu buffer used to check for acceleration spikes
 

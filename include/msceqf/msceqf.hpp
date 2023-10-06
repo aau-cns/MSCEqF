@@ -17,6 +17,7 @@
 #include "msceqf/filter/initializer/static_initializer.hpp"
 #include "msceqf/filter/propagator/propagator.hpp"
 #include "msceqf/filter/updater/updater.hpp"
+#include "msceqf/filter/updater/zero_velocity_updater.hpp"
 #include "msceqf/options/msceqf_option_parser.hpp"
 #include "msceqf/state/state.hpp"
 #include "vision/track_manager.hpp"
@@ -124,7 +125,14 @@ class MSCEqF
    *
    * @return true if the filter is initialized, false otherwise
    */
-  [[nodiscard]] bool isInit() const;
+  [[nodiscard]] const bool& isInit() const;
+
+  /**
+   * @brief Check if a zero velocity update has been performed
+   *
+   * @return true if the a zero velocity update has been performed, false otherwise
+   */
+  [[nodiscard]] const bool& zvuPerformed() const;
 
  private:
   /**
@@ -198,9 +206,11 @@ class MSCEqF
   MSCEqFState X_;    //!< The state of the MSCEqF
 
   TrackManager track_manager_;     //!< The MSCEqF track manager
+  Checker checker_;                //!< The MSCEqF checker
   StaticInitializer initializer_;  //!< The MSCEqF static initializer
   Propagator propagator_;          //!< The MSCEqF propagator
   Updater updater_;                //!< The MSCEqF updater
+  ZeroVelocityUpdater zvupdater_;  //!< The MSCEqF zero velocity updater
   Visualizer visualizer_;          //<! The MSCEqF visualizer
 
   std::unordered_set<uint> ids_to_update_;  //!< Ids of track to update
@@ -208,6 +218,7 @@ class MSCEqF
   fp timestamp_;  //!< The timestamp of the actual estimate
 
   bool is_filter_initialized_;  //!< Flag that indicates that the filter is initialized
+  bool zvu_performed_;          //!< Flag that indicates that the zero velocity update has been performed
 };
 
 }  // namespace msceqf

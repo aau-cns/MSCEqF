@@ -132,21 +132,30 @@ struct UpdaterOptions
   fp min_angle_;                                       //!< Minimum angle (in degrees) between views for trianglulation
   fp pixel_std_;                                       //!< The pixel standard deviation
   bool curvature_correction_;                          //!< Boolean to enable the curvature correction
-  ZeroVelocityUpdate zero_velocity_update_;            //!< The zero velocity update method
+};
+
+struct ZeroVelocityUpdaterOptions
+{
+  ZeroVelocityUpdate zero_velocity_update_;  //!< The zero velocity update method
+  bool curvature_correction_;                //!< Boolean to enable the curvature correction on the zero velocity update
 };
 
 struct InitializerOptions
 {
-  fp disparity_threshold_;      //!< the disparity threshold for the static initializer
   fp acc_threshold_;            //!< The acceleration threshold for the static initializer
   fp imu_init_window_;          //!< The window in seconds used to check for acceleration spikes
-  fp disparity_window_;         //!< The window is seconds used to check disparity
   fp gravity_;                  //!< The magnitude of the gravity vector in m/s^2
   bool identity_b0_;            //!< Boolean to fix identity bias origin (b0)git
   bool init_with_given_state_;  //!< Boolean to initialize the state with the given state
   SE23 initial_extended_pose_;  //!< Initial extended pose
   Vector6 initial_bias_;        //!< Initial bias
   fp initial_timestamp_;        //!< Initial timestamp
+};
+
+struct CheckerOptions
+{
+  fp disparity_threshold_;  //!< the disparity threshold for the disparity check
+  fp disparity_window_;     //!< The window is seconds used to check disparity
 };
 
 struct CameraOptions
@@ -195,11 +204,13 @@ struct TrackManagerOptions
 
 struct MSCEqFOptions
 {
-  StateOptions state_options_;                 //!< The state options
-  PropagatorOptions propagator_options_;       //!< The propagator options
-  UpdaterOptions updater_options_;             //!< The updater options
-  InitializerOptions init_options_;            //!< The initializer options
-  TrackManagerOptions track_manager_options_;  //!< The track manager options
+  TrackManagerOptions track_manager_options_;     //!< The track manager options
+  StateOptions state_options_;                    //!< The state options
+  CheckerOptions checker_options_;                //!< The checker options
+  InitializerOptions init_options_;               //!< The initializer options
+  PropagatorOptions propagator_options_;          //!< The propagator options
+  UpdaterOptions updater_options_;                //!< The updater options
+  ZeroVelocityUpdaterOptions zvupdater_options_;  //!< The zero velocity updater options
 };
 
 }  // namespace msceqf

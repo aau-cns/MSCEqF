@@ -9,17 +9,16 @@
 //
 // You can contact the authors at <alessandro.fornasier@ieee.org>
 
-#include "msceqf/filter/initializer/static_initializer.hpp"
-
 #include <algorithm>
 #include <numeric>
 
+#include "msceqf/filter/initializer/static_initializer.hpp"
 #include "utils/logger.hpp"
 
 namespace msceqf
 {
-StaticInitializer::StaticInitializer(const InitializerOptions& opts)
-    : opts_(opts), imu_buffer_(), T0_(), b0_(Vector6::Zero())
+StaticInitializer::StaticInitializer(const InitializerOptions& opts, const Checker& checker)
+    : opts_(opts), checker_(checker), imu_buffer_(), T0_(), b0_(Vector6::Zero())
 {
 }
 
@@ -48,7 +47,10 @@ void StaticInitializer::insertImu(const Imu& imu)
   }
 }
 
-bool StaticInitializer::detectMotion(const Tracks& tracks) { return accelerationCheck() && disparityCheck(tracks); }
+bool StaticInitializer::detectMotion(const Tracks& tracks)
+{
+  return detectAccelerationSpike() && checker_.disparityCheck(tracks);
+}
 
 bool StaticInitializer::initializeOrigin()
 {
@@ -67,7 +69,7 @@ bool StaticInitializer::initializeOrigin()
   return true;
 }
 
-bool StaticInitializer::accelerationCheck()
+bool StaticInitializer::detectAccelerationSpike()
 {
   if (opts_.acc_threshold_ <= 0 && !imu_buffer_.empty())
   {
@@ -94,36 +96,6 @@ bool StaticInitializer::accelerationCheck()
   computeOrigin(acc_mean, ang_mean);
 
   return true;
-}
-
-bool StaticInitializer::disparityCheck(const Tracks& tracks) const
-{
-  const auto& longest_track = std::max_element(tracks.begin(), tracks.end(), [](const auto& pre, const auto& post) {
-                                return pre.second.timestamps_.size() < post.second.timestamps_.size();
-                              })->second;
-
-  const fp& longest_track_time = longest_track.timestamps_.back() - longest_track.timestamps_.front();
-
-  if (longest_track_time < opts_.disparity_window_)
-  {
-    utils::Logger::info("feature tracks not long enough for disparity check in static initializer");
-    return false;
-  }
-
-  fp average_disparity = 0;
-  int track_cnt = 0;
-
-  for (const auto& [id, track] : tracks)
-  {
-    if (track.size() == longest_track.size())
-    {
-      average_disparity += cv::norm(track.uvs_.back() - track.uvs_.front());
-      ++track_cnt;
-    }
-  }
-  average_disparity /= track_cnt;
-
-  return average_disparity > opts_.disparity_threshold_ ? true : false;
 }
 
 bool StaticInitializer::imuMeanStd(Vector3& acc_mean, Vector3& ang_mean, fp& acc_std) const
