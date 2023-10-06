@@ -136,7 +136,7 @@ int main(int argc, char **argv)
     {
       msgs.push_back(msg);
     }
-    else if (msg.getTopic() == cam_topic || msg.getTopic() == features_topic)
+    else if (msg.getTopic() == cam_topic)
     {
       msgs.push_back(msg);
       max_camera_time = std::max(max_camera_time, msg.getTime().toSec());
