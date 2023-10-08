@@ -85,6 +85,22 @@ $ xhost +
 $ docker run --net=host -it --gpus all --env="NVIDIA_DRIVER_CAPABILITIES=all" --env="DISPLAY" --env="QT_X11_NO_MITSHM=1" --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" msceqf:ros<ros_version>
 ```
 
+### ROS1 setup
+```sh
+$ cd ws/src                                                                             # Move into ROS workspace
+$ git clone <url> msceqf                                                                # Get the code
+$ cd msceqf                                                                             # Move into msceqf folder
+$ catkin build -DCMAKE_BUILD_TYPE=<build_type> -DBUILD_ROS=ON                           # ROS1 build
+```
+
+### ROS2 setup
+```sh
+$ cd ws/src                                                                             # Move into ROS workspace
+$ git clone <url> msceqf                                                                # Get the code
+$ cd msceqf                                                                             # Move into msceqf folder
+$ colcon build -DCMAKE_BUILD_TYPE=<build_type> -DBUILD_ROS=ON                           # ROS2 build
+```
+
 ## License
 
 This software is made available to the public to use (source-available), licensed under the terms of the BSD-2-Clause-License with no commercial use allowed, the full terms of which are made available in the [LICENSE](LICENSE) file. 

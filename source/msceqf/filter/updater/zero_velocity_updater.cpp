@@ -22,6 +22,8 @@ ZeroVelocityUpdater::ZeroVelocityUpdater(const ZeroVelocityUpdaterOptions& opts,
 
 void ZeroVelocityUpdater::setMotion() { motion_ = true; }
 
+void ZeroVelocityUpdater::setMeasurement(const SE23& y) { y_ = y; }
+
 bool ZeroVelocityUpdater::isActive(const Tracks& tracks)
 {
   if (opts_.zero_velocity_update_ == ZeroVelocityUpdate::DISABLE)
@@ -41,11 +43,11 @@ bool ZeroVelocityUpdater::isActive(const Tracks& tracks)
 
 bool ZeroVelocityUpdater::zvUpdate(MSCEqFState& X, const SystemState& xi0) const
 {
-  Vector9 delta = SE23::log(SE23(SO3(), {X.D().v() + xi0.T().R().transpose() * xi0.T().v(), Vector3::Zero()}));
+  Vector9 delta = SE23::log(xi0.T().inv() * y_ * X.D().inv());
 
   Matrix9 Sigma = X.subCov({MSCEqFStateElementName::Dd}).block(0, 0, 9, 9);
 
-  Matrix9 R = 0.05 * Matrix9::Identity();
+  Matrix9 R = Matrix9::Identity() * 0.05 * 0.05;
   R.block(0, 0, 3, 3) = Sigma.block(0, 0, 3, 3);
   R.block(6, 6, 3, 3) = Sigma.block(6, 6, 3, 3);
 
@@ -82,6 +84,7 @@ bool ZeroVelocityUpdater::zvUpdate(MSCEqFState& X, const SystemState& xi0) const
   {
     MatrixX expGamma = Symmetry::curvatureCorrection(X, inn);
     X.cov_ = expGamma * X.cov_ * expGamma.transpose();
+    // I could use multleft mulright
   }
 
   return true;

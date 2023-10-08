@@ -40,6 +40,13 @@ class ZeroVelocityUpdater
   void setMotion();
 
   /**
+   * @brief Set the static extended pose measurement
+   *
+   * @param y static extended pose
+   */
+  void setMeasurement(const SE23& y);
+
+  /**
    * @brief Check whether the zero velocity updater is active
    *
    * @param tracks tracks up to date used for disparity check
@@ -63,6 +70,8 @@ class ZeroVelocityUpdater
   ZeroVelocityUpdaterOptions opts_;  //!< The zero velocity updater options
 
   const Checker& checker_;  // The MSCEqF checker
+
+  SE23 y_;  //!< Static extended pose
 
   bool motion_;  //!< Flag indicating whether we have moved
 };
