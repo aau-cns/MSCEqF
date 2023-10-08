@@ -15,9 +15,7 @@
 
 namespace msceqf
 {
-
-const Matrix5 Symmetry::D = []()
-{
+const Matrix5 Symmetry::D = []() {
   Matrix5 D = Matrix5::Zero();
   D(3, 4) = 1.0;
   return D;
@@ -25,11 +23,11 @@ const Matrix5 Symmetry::D = []()
 
 const SystemState Symmetry::phi(const MSCEqFState& X, const SystemState& xi)
 {
-  SE3 PS;
+  SE3 PS = xi.P();
 
   if (X.opts().num_persistent_features_ > 0)
   {
-    PS = xi.P() * xi.S();
+    PS.multiplyRight(xi.S());
   }
 
   SystemState result(xi);
@@ -43,16 +41,17 @@ const SystemState Symmetry::phi(const MSCEqFState& X, const SystemState& xi)
       switch (std::get<SystemStateElementName>(key))
       {
         case SystemStateElementName::T:
-          std::static_pointer_cast<ExtendedPoseState>(ptr)->T_ = xi.T() * X.D();
+          std::static_pointer_cast<ExtendedPoseState>(ptr)->T_.multiplyRight(X.D());
           break;
         case SystemStateElementName::b:
           std::static_pointer_cast<BiasState>(ptr)->b_ = X.B().invAdjoint() * (xi.b() - X.delta());
           break;
         case SystemStateElementName::S:
-          std::static_pointer_cast<CameraExtrinsicState>(ptr)->S_ = X.C().inv() * xi.S() * X.E();
+          std::static_pointer_cast<CameraExtrinsicState>(ptr)->S_.multiplyLeft(X.C().inv());
+          std::static_pointer_cast<CameraExtrinsicState>(ptr)->S_.multiplyRight(X.E());
           break;
         case SystemStateElementName::K:
-          std::static_pointer_cast<CameraIntrinsicState>(ptr)->K_ = xi.K() * X.L();
+          std::static_pointer_cast<CameraIntrinsicState>(ptr)->K_.multiplyRight(X.L());
           break;
       }
     }
@@ -84,11 +83,11 @@ const SystemState::SystemStateAlgebraMap Symmetry::lift(const SystemState& xi, c
     lambda_S = xi.S().invAdjoint() * (Vector6() << lambda_T.block<3, 1>(0, 0), lambda_T.block<3, 1>(6, 0)).finished();
   }
 
-  SE3 PS_inv;
+  SE3 PS_inv = xi.S().inv();
 
   if (xi.opts_.num_persistent_features_ > 0)
   {
-    PS_inv = (xi.P() * xi.S()).inv();
+    PS_inv.multiplyRight(xi.P().inv());
   }
 
   for (auto& [key, ptr] : xi.state_)

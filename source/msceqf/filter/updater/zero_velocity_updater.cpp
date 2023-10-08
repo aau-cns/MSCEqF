@@ -84,7 +84,6 @@ bool ZeroVelocityUpdater::zvUpdate(MSCEqFState& X, const SystemState& xi0) const
   {
     MatrixX expGamma = Symmetry::curvatureCorrection(X, inn);
     X.cov_ = expGamma * X.cov_ * expGamma.transpose();
-    // I could use multleft mulright
   }
 
   return true;
