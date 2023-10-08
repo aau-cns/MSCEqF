@@ -18,6 +18,7 @@ MSCEqF::MSCEqF(const std::string& params_filepath)
     , opts_(parser_.parseOptions())
     , xi0_(opts_.state_options_)
     , X_(opts_.state_options_, xi0_)
+    , xi_(opts_.state_options_)
     , track_manager_(opts_.track_manager_options_, opts_.state_options_.initial_camera_intrinsics_.k())
     , checker_(opts_.checker_options_)
     , initializer_(opts_.init_options_, checker_)
@@ -93,6 +94,10 @@ void MSCEqF::processCameraMeasurement(Camera& cam)
     future_image_processing.wait();
     if (zvupdater_.isActive(track_manager_.tracks()))
     {
+      if (!zvu_performed_)
+      {
+        zvupdater_.setMeasurement(SE23(SO3(), {-xi_.T().v(), Vector3::Zero()}).multiplyRight(xi_.T()));
+      }
       zvu_performed_ = zvupdater_.zvUpdate(X_, xi0_);
       utils::Logger::info("Successful zero velocity update");
       return;
@@ -133,10 +138,11 @@ void MSCEqF::processCameraMeasurement(Camera& cam)
     utils::Logger::warn("Failed update.");
   }
 
+  xi_ = Symmetry::phi(X_, xi0_);
+
   if (X_.opts().enable_camera_intrinsics_calibration_)
   {
-    SystemState xi = stateEstimate();
-    track_manager_.cam()->setIntrinsics(xi.k());
+    track_manager_.cam()->setIntrinsics(xi_.k());
   }
 
   track_manager_.removeTracksId(ids_to_update_);
@@ -182,6 +188,10 @@ void MSCEqF::processFeaturesMeasurement(TriangulatedFeatures& features)
     future_feature_processing.wait();
     if (zvupdater_.isActive(track_manager_.tracks()))
     {
+      if (!zvu_performed_)
+      {
+        zvupdater_.setMeasurement(SE23(SO3(), {-xi_.T().v(), Vector3::Zero()}).multiplyRight(xi_.T()));
+      }
       zvu_performed_ = zvupdater_.zvUpdate(X_, xi0_);
       utils::Logger::info("Successful zero velocity update");
       return;
@@ -222,10 +232,11 @@ void MSCEqF::processFeaturesMeasurement(TriangulatedFeatures& features)
     utils::Logger::warn("Failed update.");
   }
 
+  xi_ = Symmetry::phi(X_, xi0_);
+
   if (X_.opts().enable_camera_intrinsics_calibration_)
   {
-    SystemState xi = stateEstimate();
-    track_manager_.cam()->setIntrinsics(xi.k());
+    track_manager_.cam()->setIntrinsics(xi_.k());
   }
 
   track_manager_.removeTracksId(ids_to_update_);
@@ -304,6 +315,7 @@ void MSCEqF::setGivenOrigin()
                      createSystemStateElement<BiasState>(std::make_tuple(opts_.init_options_.initial_bias_))));
 
   X_ = MSCEqFState(opts_.state_options_, xi0_);
+  xi_ = Symmetry::phi(X_, xi0_);
   timestamp_ = opts_.init_options_.initial_timestamp_;
 
   is_filter_initialized_ = true;
@@ -314,6 +326,7 @@ void MSCEqF::setGivenOrigin(const SE23& T0, const Vector6& b0)
 {
   xi0_ = SystemState(opts_.state_options_, T0, b0);
   X_ = MSCEqFState(opts_.state_options_, xi0_);
+  xi_ = Symmetry::phi(X_, xi0_);
   timestamp_ = opts_.init_options_.initial_timestamp_;
 
   is_filter_initialized_ = true;
@@ -330,7 +343,7 @@ const MatrixX& MSCEqF::covariance() const { return X_.cov(); }
 
 const MatrixX MSCEqF::coreCovariance() const { return X_.covBlock(MSCEqFStateElementName::Dd); }
 
-const SystemState MSCEqF::stateEstimate() const { return Symmetry::phi(X_, xi0_); }
+const SystemState& MSCEqF::stateEstimate() const { return xi_; }
 
 const bool& MSCEqF::isInit() const { return is_filter_initialized_; }
 

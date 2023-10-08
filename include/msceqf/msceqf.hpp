@@ -85,11 +85,11 @@ class MSCEqF
   const MatrixX coreCovariance() const;
 
   /**
-   * @brief Get a constant copy of the estimated state
+   * @brief Get a constant reference to the estimated state
    *
    * @return System state (homogeneous space element) reperesenting the state estimate
    */
-  const SystemState stateEstimate() const;
+  const SystemState& stateEstimate() const;
 
   /**
    * @brief Get a constant reference to the origin state
@@ -204,6 +204,7 @@ class MSCEqF
 
   SystemState xi0_;  //!< The origin state of the System
   MSCEqFState X_;    //!< The state of the MSCEqF
+  SystemState xi_;   //!< The state of the System in the homogeneous space
 
   TrackManager track_manager_;     //!< The MSCEqF track manager
   Checker checker_;                //!< The MSCEqF checker

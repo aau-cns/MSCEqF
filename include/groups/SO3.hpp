@@ -167,10 +167,15 @@ class SO3
    */
   [[nodiscard]] static const VectorType log(const SO3& X)
   {
-    VectorType qv = X.q_.vec();
     FPType qw = X.q_.w();
+    VectorType qv = X.q_.vec();
     FPType ang = qv.norm();
     VectorType u;
+    if (qw < 0)
+    {
+      qw = -qw;
+      qv = -qv;
+    }
     if (ang < eps_)
     {
       u = (2.0 / qw) * qv * (1.0 - (pow((ang / qw), 2) / 3));
