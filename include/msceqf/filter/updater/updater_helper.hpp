@@ -22,8 +22,8 @@
 
 namespace msceqf
 {
-using MatrixXBlockRowRef = Eigen::Ref<MatrixX::RowsBlockXpr>;  //!< Block row reference for a dynamic matrix
-using VectorXBlockRowRef = Eigen::Ref<VectorX::RowsBlockXpr>;  //!< Block row reference for a dynamic vector
+using MatrixXBlockRowRef = Ref<MatrixX::RowsBlockXpr>;  //!< Block row reference for a dynamic matrix
+using VectorXBlockRowRef = Ref<VectorX::RowsBlockXpr>;  //!< Block row reference for a dynamic vector
 
 using ColsMap = utils::InsertionOrderedMap<MSCEqFState::MSCEqFKey, size_t>;  //!< Map of indices for C and delta
 
@@ -256,7 +256,7 @@ struct UpdaterHelper
    * @param f
    * @return Matrix representing the Xi operator
    */
-  [[nodiscard]] static Eigen::Matrix<fp, 2, 4> Xi(const Vector3& f);
+  [[nodiscard]] static Matrix<2, 4> Xi(const Vector3& f);
 
   /**
    * @brief Compute the Jacobian for inverse depth parametrization, used in the Cf matrix
@@ -274,7 +274,7 @@ struct UpdaterHelper
    * @param delta Residual
    * @param Cf Cf matrix
    */
-  static void nullspaceProjection(Eigen::Ref<MatrixX> Cf, MatrixXBlockRowRef Ct, VectorXBlockRowRef delta);
+  static void nullspaceProjection(Ref<MatrixX> Cf, MatrixXBlockRowRef Ct, VectorXBlockRowRef delta);
 
   /**
    * @brief Perform in-place compression of the C matrix and the residual using QR decomposition
