@@ -14,72 +14,99 @@
 
 #include "groups/In.hpp"
 #include "groups/SDB.hpp"
+#include "groups/TG.hpp"
 #include "groups/SOT3.hpp"
 
 namespace msceqf
 {
-
 #ifdef SINGLE_PRECISION
-using SO3 = group::SO3f;
-using SE3 = group::SE3f;
-using SE23 = group::SE23f;
-using SOT3 = group::SOT3f;
-using In = group::Inf;
-using SDB = group::SDBf;
-using Vector2 = Eigen::Vector2f;
-using Vector3 = Eigen::Vector3f;
-using Vector4 = Eigen::Vector4f;
-using Vector6 = Eigen::Matrix<float, 6, 1>;
-using Vector9 = Eigen::Matrix<float, 9, 1>;
-using Vector15 = Eigen::Matrix<float, 15, 1>;
-using Vector21 = Eigen::Matrix<float, 21, 1>;
-using Vector25 = Eigen::Matrix<float, 25, 1>;
-using VectorX = Eigen::VectorXf;
-using Matrix2 = Eigen::Matrix2f;
-using Matrix3 = Eigen::Matrix3f;
-using Matrix4 = Eigen::Matrix4f;
-using Matrix5 = Eigen::Matrix<float, 5, 5>;
-using Matrix6 = Eigen::Matrix<float, 6, 6>;
-using Matrix7 = Eigen::Matrix<float, 7, 7>;
-using Matrix9 = Eigen::Matrix<float, 9, 9>;
-using Matrix12 = Eigen::Matrix<float, 12, 12>;
-using Matrix15 = Eigen::Matrix<float, 15, 15>;
-using Matrix21 = Eigen::Matrix<float, 21, 21>;
-using Matrix25 = Eigen::Matrix<float, 25, 25>;
-using MatrixX = Eigen::MatrixXf;
-using Quaternion = Eigen::Quaternionf;
+
 using fp = float;
+
 #else
-using SO3 = group::SO3d;
-using SE3 = group::SE3d;
-using SE23 = group::SE23d;
-using SOT3 = group::SOT3d;
-using In = group::Ind;
-using SDB = group::SDBd;
-using Vector2 = Eigen::Vector2d;
-using Vector3 = Eigen::Vector3d;
-using Vector4 = Eigen::Vector4d;
-using Vector6 = Eigen::Matrix<double, 6, 1>;
-using Vector9 = Eigen::Matrix<double, 9, 1>;
-using Vector15 = Eigen::Matrix<double, 15, 1>;
-using Vector21 = Eigen::Matrix<double, 21, 1>;
-using Vector25 = Eigen::Matrix<double, 25, 1>;
-using VectorX = Eigen::VectorXd;
-using Matrix2 = Eigen::Matrix2d;
-using Matrix3 = Eigen::Matrix3d;
-using Matrix4 = Eigen::Matrix4d;
-using Matrix5 = Eigen::Matrix<double, 5, 5>;
-using Matrix6 = Eigen::Matrix<double, 6, 6>;
-using Matrix7 = Eigen::Matrix<double, 7, 7>;
-using Matrix9 = Eigen::Matrix<double, 9, 9>;
-using Matrix12 = Eigen::Matrix<double, 12, 12>;
-using Matrix15 = Eigen::Matrix<double, 15, 15>;
-using Matrix21 = Eigen::Matrix<double, 21, 21>;
-using Matrix25 = Eigen::Matrix<double, 25, 25>;
-using MatrixX = Eigen::MatrixXd;
-using Quaternion = Eigen::Quaterniond;
+
 using fp = double;
+
 #endif
+
+using SO3 = group::SO3<fp>;
+
+using SE3 = group::SEn3<fp, 1>;
+
+using SE23 = group::SEn3<fp, 2>;
+
+using SOT3 = group::SOT3<fp>;
+
+using In = group::In<fp>;
+
+using SDB = group::SemiDirectBias<fp>;
+
+using TG = group::Tangent<fp>;
+
+using Vector2 = Eigen::Matrix<fp, 2, 1>;
+
+using Vector3 = Eigen::Matrix<fp, 3, 1>;
+
+using Vector4 = Eigen::Matrix<fp, 4, 1>;
+
+using Vector6 = Eigen::Matrix<fp, 6, 1>;
+
+using Vector9 = Eigen::Matrix<fp, 9, 1>;
+
+using Vector15 = Eigen::Matrix<fp, 15, 1>;
+
+using Vector18 = Eigen::Matrix<fp, 18, 1>;
+
+using Vector21 = Eigen::Matrix<fp, 21, 1>;
+
+using Vector24 = Eigen::Matrix<fp, 24, 1>;
+
+using Vector25 = Eigen::Matrix<fp, 25, 1>;
+
+using Vector29 = Eigen::Matrix<fp, 29, 1>;
+
+using VectorX = Eigen::Matrix<fp, Eigen::Dynamic, 1>;
+
+using Matrix2 = Eigen::Matrix<fp, 2, 2>;
+
+using Matrix3 = Eigen::Matrix<fp, 3, 3>;
+
+using Matrix4 = Eigen::Matrix<fp, 4, 4>;
+
+using Matrix5 = Eigen::Matrix<fp, 5, 5>;
+
+using Matrix6 = Eigen::Matrix<fp, 6, 6>;
+
+using Matrix7 = Eigen::Matrix<fp, 7, 7>;
+
+using Matrix9 = Eigen::Matrix<fp, 9, 9>;
+
+using Matrix12 = Eigen::Matrix<fp, 12, 12>;
+
+using Matrix15 = Eigen::Matrix<fp, 15, 15>;
+
+using Matrix18 = Eigen::Matrix<fp, 18, 18>;
+
+using Matrix21 = Eigen::Matrix<fp, 21, 21>;
+
+using Matrix24 = Eigen::Matrix<fp, 24, 24>;
+
+using Matrix25 = Eigen::Matrix<fp, 25, 25>;
+
+using Matrix29 = Eigen::Matrix<fp, 24, 24>;
+
+using MatrixX = Eigen::MatrixXd;
+
+using Quaternion = Eigen::Quaternion<fp>;
+
+template <int R, int C, int T = Eigen::ColMajor>
+using Matrix = Eigen::Matrix<fp, R, C, T>;
+
+template <typename T>
+using Ref = Eigen::Ref<T>;
+
+template <typename T>
+using Map = Eigen::Map<T>;
 
 }  // namespace msceqf
 

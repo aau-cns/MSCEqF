@@ -142,7 +142,7 @@ void Updater::mscUpdate(MSCEqFState& X, const Tracks& tracks, std::unordered_set
     const auto& delta_block = delta.middleRows(total_size_, (ph_->block_rows() * track_size) - ph_->dim_loss());
 
     MatrixX S = C_block * X.subCov(cols_map_.keys()) * C_block.transpose();
-    S.diagonal() += Eigen::VectorXd::Ones(S.rows()) * opts_.pixel_std_ * opts_.pixel_std_;
+    S.diagonal() += VectorX::Ones(S.rows()) * opts_.pixel_std_ * opts_.pixel_std_;
     fp chi2 = delta_block.dot(S.llt().solve(delta_block));
 
     if (!UpdaterHelper::chi2Test(chi2, (ph_->block_rows() * track_size) - ph_->dim_loss(), chi2_table_))
@@ -244,10 +244,10 @@ bool Updater::linearTriangulation(const MSCEqFState& X, const Track& track, cons
   // cv::Mat uvn_first_cv = (cv::Mat_<fp>(2, 1) << track.normalized_uvs_.front().x, track.normalized_uvs_.front().y);
   // cv::Mat uvn_last_cv = (cv::Mat_<fp>(2, 1) << track.normalized_uvs_.back().x, track.normalized_uvs_.back().y);
 
-  // Eigen::Matrix<fp, 3, 4> P_first_eigen = Eigen::Matrix<fp, 3, 4>::Zero();
+  // Matrix<3, 4> P_first_eigen = Matrix<3, 4>::Zero();
   // P_first_eigen.block(0, 0, 3, 3) = Matrix3::Identity();
 
-  // Eigen::Matrix<fp, 3, 4> P_last_eigen = (X.clone(track.timestamps_.back()).inv() * A_E).asMatrix().block(0, 0, 3,
+  // Matrix<3, 4> P_last_eigen = (X.clone(track.timestamps_.back()).inv() * A_E).asMatrix().block(0, 0, 3,
   // 4);
 
   // cv::Mat P_first_cv, P_last_cv;
@@ -371,7 +371,9 @@ void Updater::UpdateMSCEqF(MSCEqFState& X, const MatrixX& C, const VectorX& delt
   MatrixX K = G * invS.selfadjointView<Eigen::Upper>();
   VectorX inn = K * delta;
 
-  assert((inn.segment(15, 6) - inn.segment(inn.rows() - 6, 6)).norm() < 1e-12);
+  assert((inn.segment(X.index(MSCEqFStateElementName::E), X.dof(MSCEqFStateElementName::E)) -
+          inn.segment(inn.rows() - X.dof(MSCEqFStateElementName::E), X.dof(MSCEqFStateElementName::E)))
+             .norm() < 1e-12);
 
   // Update state
   X.state_.at(MSCEqFStateElementName::Dd)

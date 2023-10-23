@@ -25,7 +25,6 @@ namespace msceqf
  * @brief this class represent the state of the MSCEqF.
  * This includes the state of the lifted system (element of the symmetry group) and the covariance.
  *
- * @note
  */
 class MSCEqFState
 {

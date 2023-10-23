@@ -41,8 +41,7 @@ MatrixX ProjectionHelperS2::dpi(const Vector3& f)
 
 MatrixX ProjectionHelperZ1::dpi(const Vector3& f)
 {
-  return (Eigen::Matrix<fp, 2, 3>() << 1.0 / f(2), 0.0, -f(0) / (f(2) * f(2)), 0.0, 1.0 / f(2), -f(1) / (f(2) * f(2)))
-      .finished();
+  return (Matrix<2, 3>() << 1.0 / f(2), 0.0, -f(0) / (f(2) * f(2)), 0.0, 1.0 / f(2), -f(1) / (f(2) * f(2))).finished();
 }
 
 void ProjectionHelperS2::residualJacobianBlock([[maybe_unused]] const MSCEqFState& X,
@@ -72,9 +71,9 @@ void ProjectionHelperZ1::residualJacobianBlock(const MSCEqFState& X,
   Vector3 C_f = clone_E.inv() * G0_f;
 
   // precompute D = K0 * L * dpi(C_f) if intrinsics are calibrated, D = dpi(C_f) otherwise
-  Eigen::Matrix<fp, 2, 3> D = X.opts().enable_camera_intrinsics_calibration_ ?
-                                  (xi0.K() * X.L()).asMatrix().block<2, 2>(0, 0) * dpi(C_f) :
-                                  dpi(C_f);
+  Matrix<2, 3> D = X.opts().enable_camera_intrinsics_calibration_ ?
+                       (xi0.K() * X.L()).asMatrix().block<2, 2>(0, 0) * dpi(C_f) :
+                       dpi(C_f);
 
   // Precompute P = L * pi(C_f) if intrinsics are calibrated, P = pi(C_f) otherwise
   Vector3 P = X.opts().enable_camera_intrinsics_calibration_ ? X.L().asMatrix() * pi(C_f) : pi(C_f);
@@ -87,7 +86,7 @@ void ProjectionHelperZ1::residualJacobianBlock(const MSCEqFState& X,
 
   if (X.opts().enable_camera_extrinsics_calibration_)
   {
-    Eigen::Matrix<fp, 3, 6> A = Eigen::Matrix<fp, 3, 6>::Zero();
+    Matrix<3, 6> A = Matrix<3, 6>::Zero();
     A.block<3, 3>(0, 0) = SO3::wedge(G0_f);
     A.block<3, 3>(0, 3) = -Matrix3::Identity();
 
@@ -116,7 +115,7 @@ void ProjectionHelperZ1::residualJacobianBlock(const MSCEqFState& X,
       Vector3 A_f0 = (Vector3() << 0.0, 0.0, 1.0).finished();
       Vector3 thetak =
           std::acos((A_f0.normalized().transpose() * feat.A_f_.normalized())) * A_f0.cross(feat.A_f_).normalized();
-      Eigen::Matrix<fp, 3, 4> J = Eigen::Matrix<fp, 3, 4>::Zero();
+      Matrix<3, 4> J = Matrix<3, 4>::Zero();
       J.block<3, 3>(0, 0) = SO3::wedge(feat.A_f_) * SO3::leftJacobian(thetak);
       J.block<3, 1>(0, 3) = -feat.A_f_;
       Cf_block_row = D * clone_E.R().transpose() * anchor_E.R() * J;
@@ -134,9 +133,9 @@ void ProjectionHelperZ1::residualJacobianBlock(const MSCEqFState& X,
   }
 }
 
-Eigen::Matrix<fp, 2, 4> UpdaterHelper::Xi(const Vector3& f)
+Matrix<2, 4> UpdaterHelper::Xi(const Vector3& f)
 {
-  Eigen::Matrix<fp, 2, 4> Xi = Eigen::Matrix<fp, 2, 4>::Zero();
+  Matrix<2, 4> Xi = Matrix<2, 4>::Zero();
   Xi(0, 0) = f(0);
   Xi(1, 1) = f(1);
   Xi(0, 2) = f(2);
@@ -152,9 +151,9 @@ Matrix3 UpdaterHelper::inverseDepthJacobian(const Vector3& A_f)
   return Cid;
 }
 
-void UpdaterHelper::nullspaceProjection(Eigen::Ref<MatrixX> Cf, MatrixXBlockRowRef Ct, VectorXBlockRowRef delta)
+void UpdaterHelper::nullspaceProjection(Ref<MatrixX> Cf, MatrixXBlockRowRef Ct, VectorXBlockRowRef delta)
 {
-  Eigen::HouseholderQR<Eigen::Ref<MatrixX>> QR(Cf);
+  Eigen::HouseholderQR<Ref<MatrixX>> QR(Cf);
 
   MatrixX Q = MatrixX::Zero(Cf.rows(), Cf.rows() - Cf.cols());
   Q.block(Cf.cols(), 0, Cf.rows() - Cf.cols(), Cf.rows() - Cf.cols()) =
