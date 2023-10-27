@@ -7,19 +7,23 @@ project(
     LANGUAGES CXX
 )
 
+# Set build type, Release by default
+if (NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Release")
+endif()
+
 ## Options
-if (NOT BUILD_TESTS)
-    set(BUILD_TESTS OFF)
-endif()
-if (NOT ROS_BUILD)
-    set(ROS_BUILD OFF)
-endif()
+option(BUILD_TESTS "Build tests" OFF)
+option(ROS_BUILD "Build with ROS" OFF)
+option(ENABLE_ADDRESS_SANITIZER "Enable address sanitizer" OFF)
+option(ENABLE_UNDEFINED_SANITIZER "Enable undefined behavior sanitizer" ON)
+option(ENABLE_THREAD_SANITIZER "Enable thread sanitizer" OFF)
 
 ## Include and set up external libraries
 include(FetchContent)
 
 # Googletest
-if(${BUILD_TESTS})
+if(BUILD_TESTS)
     FetchContent_Declare(
         googletest
         GIT_REPOSITORY  https://github.com/google/googletest.git
@@ -33,20 +37,22 @@ if(${BUILD_TESTS})
     list(APPEND libs ${googletest_LIBRARIES})
 endif()
 
-# Eigen
-FetchContent_Declare(
-    Eigen
-    GIT_REPOSITORY  https://gitlab.com/libeigen/eigen.git
-    GIT_TAG         3.4.0
-    GIT_SHALLOW     TRUE
-    GIT_PROGRESS    TRUE
-)
-set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
-set(EIGEN_BUILD_DOC OFF)
-set(EIGEN_BUILD_PKGCONFIG OFF)
-list(APPEND external Eigen)
-list(APPEND include_dirs ${EIGEN3_INCLUDE_DIR})
-list(APPEND libs Eigen3::Eigen ${EIGEN3_LIBRARIES})
+# # Eigen
+# FetchContent_Declare(
+#     Eigen
+#     GIT_REPOSITORY  https://gitlab.com/libeigen/eigen.git
+#     GIT_TAG         3.4.0
+#     GIT_SHALLOW     TRUE
+#     GIT_PROGRESS    TRUE
+# )
+# set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
+# set(EIGEN_BUILD_DOC OFF)
+# set(EIGEN_BUILD_PKGCONFIG OFF)
+# set(EIGEN_TEST_CXX11 ON)
+# set(EIGEN_HAS_CXX11_MATH ON)
+# list(APPEND external Eigen)
+# list(APPEND include_dirs ${EIGEN3_INCLUDE_DIR})
+# list(APPEND libs Eigen3::Eigen ${EIGEN3_LIBRARIES})
 
 # YamlCPP
 FetchContent_Declare(
@@ -96,31 +102,64 @@ message(STATUS "OpenCV:   " ${OpenCV_VERSION})
 message(STATUS "BUILD TESTS = ${BUILD_TESTS}")
 message(STATUS "ROS BUILD = ${ROS_BUILD}")
 
-## Try to compile with C++ 17 (make sure GCC>=7, clang>=5, MSVC>=19.12)
 include(CheckCXXCompilerFlag)
+
+# Set compiler flags
+set(RELEASE_FLAGS "-DNDEBUG" "-O3" "-fsee" "-fomit-frame-pointer" "-fno-signed-zeros" "-fno-math-errno" "-funroll-loops" "-fno-unsafe-math-optimizations" "-flto" "-march=native")
+set(DEBUG_FLAGS "-O0" "-g3" "-Wall" "-Wextra" "-Werror" "-Wuninitialized" "-Wmaybe-uninitialized" "-pedantic" "-fno-omit-frame-pointer")
+
 CHECK_CXX_COMPILER_FLAG("-std=c++17" COMPILER_SUPPORTS_CXX17)
 if(COMPILER_SUPPORTS_CXX17)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
     set(CMAKE_CXX_STANDARD 17)
+    set(CMAKE_CXX_STANDARD_REQUIRED ON)
 else()
     message(STATUS "The compiler ${CMAKE_CXX_COMPILER} has no c++17 support. Please use a different C++ compiler.")
 endif()
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-message(STATUS "Set compiler ${CMAKE_CXX_COMPILER}.")
-
-## Define build type, Release by default
-if (NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE "Release")
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    foreach(FLAG ${DEBUG_FLAGS})
+        string(REPLACE "-" "" FLAG_NAME ${FLAG})
+        string(TOUPPER ${FLAG_NAME} FLAG_VAR_NAME)
+        CHECK_CXX_COMPILER_FLAG("${FLAG}" COMPILER_SUPPORTS_${FLAG_VAR_NAME})
+        if (COMPILER_SUPPORTS_${FLAG_VAR_NAME})
+            set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} ${FLAG}")
+        else()
+            message("${FLAG} was requested but is not supported.")
+        endif()
+    endforeach()
+    if (ENABLE_ADDRESS_SANITIZER)
+        CHECK_CXX_COMPILER_FLAG("-fsanitize=address" COMPILER_SUPPORTS_ADDRESS_SANITIZER)
+        if (COMPILER_SUPPORTS_ADDRESS_SANITIZER)
+            set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=address -fsanitize-recover=address")
+        else()
+            message("-fsanitize=address -fsanitize-recover=address were requested but is not supported.")
+        endif()
+    elseif (ENABLE_UNDEFINED_SANITIZER)
+        CHECK_CXX_COMPILER_FLAG("-fsanitize=undefined" COMPILER_SUPPORTS_UNDEFINED_SANITIZER)
+        if (COMPILER_SUPPORTS_UNDEFINED_SANITIZER)
+            set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=undefined")
+        else()
+            message("-fsanitize=undefined was requested but is not supported.")
+        endif()
+    elseif(ENABLE_THREAD_SANITIZER)
+        CHECK_CXX_COMPILER_FLAG("-fsanitize=thread" COMPILER_SUPPORTS_THREAD_SANITIZER)
+        if (COMPILER_SUPPORTS_THREAD_SANITIZER)
+            set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=thread")
+        else()
+            message("-fsanitize=thread was requested but is not supported.")
+        endif()
+    endif()
+else()
+    foreach(FLAG ${RELEASE_FLAGS})
+        string(REPLACE "-" "" FLAG_NAME ${FLAG})
+        string(TOUPPER ${FLAG_NAME} FLAG_VAR_NAME)
+        CHECK_CXX_COMPILER_FLAG("${FLAG}" COMPILER_SUPPORTS_${FLAG_VAR_NAME})
+        if (COMPILER_SUPPORTS_${FLAG_VAR_NAME})
+            set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${FLAG}")
+        else()
+            message("${FLAG} was requested but is not supported.")
+        endif()
+    endforeach()
 endif()
-message(STATUS "CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE}.")
-
-# Set CMAKE compile flags
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -DNDEBUG -O3 -fsee -fomit-frame-pointer -fno-signed-zeros -fno-math-errno -funroll-loops -fno-unsafe-math-optimizations -pthread")
-# set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g3 -Wall -Wextra -Werror -Wuninitialized -Wmaybe-uninitialized -pedantic -fno-omit-frame-pointer -fsanitize=thread -pthread")
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -O0 -g3 -Wall -Wextra -Werror -Wuninitialized -Wmaybe-uninitialized -pedantic -fno-omit-frame-pointer -fsanitize=address -fsanitize-recover=address -pthread")
-# set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g3 -Wall -Wextra -Werror -Wuninitialized -Wmaybe-uninitialized -pedantic -fno-omit-frame-pointer -fsanitize=undefined -pthread")
-# set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -O0 -g3 -Wall -Wextra -Werror -Wuninitialized -Wmaybe-uninitialized -pedantic -fno-omit-frame-pointer -Wpadded -pthread")
-message(STATUS "CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS}.")
 
 ## List source files
 list(
