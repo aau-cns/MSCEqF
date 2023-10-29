@@ -1,4 +1,6 @@
-<p align="center"> <img src="https://drive.google.com/uc?id=1y8wuUhLBD60TJ7D8N30FmNNyNzEH3MY6"/></p>
+[![License](https://img.shields.io/badge/License-AAUCNS-336B81.svg)](./LICENSE)
+
+![MSCEqF logo](./resources/msceqf_logo.png)
 
 > MSCEqF: Multi State Constraint Equivariant Filter
 
