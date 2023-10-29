@@ -13,8 +13,8 @@ if (NOT CMAKE_BUILD_TYPE)
 endif()
 
 ## Options
-option(BUILD_TESTS "Build tests" OFF)
-option(ROS_BUILD "Build with ROS" OFF)
+option(MSCEQF_TESTS "Build MSCEqF tests" OFF)
+option(ROS_BUILD "Build MSCEqF with ROS" OFF)
 option(ENABLE_ADDRESS_SANITIZER "Enable address sanitizer" OFF)
 option(ENABLE_UNDEFINED_SANITIZER "Enable undefined behavior sanitizer" ON)
 option(ENABLE_THREAD_SANITIZER "Enable thread sanitizer" OFF)
@@ -23,7 +23,7 @@ option(ENABLE_THREAD_SANITIZER "Enable thread sanitizer" OFF)
 include(FetchContent)
 
 # Googletest
-if(BUILD_TESTS)
+if(MSCEQF_TESTS)
     FetchContent_Declare(
         googletest
         GIT_REPOSITORY  https://github.com/google/googletest.git
@@ -36,6 +36,19 @@ if(BUILD_TESTS)
     list(APPEND include_dirs ${googletest_INCLUDE_DIR})
     list(APPEND libs ${googletest_LIBRARIES})
 endif()
+
+# Lie++ (and Eigen)
+FetchContent_Declare(
+    LiePlusPlus
+    GIT_REPOSITORY  https://github.com/aau-cns/Lie-plusplus
+    GIT_TAG         main
+    GIT_SHALLOW     TRUE
+    GIT_PROGRESS    TRUE
+)
+set(LIEPLUSPLUS_TESTS ${MSCEQF_TESTS})
+list(APPEND external LiePlusPlus) 
+list(APPEND include_dirs ${LIEPLUSPLUS_INCLUDE_DIR})
+list(APPEND libs LiePlusPlus Eigen3::Eigen)
 
 # # Eigen
 # FetchContent_Declare(
@@ -51,8 +64,7 @@ endif()
 # set(EIGEN_TEST_CXX11 ON)
 # set(EIGEN_HAS_CXX11_MATH ON)
 # list(APPEND external Eigen)
-# list(APPEND include_dirs ${EIGEN3_INCLUDE_DIR})
-# list(APPEND libs Eigen3::Eigen ${EIGEN3_LIBRARIES})
+# list(APPEND libs Eigen3::Eigen)
 
 # YamlCPP
 FetchContent_Declare(
@@ -94,13 +106,11 @@ list(APPEND libs ${OpenCV_LIBRARIES})
 
 FetchContent_MakeAvailable(${external})
 
-message(STATUS "Eigen:    " ${EIGEN3_VERSION})
-message(STATUS "Yaml-cpp: " ${YAML_CPP})
-message(STATUS "Boost:    " ${Boost_VERSION})
-message(STATUS "OpenCV:   " ${OpenCV_VERSION})
-
-message(STATUS "BUILD TESTS = ${BUILD_TESTS}")
-message(STATUS "ROS BUILD = ${ROS_BUILD}")
+message(STATUS "Eigen VER: " ${EIGEN3_VERSION})
+message(STATUS "Lie++ VER: " ${LiePlusPlus_VERSION})
+message(STATUS "Yaml-cpp VER: " ${YAML_CPP_VERSION})
+message(STATUS "Boost VER: " ${Boost_VERSION})
+message(STATUS "OpenCV VER: " ${OpenCV_VERSION})
 
 include(CheckCXXCompilerFlag)
 
@@ -148,7 +158,7 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
             message("-fsanitize=thread was requested but is not supported.")
         endif()
     endif()
-else()
+elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
     foreach(FLAG ${RELEASE_FLAGS})
         string(REPLACE "-" "" FLAG_NAME ${FLAG})
         string(TOUPPER ${FLAG_NAME} FLAG_VAR_NAME)

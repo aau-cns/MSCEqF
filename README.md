@@ -30,7 +30,7 @@ It is based on the recent advances in equivaraint inertial navigation systems [[
 
 MSCEqF has the following dependencies which are automatically downloaded and linked against:
 
-- Eigen
+- Lie++ (Eigen)
 - yaml-cpp
 - googletest
 - Boost

@@ -12,10 +12,10 @@
 #ifndef FPTYPES_HPP
 #define FPTYPES_HPP
 
-#include "groups/In.hpp"
-#include "groups/SDB.hpp"
-#include "groups/TG.hpp"
-#include "groups/SOT3.hpp"
+#include <groups/In.hpp>
+#include <groups/SDB.hpp>
+#include <groups/TG.hpp>
+#include <groups/SOT3.hpp>
 
 namespace msceqf
 {
