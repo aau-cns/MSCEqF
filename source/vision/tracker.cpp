@@ -33,6 +33,9 @@ Tracker::Tracker(const TrackerOptions& opts, const Vector4& intrinsics)
   assert(opts_.optical_flow_pyramid_levels_ > 0);
   assert(opts_.detector_pyramid_levels_ > 0);
 
+  cv::setNumThreads(opts_.opencv_threads_);
+  utils::Logger::info("Set OpenCV threads to: " + std::to_string(cv::getNumThreads()));
+
   // Deep copy allocate new memory
   feature_mask_ = feature_mask_.clone();
 
@@ -227,8 +230,8 @@ void Tracker::detect(std::vector<cv::Mat>& pyramids, cv::Mat& mask, Features& fe
       {
         cell_kpts[cell_idx].clear();
 
-        int y = cell_idx / opts_.grid_x_size_;
-        int x = cell_idx % opts_.grid_x_size_;
+        int y = cell_idx % opts_.grid_y_size_;
+        int x = cell_idx / opts_.grid_y_size_;
         cv::Rect cell(x * cell_width, y * cell_height, cell_width, cell_height);
 
         extractCellKeypoints(i, pyramids[pyr_idx](cell), resized_mask(cell), cell_kpts[cell_idx]);

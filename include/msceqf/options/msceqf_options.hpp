@@ -191,6 +191,7 @@ struct TrackerOptions
   uint optical_flow_pyramid_levels_;  //!< Pyramids levels for optical flow (1-based)
   uint detector_pyramid_levels_;      //!< Pyramids levels for feature detection (1-based)
   uint optical_flow_win_size_;        //!< Window size for optical flow
+  int opencv_threads_;                //!< Number of threads for opencv
   fp ransac_reprojection_;            //!< RANSAC reprojection threshold
   FastOptions fast_opts_;             //!< Fast feature detector options
   GFTTOptions gftt_opts_;             //!< Shi-Tomasi feature detector options
