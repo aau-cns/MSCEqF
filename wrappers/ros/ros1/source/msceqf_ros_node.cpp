@@ -88,8 +88,10 @@ int main(int argc, char **argv)
   MSCEqFRos MSCEqFRos(nh, config_filepath, imu_topic, cam_topic, pose_topic, path_topic, image_topic, extrinsics_topic,
                       intrinsics_topic, origin_topic, record, outbagfile);
 
-  // ROS Spin
-  ros::spin();
+  // ROS spin asyncronously
+  ros::AsyncSpinner spinner(0);
+  spinner.start();
+  ros::waitForShutdown();
 
   // Done!
   return EXIT_SUCCESS;

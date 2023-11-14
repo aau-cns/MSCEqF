@@ -34,6 +34,8 @@ Propagator::Propagator(const PropagatorOptions& opts)
 
 void Propagator::insertImu(MSCEqFState& X, const SystemState& xi0, const Imu& imu, fp& timestamp)
 {
+  std::lock_guard<std::mutex> lock(mutex_);
+
   if (imu_buffer_.empty() || imu.timestamp_ > imu_buffer_.back().timestamp_)
   {
     imu_buffer_.push_back(imu);
@@ -151,13 +153,11 @@ bool Propagator::propagate(MSCEqFState& X, const SystemState& xi0, fp& timestamp
 {
   assert(new_timestamp > timestamp);
 
-  if (imu_buffer_.size() < 1)
+  Propagator::ImuBuffer propagation_buffer;
   {
-    utils::Logger::err("not enough IMU measurements in buffer to propagate with");
-    return false;
+    std::lock_guard<std::mutex> lock(mutex_);
+    propagation_buffer = getImuReadings(timestamp, new_timestamp);
   }
-
-  Propagator::ImuBuffer propagation_buffer = getImuReadings(timestamp, new_timestamp);
 
   if (propagation_buffer.empty())
   {
@@ -330,7 +330,7 @@ const MatrixX Propagator::stateMatrix(MSCEqFState& X, const SystemState& xi0, co
   }
 
   return A;
-} 
+}
 
 const MatrixX Propagator::inputMatrix(MSCEqFState& X, const SystemState& xi0) const
 {
