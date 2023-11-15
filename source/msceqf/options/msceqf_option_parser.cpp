@@ -62,6 +62,7 @@ MSCEqFOptions OptionParser::parseOptions()
   readDefault(opts.track_manager_options_.tracker_options_.ransac_reprojection_, 0.5, "ransac_reprojection");
   readDefault(opts.track_manager_options_.tracker_options_.optical_flow_pyramid_levels_, 3,
               "optical_flow_pyramid_levels");
+  readDefault(opts.track_manager_options_.tracker_options_.opencv_threads_, 0, "opencv_threads");
 
   // Parse camera parameters
   parseCameraParameters(opts.state_options_.initial_camera_extrinsics_, opts.state_options_.initial_camera_intrinsics_,

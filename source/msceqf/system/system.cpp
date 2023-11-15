@@ -68,7 +68,7 @@ SystemState& SystemState::operator=(SystemState&& other) noexcept
   return *this;
 }
 
-SystemState ::~SystemState() { state_.clear(); }
+SystemState::~SystemState() { state_.clear(); }
 
 void SystemState::preallocate()
 {

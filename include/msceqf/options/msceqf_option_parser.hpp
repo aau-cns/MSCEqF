@@ -55,13 +55,13 @@ class OptionParser
    * @param param Parameter to be read
    * @return true if parameter correctly parsed, false otherwise
    */
-  template <typename Scalar, int Rows, int Cols>
-  [[nodiscard]] bool read(Eigen::Matrix<Scalar, Rows, Cols>& x, const std::string& param)
+  template <int Rows, int Cols>
+  [[nodiscard]] bool read(Matrix<Rows, Cols>& x, const std::string& param)
   {
     if (node_[param])
     {
-      using vector = std::vector<Scalar>;
-      using vectorvector = std::vector<std::vector<Scalar>>;
+      using vector = std::vector<fp>;
+      using vectorvector = std::vector<std::vector<fp>>;
 
       int rows = Rows;
       int cols = Cols;
@@ -77,7 +77,7 @@ class OptionParser
         {
           cols = vec.size();
         }
-        x = Eigen::Map<Eigen::Matrix<Scalar, Rows, Cols>>(vec.data(), rows, cols);
+        x = Map<Matrix<Rows, Cols>>(vec.data(), rows, cols);
       }
       else
       {
@@ -88,7 +88,7 @@ class OptionParser
           rows = mat.size();
           cols = vec.size() / mat.size();
         }
-        x = Eigen::Map<Eigen::Matrix<Scalar, Rows, Cols, Eigen::RowMajor>>(vec.data(), rows, cols);
+        x = Map<Matrix<Rows, Cols, Eigen::RowMajor>>(vec.data(), rows, cols);
       }
       if constexpr (Rows == 1)
       {
@@ -123,13 +123,13 @@ class OptionParser
    * @return true if parameter correctly parsed, false otherwise
    */
   template <typename Scalar>
-  [[nodiscard]] bool read(Eigen::Quaternion<Scalar>& q, const std::string& param)
+  [[nodiscard]] bool read(Quaternion& q, const std::string& param)
   {
     if (node_[param])
     {
-      using vector = std::vector<Scalar>;
+      using vector = std::vector<fp>;
       vector vec = node_[param].as<vector>();
-      q = Eigen::Quaternion<Scalar>(vec).normalize();
+      q = Quaternion(vec).normalize();
       utils::Logger::info("Parameter: [" + param + "] found. Option set to: \n" +
                           static_cast<std::ostringstream&>(std::ostringstream() << q).str());
       return true;

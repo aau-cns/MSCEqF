@@ -34,6 +34,8 @@ Propagator::Propagator(const PropagatorOptions& opts)
 
 void Propagator::insertImu(MSCEqFState& X, const SystemState& xi0, const Imu& imu, fp& timestamp)
 {
+  std::lock_guard<std::mutex> lock(mutex_);
+
   if (imu_buffer_.empty() || imu.timestamp_ > imu_buffer_.back().timestamp_)
   {
     imu_buffer_.push_back(imu);
@@ -151,13 +153,11 @@ bool Propagator::propagate(MSCEqFState& X, const SystemState& xi0, fp& timestamp
 {
   assert(new_timestamp > timestamp);
 
-  if (imu_buffer_.size() < 1)
+  Propagator::ImuBuffer propagation_buffer;
   {
-    utils::Logger::err("not enough IMU measurements in buffer to propagate with");
-    return false;
+    std::lock_guard<std::mutex> lock(mutex_);
+    propagation_buffer = getImuReadings(timestamp, new_timestamp);
   }
-
-  Propagator::ImuBuffer propagation_buffer = getImuReadings(timestamp, new_timestamp);
 
   if (propagation_buffer.empty())
   {
@@ -243,45 +243,58 @@ void Propagator::propagateCovariance(MSCEqFState& X, const SystemState& xi0, con
 
 const MatrixX Propagator::stateMatrix(MSCEqFState& X, const SystemState& xi0, const Imu& u) const
 {
-  int size = 15;
+  const uint& D_idx = X.index(MSCEqFStateElementName::Dd);
+  const uint& D_dof = 9;
+
+  const uint& delta_idx = D_idx + D_dof;
+  const uint& delta_dof = X.dof(MSCEqFStateElementName::Dd) - D_dof;
+
+  auto size = D_dof + delta_dof;
+
   if (X.opts().enable_camera_extrinsics_calibration_)
   {
-    size += 6;
+    size += X.dof(MSCEqFStateElementName::E);
   }
 
   MatrixX A = MatrixX::Zero(size, size);
 
+  // Precompute useful vectors
+  Vector3 R0Tg = xi0.T().R().transpose() * xi0.ge3();
+  Vector3 R0Tv0 = xi0.T().R().transpose() * xi0.T().v();
+
   // Precompute adjoint b0
   Matrix6 adb0 = SE3::adjoint(xi0.b());
+
+  // Precompute Psi matrix
+  Matrix6 Psi = Matrix6::Zero();
+  Psi.block<3, 3>(3, 0) = SO3::wedge(R0Tg);
 
   // Precompute Adjoint B and its inverse
   Matrix6 AdB = X.B().Adjoint();
 
   // Precompute theta
-  Vector6 theta = AdB * u.w() + (Vector6() << Vector3::Zero(), (xi0.T().R().transpose() * xi0.ge3())).finished();
-
-  // Precompute Psi matrix
-  Matrix6 Psi = Matrix6::Zero();
-  Psi.block(3, 0, 3, 3) = SO3::wedge(xi0.T().R().transpose() * xi0.ge3());
+  Vector6 theta = AdB * u.w() + (Vector6() << Vector3::Zero(), (R0Tg)).finished();
 
   // Compute A1
-  A.block(0, 0, 6, 6) = Psi - adb0;
-  A.block(6, 0, 3, 3) =
-      SO3::wedge(xi0.T().R().transpose() * xi0.T().v()) - SO3::wedge(X.D().p()) * SO3::wedge(xi0.b().segment<3>(0));
-  A.block(6, 3, 3, 3) = Matrix3::Identity();
+  A.block(D_idx, D_idx, 6, 6) = Psi - adb0;
+  A.block(D_idx + 6, D_idx, 3, 3) = SO3::wedge(R0Tv0) - SO3::wedge(X.D().p()) * SO3::wedge(xi0.b().segment<3>(0));
+  A.block(D_idx + 6, D_idx + 3, 3, 3) = Matrix3::Identity();
 
   // Compute A2
-  A.block(0, 9, 6, 6) = Matrix6::Identity();
-  A.block(6, 9, 3, 3) = SO3::wedge(X.D().p());
+  A.block(D_idx, delta_idx, 6, 6) = Matrix6::Identity();
+  A.block(D_idx + 6, delta_idx, 3, 3) = SO3::wedge(X.D().p());
 
   // Compute A3
-  A.block(9, 0, 6, 6) = adb0 * Psi - SE3::adjoint(X.delta() + theta) * adb0;
+  A.block(delta_idx, D_idx, 6, 6) = adb0 * Psi - SE3::adjoint(X.delta() + theta) * adb0;
 
   // Compute A4
-  A.block(9, 9, 6, 6) = SE3::adjoint(X.delta() + theta);
+  A.block(delta_idx, delta_idx, delta_dof, delta_dof) = SE3::adjoint(X.delta() + theta);
 
   if (X.opts().enable_camera_extrinsics_calibration_)
   {
+    const uint& E_idx = X.index(MSCEqFStateElementName::E);
+    const uint& E_dof = X.dof(MSCEqFStateElementName::E);
+
     // Precompute Adjoint S0 inverse
     Matrix6 AdS0inv = xi0.S().invAdjoint();
 
@@ -289,13 +302,13 @@ const MatrixX Propagator::stateMatrix(MSCEqFState& X, const SystemState& xi0, co
     Vector3 psi1 = X.D().R() * u.ang_ + X.delta().segment<3>(0);
     Vector3 psi2 = psi1 - xi0.b().segment<3>(0);
     Vector3 psi3 = X.D().v() + SO3::wedge(X.D().p()) * psi1;
-    Vector3 psi4 = X.D().v() + SO3::wedge(X.D().p()) * psi2 + xi0.T().R().transpose() * xi0.T().v();
+    Vector3 psi4 = X.D().v() + SO3::wedge(X.D().p()) * psi2 + R0Tv0;
 
     // Precompute rho
     Vector6 rho = (Vector6() << psi2, psi4).finished();
 
     // Precompute Xi matrix
-    Eigen::Matrix<fp, 6, 9> Xi = Eigen::Matrix<fp, 6, 9>::Zero();
+    Matrix<6, 9> Xi = Matrix<6, 9>::Zero();
     Xi.block<3, 3>(0, 0) = -SO3::wedge(psi1);
     Xi.block<3, 3>(3, 0) = -SO3::wedge(psi3) - SO3::wedge(xi0.b().segment<3>(0)) * SO3::wedge(X.D().p());
     Xi.block<3, 3>(3, 3) = Matrix3::Identity();
@@ -307,13 +320,13 @@ const MatrixX Propagator::stateMatrix(MSCEqFState& X, const SystemState& xi0, co
     Gamma.block<3, 3>(3, 0) = SO3::wedge(X.D().p());
 
     // Compute A5
-    A.block(15, 0, 6, 9) = AdS0inv * Xi;
+    A.block(E_idx, D_idx, E_dof, D_dof) = AdS0inv * Xi;
 
     // Compute A6
-    A.block(15, 9, 6, 6) = AdS0inv * Gamma;
+    A.block(E_idx, delta_idx, E_dof, delta_dof) = AdS0inv * Gamma;
 
     // Compute A7
-    A.block(15, 15, 6, 6) = SE3::adjoint(AdS0inv * rho);
+    A.block(E_idx, E_idx, E_dof, E_dof) = SE3::adjoint(AdS0inv * rho);
   }
 
   return A;
@@ -321,29 +334,30 @@ const MatrixX Propagator::stateMatrix(MSCEqFState& X, const SystemState& xi0, co
 
 const MatrixX Propagator::inputMatrix(MSCEqFState& X, const SystemState& xi0) const
 {
-  int size = 15;
+  const uint& D_idx = X.index(MSCEqFStateElementName::Dd);
+  const uint& D_dof = 9;
+
+  const uint& delta_idx = D_idx + D_dof;
+  const uint& delta_dof = X.dof(MSCEqFStateElementName::Dd) - D_dof;
+
+  auto size = D_dof + delta_dof;
+
   if (X.opts().enable_camera_extrinsics_calibration_)
   {
-    size += 6;
+    size += X.dof(MSCEqFStateElementName::E);
   }
 
   MatrixX B = MatrixX::Zero(size, 12);
 
-  Eigen::Matrix<fp, 9, 6> B1 = Eigen::Matrix<fp, 9, 6>::Zero();
-  B1.block<6, 6>(0, 0) = Matrix6::Identity();
-
   Matrix9 AdD = X.D().Adjoint();
 
-  B.block(0, 0, 9, 6) = AdD * B1;
-  B.block(9, 0, 6, 6) = SE3::adjoint(xi0.b()) * AdD.block<6, 6>(0, 0);
-  B.block(9, 6, 6, 6) = -AdD.block<6, 6>(0, 0);
+  B.block(D_idx, 0, 9, 6) = AdD.block<9, 6>(0, 0);
+  B.block(delta_idx, 0, 6, 6) = SE3::adjoint(xi0.b()) * AdD.block<6, 6>(0, 0);
+  B.block(delta_idx, 6, 6, 6) = -AdD.block<6, 6>(0, 0);
 
   if (X.opts().enable_camera_extrinsics_calibration_)
   {
-    Matrix6 B2 = Matrix6::Zero();
-    B2.block<3, 3>(0, 0) = Matrix3::Identity();
-
-    B.block(15, 0, 6, 6) = (xi0.S().inv() * X.C()).Adjoint() * B2;
+    B.block(X.index(MSCEqFStateElementName::E), 0, 3, 3) = xi0.S().R().transpose() * X.D().R();
   }
 
   return B;

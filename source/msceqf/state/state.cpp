@@ -36,15 +36,21 @@ MSCEqFState::MSCEqFState(const StateOptions& opts, const SystemState& xi0) : opt
     initializeStateElement(MSCEqFStateElementName::L, opts_.L_init_cov_);
   }
 
+  const uint& D_idx = state_.at(MSCEqFStateElementName::Dd)->getIndex();
+  const uint& delta_idx = D_idx + 9;
+
   // Transform covariance to the new origin
   Matrix6 AdS0inv = xi0.S().invAdjoint();
   MatrixX D = MatrixX::Identity(cov_.rows(), cov_.cols());
-  D.block(9, 0, 6, 6) = SE3::adjoint(xi0.b());
+  D.block(delta_idx, D_idx, 6, 6) = SE3::adjoint(xi0.b());
   if (opts_.enable_camera_extrinsics_calibration_)
   {
-    D.block(15, 0, 6, 3) = AdS0inv.block<6, 3>(0, 0);
-    D.block(15, 6, 6, 3) = AdS0inv.block<6, 3>(0, 3);
+    const uint& E_idx = state_.at(MSCEqFStateElementName::E)->getIndex();
+
+    D.block(E_idx, D_idx, 6, 3) = AdS0inv.block<6, 3>(0, 0);
+    D.block(E_idx + 3, D_idx + 6, 3, 3) = AdS0inv.block<3, 3>(3, 3);
   }
+
   cov_ = D * cov_ * D.transpose();
 }
 
@@ -97,7 +103,7 @@ MSCEqFState& MSCEqFState::operator=(MSCEqFState&& other) noexcept
   return *this;
 }
 
-MSCEqFState ::~MSCEqFState()
+MSCEqFState::~MSCEqFState()
 {
   state_.clear();
   clones_.clear();
@@ -307,21 +313,21 @@ void MSCEqFState::stochasticCloning(const fp& timestamp)
   {
     utils::Logger::debug("Created MSCEqF Clone element at time: " + std::to_string(timestamp));
 
-    const uint& E_idx = ptr->getIndex();
+    const uint& idx = ptr->getIndex();
     const uint& size_increment = ptr->getDof();
 
     cov_.conservativeResize(old_size + size_increment, old_size + size_increment);
 
     cov_.block(old_size, old_size, size_increment, size_increment) =
-        cov_.block(E_idx, E_idx, size_increment, size_increment).eval();
-    cov_.block(0, old_size, old_size, size_increment) = cov_.block(0, E_idx, old_size, size_increment).eval();
-    cov_.block(old_size, 0, size_increment, old_size) = cov_.block(E_idx, 0, size_increment, old_size).eval();
+        cov_.block(idx, idx, size_increment, size_increment).eval();
+    cov_.block(0, old_size, old_size, size_increment) = cov_.block(0, idx, old_size, size_increment).eval();
+    cov_.block(old_size, 0, size_increment, old_size) = cov_.block(idx, 0, size_increment, old_size).eval();
 
     // cov_ = 0.5 * (cov_ + cov_.transpose()).eval();
 
-    assert((cov_.middleCols(E_idx, 6) - cov_.middleCols(old_size, 6)).norm() < 1e-12);
-    assert((cov_.middleRows(E_idx, 6) - cov_.middleRows(old_size, 6)).norm() < 1e-12);
-    assert((cov_.block(E_idx, E_idx, 6, 6) - cov_.block(old_size, old_size, 6, 6)).norm() < 1e-12);
+    assert((cov_.middleCols(idx, 6) - cov_.middleCols(old_size, 6)).norm() < 1e-12);
+    assert((cov_.middleRows(idx, 6) - cov_.middleRows(old_size, 6)).norm() < 1e-12);
+    assert((cov_.block(idx, idx, 6, 6) - cov_.block(old_size, old_size, 6, 6)).norm() < 1e-12);
     assert((cov_ - cov_.transpose()).norm() < 1e-12);
   }
   else

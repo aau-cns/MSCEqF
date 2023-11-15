@@ -96,6 +96,9 @@ class MSCEqFRos
   sensor_msgs::CameraInfo intrinsics_;             //!< Intrinsics message
   geometry_msgs::PoseStamped origin_;              //!< Origin message
 
+  std::deque<msceqf::Camera> cams_;           //!< Camera measurements
+  std::atomic<double> latest_imu_timestamp_;  //!< Latest IMU timestamp
+
   bool record_;      //!< Record flag
   rosbag::Bag bag_;  //!< Bagfile
 

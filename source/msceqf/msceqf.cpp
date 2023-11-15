@@ -56,7 +56,6 @@ void MSCEqF::processImuMeasurement(const Imu& imu)
 void MSCEqF::processCameraMeasurement(Camera& cam)
 {
   assert(cam.timestamp_ >= 0);
-  assert(cam.image_.size() == cam.mask_.size());
   assert(cam.image_.size() == cv::Size(opts_.track_manager_options_.tracker_options_.cam_options_.resolution_(0),
                                        opts_.track_manager_options_.tracker_options_.cam_options_.resolution_(1)));
 
@@ -64,9 +63,10 @@ void MSCEqF::processCameraMeasurement(Camera& cam)
 
   if (opts_.track_manager_options_.tracker_options_.cam_options_.mask_type_ == MaskType::STATIC)
   {
-    assert(cam.mask_.size() == opts_.track_manager_options_.tracker_options_.cam_options_.static_mask_.size());
     cam.mask_ = opts_.track_manager_options_.tracker_options_.cam_options_.static_mask_;
   }
+
+  assert(cam.image_.size() == cam.mask_.size());
 
   if (!is_filter_initialized_)
   {
@@ -253,7 +253,8 @@ void MSCEqF::initialize(Camera& cam)
 {
   if (opts_.init_options_.init_with_given_state_)
   {
-    setGivenOrigin();
+    setGivenOrigin(opts_.init_options_.initial_extended_pose_, opts_.init_options_.initial_bias_,
+                   opts_.init_options_.initial_timestamp_);
     return;
   }
 
@@ -262,7 +263,7 @@ void MSCEqF::initialize(Camera& cam)
   {
     if (initializer_.initializeOrigin())
     {
-      setGivenOrigin(initializer_.T0(), initializer_.b0());
+      setGivenOrigin(initializer_.T0(), initializer_.b0(), cam.timestamp_);
     }
   }
   else
@@ -271,7 +272,7 @@ void MSCEqF::initialize(Camera& cam)
     {
       utils::Logger::info("Static initialization succeeded");
       track_manager_.clear();
-      setGivenOrigin(initializer_.T0(), initializer_.b0());
+      setGivenOrigin(initializer_.T0(), initializer_.b0(), cam.timestamp_);
     }
   }
   return;
@@ -281,7 +282,8 @@ void MSCEqF::initialize(TriangulatedFeatures& features)
 {
   if (opts_.init_options_.init_with_given_state_)
   {
-    setGivenOrigin();
+    setGivenOrigin(opts_.init_options_.initial_extended_pose_, opts_.init_options_.initial_bias_,
+                   opts_.init_options_.initial_timestamp_);
     return;
   }
 
@@ -290,7 +292,7 @@ void MSCEqF::initialize(TriangulatedFeatures& features)
   {
     if (initializer_.initializeOrigin())
     {
-      setGivenOrigin(initializer_.T0(), initializer_.b0());
+      setGivenOrigin(initializer_.T0(), initializer_.b0(), features.timestamp_);
     }
   }
   else
@@ -299,35 +301,18 @@ void MSCEqF::initialize(TriangulatedFeatures& features)
     {
       utils::Logger::info("Static initialization succeeded");
       track_manager_.clear();
-      setGivenOrigin(initializer_.T0(), initializer_.b0());
+      setGivenOrigin(initializer_.T0(), initializer_.b0(), features.timestamp_);
     }
   }
   return;
 }
 
-void MSCEqF::setGivenOrigin()
-{
-  xi0_ = SystemState(
-      opts_.state_options_,
-      std::make_pair(SystemStateElementName::T, createSystemStateElement<ExtendedPoseState>(
-                                                    std::make_tuple(opts_.init_options_.initial_extended_pose_))),
-      std::make_pair(SystemStateElementName::b,
-                     createSystemStateElement<BiasState>(std::make_tuple(opts_.init_options_.initial_bias_))));
-
-  X_ = MSCEqFState(opts_.state_options_, xi0_);
-  xi_ = Symmetry::phi(X_, xi0_);
-  timestamp_ = opts_.init_options_.initial_timestamp_;
-
-  is_filter_initialized_ = true;
-  logInit();
-}
-
-void MSCEqF::setGivenOrigin(const SE23& T0, const Vector6& b0)
+void MSCEqF::setGivenOrigin(const SE23& T0, const Vector6& b0, const fp& timestamp)
 {
   xi0_ = SystemState(opts_.state_options_, T0, b0);
   X_ = MSCEqFState(opts_.state_options_, xi0_);
   xi_ = Symmetry::phi(X_, xi0_);
-  timestamp_ = opts_.init_options_.initial_timestamp_;
+  timestamp_ = timestamp;
 
   is_filter_initialized_ = true;
   logInit();

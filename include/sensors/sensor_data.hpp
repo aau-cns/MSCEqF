@@ -77,7 +77,7 @@ struct Imu
 struct Camera
 {
   /**
-   * @brief Comparison operator with other imu
+   * @brief Comparison operator with other camera
    *
    */
   friend bool operator<(const Camera& lhs, const Camera& rhs) { return lhs.timestamp_ < rhs.timestamp_; }

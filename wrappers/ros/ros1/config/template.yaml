@@ -51,18 +51,17 @@ enable_camera_extrinsic_calibration: true
 enable_camera_intrinsic_calibration: false
 gravity: 9.81
 num_clones: 11
-num_persistent_features: 0
 
 # Tracker
 equalization_method: histogram
 optical_flow_pyramid_levels: 3
 detector_pyramid_levels: 1
 feature_detector: fast
-grid_x_size: 2
-grid_y_size: 2
-min_feature_pixel_distance: 5
-min_features: 160
-max_features: 200
+grid_x_size: 4
+grid_y_size: 4
+min_feature_pixel_distance: 15
+min_features: 120
+max_features: 160
 fast_threshold: 20
 shi_tomasi_quality_level: 0.75
 

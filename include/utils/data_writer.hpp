@@ -29,16 +29,14 @@ class dataWriter
    * The data writer writes the estimated data in a csv file
    *
    * @param data_filename filename of csv file where the data is written to
-   * @param titles titles of the columns in csv file
+   * @param names names of the columns in csv file
    * @param delimiter delimiter used in csv file
-   * @note titles has to be provided according to the following order
+   * @note names has to be provided according to the following order
    * @note [t, q_x, q_y, q_z, q_w, p_x, p_y, p_z, v_x, v_y, v_z, bw_x, bw_y, bw_z, ba_x, ba_y, ba_z, s_q_x, s_q_y,
    * s_q_z, s_q_w, s_p_x, s_p_y, s_p_z, f_x, f_y, c_x, c_y, P_11, P_12, ...]
    */
-  dataWriter(const std::string& data_filename,
-             const std::vector<std::string> titles,
-             const std::string& delimiter = ",")
-      : fs_(), filename_(data_filename), delimiter_(delimiter), dim_(titles.size())
+  dataWriter(const std::string& data_filename, const std::vector<std::string> names, const std::string& delimiter = ",")
+      : fs_(), filename_(data_filename), delimiter_(delimiter), dim_(names.size())
   {
     fs_.exceptions(std::ios::failbit | std::ios::badbit);
 
@@ -50,7 +48,7 @@ class dataWriter
 
     fs_.open(filename_, std::ios_base::app);
     fs_.precision(12);
-    writeRow(titles);
+    writeRow(names);
   }
 
   /**

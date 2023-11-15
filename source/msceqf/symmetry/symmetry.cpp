@@ -162,9 +162,10 @@ const MatrixX Symmetry::curvatureCorrection(const MSCEqFState& X, const VectorX&
         SE3::adjoint(inn.segment(clone->getIndex(), clone->getDof()));
   }
 
-  Gamma *= 0.5;
+  Gamma *= -0.5;
 
   return Gamma.exp();
+  // return MatrixX::Identity(Gamma.rows(), Gamma.rows()) + Gamma;
 }
 
 }  // namespace msceqf

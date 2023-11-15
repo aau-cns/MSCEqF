@@ -3,7 +3,8 @@ add_library(${PROJECT_NAME}_lib STATIC ${lib_sources})
 target_link_libraries(${PROJECT_NAME}_lib ${libs})
 
 ## Declare C++ tests
-if(${BUILD_TESTS})
+if(${MSCEQF_TESTS})
+    message(STATUS "Building MSCEqF tests")
     add_executable(msceqf_tests tests/tests.cpp)
     target_include_directories(msceqf_tests PRIVATE ${include_dirs})
     target_link_libraries(msceqf_tests ${PROJECT_NAME}_lib GTest::gtest_main)

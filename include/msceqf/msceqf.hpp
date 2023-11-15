@@ -103,8 +103,9 @@ class MSCEqF
    *
    * @param T0 Origin extended pose
    * @param b0 Origin bias
+   * @param timestamp initial timestamp
    */
-  void setGivenOrigin(const SE23& T0, const Vector6& b0);
+  void setGivenOrigin(const SE23& T0, const Vector6& b0, const fp& timestamp);
 
   /**
    * @brief Get the processed image with overlayed tracks
