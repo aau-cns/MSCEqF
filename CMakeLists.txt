@@ -16,7 +16,7 @@ endif()
 option(MSCEQF_TESTS "Build MSCEqF tests" OFF)
 option(ROS_BUILD "Build MSCEqF with ROS" OFF)
 option(ENABLE_ADDRESS_SANITIZER "Enable address sanitizer" OFF)
-option(ENABLE_UNDEFINED_SANITIZER "Enable undefined behavior sanitizer" ON)
+option(ENABLE_UNDEFINED_SANITIZER "Enable undefined behavior sanitizer" OFF)
 option(ENABLE_THREAD_SANITIZER "Enable thread sanitizer" OFF)
 
 ## Include and set up external libraries

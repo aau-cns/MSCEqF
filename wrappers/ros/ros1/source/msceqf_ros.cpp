@@ -35,7 +35,6 @@ MSCEqFRos::MSCEqFRos(const ros::NodeHandle &nh,
   utils::Logger::info("Subscribing: " + std::string(sub_cam_.getTopic().c_str()));
   utils::Logger::info("Subscribing: " + std::string(sub_imu_.getTopic().c_str()));
 
-  // Publishers
   pub_pose_ = nh_.advertise<geometry_msgs::PoseWithCovarianceStamped>(pose_topic, 1);
   pub_path_ = nh_.advertise<nav_msgs::Path>(path_topic, 1);
   pub_image_ = nh_.advertise<sensor_msgs::Image>(image_topic, 1);
@@ -43,7 +42,6 @@ MSCEqFRos::MSCEqFRos(const ros::NodeHandle &nh,
   pub_intrinsics_ = nh_.advertise<sensor_msgs::CameraInfo>(intrinsics_topic, 1);
   pub_origin_ = nh_.advertise<geometry_msgs::PoseStamped>(origin_topic, 1);
 
-  // Print topics where we are publishing on
   utils::Logger::info("Publishing: " + std::string(pub_pose_.getTopic().c_str()));
   utils::Logger::info("Publishing: " + std::string(pub_path_.getTopic().c_str()));
   utils::Logger::info("Publishing: " + std::string(pub_image_.getTopic().c_str()));
@@ -51,12 +49,13 @@ MSCEqFRos::MSCEqFRos(const ros::NodeHandle &nh,
   utils::Logger::info("Publishing: " + std::string(pub_intrinsics_.getTopic().c_str()));
   utils::Logger::info("Publishing: " + std::string(pub_origin_.getTopic().c_str()));
 
-  // record
   record_ = record;
   if (record_)
   {
     bag_.open(bagfile, rosbag::bagmode::Write);
   }
+
+  latest_imu_timestamp_ = -1.0;
 }
 
 void MSCEqFRos::callback_image(const sensor_msgs::Image::ConstPtr &msg)
@@ -77,9 +76,15 @@ void MSCEqFRos::callback_image(const sensor_msgs::Image::ConstPtr &msg)
   cam.timestamp_ = cv_ptr->header.stamp.toSec();
   cam.image_ = cv_ptr->image.clone();
 
-  sys_.processMeasurement(cam);
+  cams_.push_back(cam);
+  std::sort(cams_.begin(), cams_.end());
 
-  publish(cam);
+  while (!cams_.empty() && cams_.front().timestamp_ < latest_imu_timestamp_)
+  {
+    sys_.processMeasurement(cams_.front());
+    publish(cams_.front());
+    cams_.pop_front();
+  }
 }
 
 void MSCEqFRos::callback_imu(const sensor_msgs::Imu::ConstPtr &msg)
@@ -91,6 +96,8 @@ void MSCEqFRos::callback_imu(const sensor_msgs::Imu::ConstPtr &msg)
   imu.acc_ << msg->linear_acceleration.x, msg->linear_acceleration.y, msg->linear_acceleration.z;
 
   sys_.processMeasurement(imu);
+
+  latest_imu_timestamp_ = imu.timestamp_;
 }
 
 void MSCEqFRos::publish(const msceqf::Camera &cam)

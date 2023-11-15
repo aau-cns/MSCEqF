@@ -25,9 +25,6 @@ int main(int argc, char **argv)
   std::string config_filepath, imu_topic, cam_topic, pose_topic, path_topic, image_topic, extrinsics_topic,
       intrinsics_topic, origin_topic;
 
-  bool exist_cam_topic = false;
-  bool exist_features_topic = false;
-
   if (!nh.getParam("config_filepath", config_filepath))
   {
     ROS_ERROR("Configuration filepath not defined");
