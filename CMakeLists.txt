@@ -50,22 +50,6 @@ list(APPEND external LiePlusPlus)
 list(APPEND include_dirs ${LIEPLUSPLUS_INCLUDE_DIR})
 list(APPEND libs LiePlusPlus Eigen3::Eigen)
 
-# # Eigen
-# FetchContent_Declare(
-#     Eigen
-#     GIT_REPOSITORY  https://gitlab.com/libeigen/eigen.git
-#     GIT_TAG         3.4.0
-#     GIT_SHALLOW     TRUE
-#     GIT_PROGRESS    TRUE
-# )
-# set(CMAKE_POLICY_DEFAULT_CMP0077 NEW)
-# set(EIGEN_BUILD_DOC OFF)
-# set(EIGEN_BUILD_PKGCONFIG OFF)
-# set(EIGEN_TEST_CXX11 ON)
-# set(EIGEN_HAS_CXX11_MATH ON)
-# list(APPEND external Eigen)
-# list(APPEND libs Eigen3::Eigen)
-
 # YamlCPP
 FetchContent_Declare(
     yaml-cpp
