@@ -102,7 +102,6 @@ struct StateOptions
   Matrix4 L_init_cov_;                         //!< Initial covariance of the L element of the state
   SE3 initial_camera_extrinsics_;              //!< Initial camera extrinsics
   In initial_camera_intrinsics_;               //!< Initial camera intrinsics
-  bool enable_camera_extrinsics_calibration_;  //!< Boolean to enable estrinsic camera calibration
   bool enable_camera_intrinsics_calibration_;  //!< Boolean to enable intinsic camera calibration
   fp gravity_;                                 //!< The magnitude of the gravity vector in m/s^2
   uint num_clones_;                            //!< The maximum number of stochastic clones

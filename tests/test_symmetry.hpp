@@ -30,7 +30,6 @@ TEST(SymmetryTest, phi_without_persistent_features)
   for (int i = 0; i < N_TESTS; ++i)
   {
     // Set specific options for this test independently by given parameters
-    opts.state_options_.enable_camera_extrinsics_calibration_ = static_cast<bool>(utils::random<int>(0, 1));
     opts.state_options_.enable_camera_intrinsics_calibration_ = static_cast<bool>(utils::random<int>(0, 1));
     opts.state_options_.num_persistent_features_ = 0;
 
@@ -74,7 +73,6 @@ TEST(SymmetryTest, lift)
   for (int i = 0; i < N_TESTS; ++i)
   {
     // Set specific options for this test independently by given parameters
-    opts.state_options_.enable_camera_extrinsics_calibration_ = static_cast<bool>(utils::random<int>(0, 1));
     opts.state_options_.enable_camera_intrinsics_calibration_ = static_cast<bool>(utils::random<int>(0, 1));
     opts.state_options_.num_persistent_features_ = i == 0 ? 0 : utils::random<int>(0, 100);
 
@@ -142,15 +140,12 @@ TEST(SymmetryTest, lift)
                    b_dot);
 
     // dphi* Lambda = xi_dot (S)
-    if (opts.state_options_.enable_camera_extrinsics_calibration_)
-    {
-      Vector6 lambda_P;
-      lambda_P.block<3, 1>(0, 0) = lambda.at(SystemStateElementName::T).block<3, 1>(0, 0);
-      lambda_P.block<3, 1>(3, 0) = lambda.at(SystemStateElementName::T).block<3, 1>(6, 0);
-      MatrixEquality(SE3::vee(xi.S() * SE3::wedge(lambda.at(SystemStateElementName::S)) -
-                              SE3::wedge(lambda_P) * xi.S().asMatrix()),
-                     S_dot);
-    }
+    Vector6 lambda_P;
+    lambda_P.block<3, 1>(0, 0) = lambda.at(SystemStateElementName::T).block<3, 1>(0, 0);
+    lambda_P.block<3, 1>(3, 0) = lambda.at(SystemStateElementName::T).block<3, 1>(6, 0);
+    MatrixEquality(
+        SE3::vee(xi.S() * SE3::wedge(lambda.at(SystemStateElementName::S)) - SE3::wedge(lambda_P) * xi.S().asMatrix()),
+        S_dot);
 
     // dphi* Lambda = xi_dot (K)
     if (opts.state_options_.enable_camera_intrinsics_calibration_)
@@ -158,20 +153,8 @@ TEST(SymmetryTest, lift)
       MatrixEquality(In::vee(xi.K() * In::wedge(lambda.at(SystemStateElementName::K))), K_dot);
     }
 
-    // Precompute lambda_S for the case of no extrinsics calibration
-    Vector6 lambda_S;
-    if (opts.state_options_.enable_camera_extrinsics_calibration_)
-    {
-      lambda_S = lambda.at(SystemStateElementName::S);
-    }
-    else
-    {
-      lambda_S = xi.S().invAdjoint() * (Vector6() << lambda.at(SystemStateElementName::T).block<3, 1>(0, 0),
-                                        lambda.at(SystemStateElementName::T).block<3, 1>(6, 0))
-                                           .finished();
-    }
-
     // Precompute feature independent values
+    Vector6 lambda_S = lambda.at(SystemStateElementName::S);
     SE3 PS = xi.P() * xi.S();
     SE3 PS_inv = PS.inv();
     Vector3 alpha = lambda_S.block<3, 1>(0, 0);

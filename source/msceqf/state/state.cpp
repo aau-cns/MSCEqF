@@ -27,10 +27,7 @@ MSCEqFState::MSCEqFState(const StateOptions& opts, const SystemState& xi0) : opt
   // Initialize core state variables (Dd, E, L) and their covariance
   // Note that persistent features are delayed initialized
   initializeStateElement(MSCEqFStateElementName::Dd, Dd_cov);
-  if (opts_.enable_camera_extrinsics_calibration_)
-  {
-    initializeStateElement(MSCEqFStateElementName::E, opts_.E_init_cov_);
-  }
+  initializeStateElement(MSCEqFStateElementName::E, opts_.E_init_cov_);
   if (opts_.enable_camera_intrinsics_calibration_)
   {
     initializeStateElement(MSCEqFStateElementName::L, opts_.L_init_cov_);
@@ -38,18 +35,15 @@ MSCEqFState::MSCEqFState(const StateOptions& opts, const SystemState& xi0) : opt
 
   const uint& D_idx = state_.at(MSCEqFStateElementName::Dd)->getIndex();
   const uint& delta_idx = D_idx + 9;
+  const uint& E_idx = state_.at(MSCEqFStateElementName::E)->getIndex();
+
+  Matrix6 AdS0inv = xi0.S().invAdjoint();
 
   // Transform covariance to the new origin
-  Matrix6 AdS0inv = xi0.S().invAdjoint();
   MatrixX D = MatrixX::Identity(cov_.rows(), cov_.cols());
   D.block(delta_idx, D_idx, 6, 6) = SE3::adjoint(xi0.b());
-  if (opts_.enable_camera_extrinsics_calibration_)
-  {
-    const uint& E_idx = state_.at(MSCEqFStateElementName::E)->getIndex();
-
-    D.block(E_idx, D_idx, 6, 3) = AdS0inv.block<6, 3>(0, 0);
-    D.block(E_idx + 3, D_idx + 6, 3, 3) = AdS0inv.block<3, 3>(3, 3);
-  }
+  D.block(E_idx, D_idx, 6, 3) = AdS0inv.block<6, 3>(0, 0);
+  D.block(E_idx + 3, D_idx + 6, 3, 3) = AdS0inv.block<3, 3>(3, 3);
 
   cov_ = D * cov_ * D.transpose();
 }
@@ -233,11 +227,7 @@ const MatrixX MSCEqFState::subCovCols(const std::vector<MSCEqFKey>& keys) const
 
 void MSCEqFState::preallocate()
 {
-  size_t num_elements = 1 + opts_.num_persistent_features_;
-  if (opts_.enable_camera_extrinsics_calibration_)
-  {
-    ++num_elements;
-  }
+  size_t num_elements = 2 + opts_.num_persistent_features_;
   if (opts_.enable_camera_intrinsics_calibration_)
   {
     ++num_elements;
@@ -299,14 +289,9 @@ void MSCEqFState::stochasticCloning(const fp& timestamp)
 {
   const uint old_size = cov_.rows();
 
-  MSCEqFStateElementSharedPtr ptr = nullptr;
-  if (opts_.enable_camera_extrinsics_calibration_)
-  {
-    ptr = state_.at(MSCEqFStateElementName::E);
-  }
-  assert(ptr != nullptr);
+  auto ptr = state_.at(MSCEqFStateElementName::E);
+  auto clone = ptr->clone();
 
-  MSCEqFStateElementUniquePtr clone = ptr->clone();
   clone->updateIndex(old_size);
 
   if (insertCloneElement(timestamp, std::move(clone)))

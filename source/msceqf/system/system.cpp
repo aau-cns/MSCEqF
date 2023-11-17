@@ -23,13 +23,9 @@ SystemState::SystemState(const StateOptions& opts, const SE23& T0, const Vector6
       std::make_pair(SystemStateElementName::T, createSystemStateElement<ExtendedPoseState>(std::make_tuple(T0))));
   insertSystemStateElement(
       std::make_pair(SystemStateElementName::b, createSystemStateElement<BiasState>(std::make_tuple(b0))));
-
-  if (opts_.enable_camera_extrinsics_calibration_)
-  {
-    insertSystemStateElement(std::make_pair(
-        SystemStateElementName::S,
-        createSystemStateElement<CameraExtrinsicState>(std::make_tuple(opts_.initial_camera_extrinsics_))));
-  }
+  insertSystemStateElement(std::make_pair(
+      SystemStateElementName::S,
+      createSystemStateElement<CameraExtrinsicState>(std::make_tuple(opts_.initial_camera_extrinsics_))));
   if (opts_.enable_camera_intrinsics_calibration_)
   {
     insertSystemStateElement(std::make_pair(
@@ -72,11 +68,7 @@ SystemState::~SystemState() { state_.clear(); }
 
 void SystemState::preallocate()
 {
-  size_t num_elements = 1 + opts_.num_persistent_features_;
-  if (opts_.enable_camera_extrinsics_calibration_)
-  {
-    ++num_elements;
-  }
+  size_t num_elements = 2 + opts_.num_persistent_features_;
   if (opts_.enable_camera_intrinsics_calibration_)
   {
     ++num_elements;
@@ -119,14 +111,7 @@ const Vector6& SystemState::b() const
 
 const SE3& SystemState::S() const
 {
-  if (opts_.enable_camera_extrinsics_calibration_)
-  {
-    return std::static_pointer_cast<CameraExtrinsicState>(state_.at(SystemStateElementName::S))->S_;
-  }
-  else
-  {
-    return opts_.initial_camera_extrinsics_;
-  }
+  return std::static_pointer_cast<CameraExtrinsicState>(state_.at(SystemStateElementName::S))->S_;
 }
 
 const In& SystemState::K() const

@@ -240,7 +240,7 @@ bool Updater::linearTriangulation(const MSCEqFState& X, const Track& track, cons
   }
   fp max_angle = std::acos(min_cos) * 180 / M_PI;
 
-  // // Comparison with OpenCV triangulation
+  // OpenCV triangulation
   // cv::Mat uvn_first_cv = (cv::Mat_<fp>(2, 1) << track.normalized_uvs_.front().x, track.normalized_uvs_.front().y);
   // cv::Mat uvn_last_cv = (cv::Mat_<fp>(2, 1) << track.normalized_uvs_.back().x, track.normalized_uvs_.back().y);
 
@@ -258,11 +258,6 @@ bool Updater::linearTriangulation(const MSCEqFState& X, const Track& track, cons
   // cv::triangulatePoints(P_first_cv, P_last_cv, uvn_first_cv, uvn_last_cv, A_f_cv);
   // Vector3 A_f_eigen = Vector3(A_f_cv.at<fp>(0, 0) / A_f_cv.at<fp>(3, 0), A_f_cv.at<fp>(1, 0) / A_f_cv.at<fp>(3, 0),
   //                             A_f_cv.at<fp>(2, 0) / A_f_cv.at<fp>(3, 0));
-
-  // utils::Logger::debug("A_f with custom LS: " +
-  //                      static_cast<std::ostringstream&>(std::ostringstream() << A_f.transpose()).str());
-  // utils::Logger::debug("A_f with OpenCV: " +
-  //                      static_cast<std::ostringstream&>(std::ostringstream() << A_f_eigen.transpose()).str());
 
   if (A_f(2) < opts_.min_depth_ || A_f(2) > opts_.max_depth_ || std::isnan(A_f.norm()) || max_angle < opts_.min_angle_)
   {
@@ -378,11 +373,10 @@ void Updater::UpdateMSCEqF(MSCEqFState& X, const MatrixX& C, const VectorX& delt
   // Update state
   X.state_.at(MSCEqFStateElementName::Dd)
       ->updateLeft(inn.segment(X.index(MSCEqFStateElementName::Dd), X.dof(MSCEqFStateElementName::Dd)));
-  if (X.opts().enable_camera_extrinsics_calibration_)
-  {
-    X.state_.at(MSCEqFStateElementName::E)
-        ->updateLeft(inn.segment(X.index(MSCEqFStateElementName::E), X.dof(MSCEqFStateElementName::E)));
-  }
+
+  X.state_.at(MSCEqFStateElementName::E)
+      ->updateLeft(inn.segment(X.index(MSCEqFStateElementName::E), X.dof(MSCEqFStateElementName::E)));
+
   if (X.opts().enable_camera_intrinsics_calibration_)
   {
     X.state_.at(MSCEqFStateElementName::L)

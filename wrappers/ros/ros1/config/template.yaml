@@ -47,7 +47,6 @@ curvature_correction: true
 min_angle_deg: 0.0
 
 # State options
-enable_camera_extrinsic_calibration: true
 enable_camera_intrinsic_calibration: false
 gravity: 9.81
 num_clones: 11

@@ -249,9 +249,9 @@ class MSCEqFState
    * This method *WILL NOT* initialize the covariance or the clones map for the returned state.
    * This method will only initialize the state map with random values for the returned state.
    *
-   * *THIS IS MEANT TO BE AN HELPER FUNCTION FOR DEBUG/TESTING*
-   *
    * @return MSCEqF state
+   *
+   * @note *THIS IS MEANT TO BE AN HELPER FUNCTION FOR DEBUG/TESTING*
    */
   [[nodiscard]] const MSCEqFState Random() const;
 
@@ -260,17 +260,16 @@ class MSCEqFState
    * This function will perform the composition this * other for each element of the state map.
    * This method will *NOT* perform any composition for the covariance matrix, and for the clones map.
    *
-   * *THIS IS MEANT TO BE AN HELPER FUNCTION FOR DEBUG/TESTING*
-   *
    * @param other MSCEqF state
    * @return MSCEqF state
+   *
+   * @note *THIS IS MEANT TO BE AN HELPER FUNCTION FOR DEBUG/TESTING*
    */
   [[nodiscard]] const MSCEqFState operator*(const MSCEqFState& other) const;
 
  private:
   /**
    * @brief Preallocate space on the MSCEqF state map and clones_map based on given options
-   *
    */
   void preallocate();
 

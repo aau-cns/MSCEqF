@@ -76,12 +76,7 @@ const SystemState::SystemStateAlgebraMap Symmetry::lift(const SystemState& xi, c
   lambda_T.block<3, 1>(3, 0) = u.acc_ - xi.b().block<3, 1>(3, 0) + xi.T().R().transpose() * xi.ge3();
   lambda_T.block<3, 1>(6, 0) = xi.T().R().transpose() * xi.T().v();
 
-  // Precompute Lambda_S if we are estimating camera extrinsics or if we have persistent features
-  // Note that the S() method provide either the initial value or the actual estimate of the extrinsics
-  if (xi.opts_.enable_camera_extrinsics_calibration_ || xi.opts_.num_persistent_features_ > 0)
-  {
-    lambda_S = xi.S().invAdjoint() * (Vector6() << lambda_T.block<3, 1>(0, 0), lambda_T.block<3, 1>(6, 0)).finished();
-  }
+  lambda_S = xi.S().invAdjoint() * (Vector6() << lambda_T.block<3, 1>(0, 0), lambda_T.block<3, 1>(6, 0)).finished();
 
   SE3 PS_inv = xi.S().inv();
 
@@ -144,11 +139,8 @@ const MatrixX Symmetry::curvatureCorrection(const MSCEqFState& X, const VectorX&
   Gamma.block(X.index(MSCEqFStateElementName::Dd) + 9, X.index(MSCEqFStateElementName::Dd) + 9, 6, 6) =
       SE3::adjoint(inn.segment(X.index(MSCEqFStateElementName::Dd), 6));
 
-  if (X.opts().enable_camera_extrinsics_calibration_)
-  {
-    Gamma.block(X.index(MSCEqFStateElementName::E), X.index(MSCEqFStateElementName::E), 6, 6) =
-        SE3::adjoint(inn.segment(X.index(MSCEqFStateElementName::E), X.dof(MSCEqFStateElementName::E)));
-  }
+  Gamma.block(X.index(MSCEqFStateElementName::E), X.index(MSCEqFStateElementName::E), 6, 6) =
+      SE3::adjoint(inn.segment(X.index(MSCEqFStateElementName::E), X.dof(MSCEqFStateElementName::E)));
 
   if (X.opts().enable_camera_intrinsics_calibration_)
   {

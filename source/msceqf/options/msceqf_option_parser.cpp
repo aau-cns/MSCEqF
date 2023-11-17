@@ -32,7 +32,6 @@ MSCEqFOptions OptionParser::parseOptions()
   ///
 
   // Parse flags
-  readDefault(opts.state_options_.enable_camera_extrinsics_calibration_, true, "enable_camera_extrinsic_calibration");
   readDefault(opts.state_options_.enable_camera_intrinsics_calibration_, false, "enable_camera_intrinsic_calibration");
 
   // Parse initial covariance
@@ -42,7 +41,7 @@ MSCEqFOptions OptionParser::parseOptions()
   // parse other state options
   readDefault(opts.state_options_.gravity_, 9.81, "gravity");
   readDefault(opts.state_options_.num_clones_, 10, "num_clones");
-  readDefault(opts.state_options_.num_persistent_features_, 50, "num_persistent_features");
+  readDefault(opts.state_options_.num_persistent_features_, 0, "num_persistent_features");
 
   ///
   /// Parse tracker parameters

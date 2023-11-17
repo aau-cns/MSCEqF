@@ -202,10 +202,8 @@ void Propagator::propagateMean(MSCEqFState& X, const SystemState& xi0, const Imu
       ->updateRight(
           dt * (Vector15() << lambda.at(SystemStateElementName::T), lambda.at(SystemStateElementName::b)).finished());
 
-  if (X.opts().enable_camera_extrinsics_calibration_)
-  {
-    X.state_.at(MSCEqFStateElementName::E)->updateRight(dt * lambda.at(SystemStateElementName::S));
-  }
+  X.state_.at(MSCEqFStateElementName::E)->updateRight(dt * lambda.at(SystemStateElementName::S));
+
   if (X.opts().enable_camera_intrinsics_calibration_)
   {
     X.state_.at(MSCEqFStateElementName::L)->updateRight(dt * lambda.at(SystemStateElementName::K));
@@ -249,12 +247,10 @@ const MatrixX Propagator::stateMatrix(MSCEqFState& X, const SystemState& xi0, co
   const uint& delta_idx = D_idx + D_dof;
   const uint& delta_dof = X.dof(MSCEqFStateElementName::Dd) - D_dof;
 
-  auto size = D_dof + delta_dof;
+  const uint& E_idx = X.index(MSCEqFStateElementName::E);
+  const uint& E_dof = X.dof(MSCEqFStateElementName::E);
 
-  if (X.opts().enable_camera_extrinsics_calibration_)
-  {
-    size += X.dof(MSCEqFStateElementName::E);
-  }
+  auto size = D_dof + delta_dof + E_dof;
 
   MatrixX A = MatrixX::Zero(size, size);
 
@@ -290,44 +286,38 @@ const MatrixX Propagator::stateMatrix(MSCEqFState& X, const SystemState& xi0, co
   // Compute A4
   A.block(delta_idx, delta_idx, delta_dof, delta_dof) = SE3::adjoint(X.delta() + theta);
 
-  if (X.opts().enable_camera_extrinsics_calibration_)
-  {
-    const uint& E_idx = X.index(MSCEqFStateElementName::E);
-    const uint& E_dof = X.dof(MSCEqFStateElementName::E);
+  // Precompute Adjoint S0 inverse
+  Matrix6 AdS0inv = xi0.S().invAdjoint();
 
-    // Precompute Adjoint S0 inverse
-    Matrix6 AdS0inv = xi0.S().invAdjoint();
+  // Precompute the psi vector
+  Vector3 psi1 = X.D().R() * u.ang_ + X.delta().segment<3>(0);
+  Vector3 psi2 = psi1 - xi0.b().segment<3>(0);
+  Vector3 psi3 = X.D().v() + SO3::wedge(X.D().p()) * psi1;
+  Vector3 psi4 = X.D().v() + SO3::wedge(X.D().p()) * psi2 + R0Tv0;
 
-    // Precompute the psi vector
-    Vector3 psi1 = X.D().R() * u.ang_ + X.delta().segment<3>(0);
-    Vector3 psi2 = psi1 - xi0.b().segment<3>(0);
-    Vector3 psi3 = X.D().v() + SO3::wedge(X.D().p()) * psi1;
-    Vector3 psi4 = X.D().v() + SO3::wedge(X.D().p()) * psi2 + R0Tv0;
+  // Precompute rho
+  Vector6 rho = (Vector6() << psi2, psi4).finished();
 
-    // Precompute rho
-    Vector6 rho = (Vector6() << psi2, psi4).finished();
+  // Precompute Xi matrix
+  Matrix<6, 9> Xi = Matrix<6, 9>::Zero();
+  Xi.block<3, 3>(0, 0) = -SO3::wedge(psi1);
+  Xi.block<3, 3>(3, 0) = -SO3::wedge(psi3) - SO3::wedge(xi0.b().segment<3>(0)) * SO3::wedge(X.D().p());
+  Xi.block<3, 3>(3, 3) = Matrix3::Identity();
+  Xi.block<3, 3>(3, 6) = -SO3::wedge(psi2);
 
-    // Precompute Xi matrix
-    Matrix<6, 9> Xi = Matrix<6, 9>::Zero();
-    Xi.block<3, 3>(0, 0) = -SO3::wedge(psi1);
-    Xi.block<3, 3>(3, 0) = -SO3::wedge(psi3) - SO3::wedge(xi0.b().segment<3>(0)) * SO3::wedge(X.D().p());
-    Xi.block<3, 3>(3, 3) = Matrix3::Identity();
-    Xi.block<3, 3>(3, 6) = -SO3::wedge(psi2);
+  // Precompute the Gamma matrix
+  Matrix6 Gamma = Matrix6::Zero();
+  Gamma.block<3, 3>(0, 0) = Matrix3::Identity();
+  Gamma.block<3, 3>(3, 0) = SO3::wedge(X.D().p());
 
-    // Precompute the Gamma matrix
-    Matrix6 Gamma = Matrix6::Zero();
-    Gamma.block<3, 3>(0, 0) = Matrix3::Identity();
-    Gamma.block<3, 3>(3, 0) = SO3::wedge(X.D().p());
+  // Compute A5
+  A.block(E_idx, D_idx, E_dof, D_dof) = AdS0inv * Xi;
 
-    // Compute A5
-    A.block(E_idx, D_idx, E_dof, D_dof) = AdS0inv * Xi;
+  // Compute A6
+  A.block(E_idx, delta_idx, E_dof, delta_dof) = AdS0inv * Gamma;
 
-    // Compute A6
-    A.block(E_idx, delta_idx, E_dof, delta_dof) = AdS0inv * Gamma;
-
-    // Compute A7
-    A.block(E_idx, E_idx, E_dof, E_dof) = SE3::adjoint(AdS0inv * rho);
-  }
+  // Compute A7
+  A.block(E_idx, E_idx, E_dof, E_dof) = SE3::adjoint(AdS0inv * rho);
 
   return A;
 }
@@ -340,25 +330,19 @@ const MatrixX Propagator::inputMatrix(MSCEqFState& X, const SystemState& xi0) co
   const uint& delta_idx = D_idx + D_dof;
   const uint& delta_dof = X.dof(MSCEqFStateElementName::Dd) - D_dof;
 
-  auto size = D_dof + delta_dof;
+  const uint& E_idx = X.index(MSCEqFStateElementName::E);
+  const uint& E_dof = X.dof(MSCEqFStateElementName::E);
 
-  if (X.opts().enable_camera_extrinsics_calibration_)
-  {
-    size += X.dof(MSCEqFStateElementName::E);
-  }
+  auto size = D_dof + delta_dof + E_dof;
 
   MatrixX B = MatrixX::Zero(size, 12);
 
   Matrix9 AdD = X.D().Adjoint();
 
-  B.block(D_idx, 0, 9, 6) = AdD.block<9, 6>(0, 0);
-  B.block(delta_idx, 0, 6, 6) = SE3::adjoint(xi0.b()) * AdD.block<6, 6>(0, 0);
-  B.block(delta_idx, 6, 6, 6) = -AdD.block<6, 6>(0, 0);
-
-  if (X.opts().enable_camera_extrinsics_calibration_)
-  {
-    B.block(X.index(MSCEqFStateElementName::E), 0, 3, 3) = xi0.S().R().transpose() * X.D().R();
-  }
+  B.block(D_idx, 0, D_dof, 6) = AdD.block<9, 6>(0, 0);
+  B.block(delta_idx, 0, delta_dof, 6) = SE3::adjoint(xi0.b()) * AdD.block<6, 6>(0, 0);
+  B.block(delta_idx, 6, delta_dof, 6) = -AdD.block<6, 6>(0, 0);
+  B.block(E_idx, 0, 3, 3) = xi0.S().R().transpose() * X.D().R();
 
   return B;
 }

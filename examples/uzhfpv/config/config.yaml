@@ -4,7 +4,6 @@
 extended_pose_std: [1.0e-1, 1.0e-1, 1.0e-9, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-9, 1.0e-9, 1.0e-9]
 bias_std: [1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1]
 extrinsics_std: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
-# intrinsics_std: [5.0e-3, 5.0e-3, 1.0e-3, 1.0e-3]
 intrinsics_std: [1.0, 1.0, 1.0, 1.0]
 
 # IMU noise statistics
@@ -23,11 +22,6 @@ T_cam_imu:
   - [0.014401251861751119, -0.00041887083271471837, -0.9998962088597202, -6.605455433829172e-05]
   - [0.999497743623523, -0.028225682131089447, 0.014407337010089172, -0.00048817563004522853]
   - [0.0, 0.0, 0.0, 1.0]
-# T_cam_imu:
-#   - [0.0, -1.0, 0.0, 0.0]
-#   - [0.0, 0.0, -1.0, 0.0]
-#   - [1.0, 0.0, 0.0, 0.0]
-#   - [0.0, 0.0, 0.0, 1.0]
 
 # Initializer
 static_initializer_imu_window: 2.0
@@ -54,11 +48,9 @@ curvature_correction: true
 min_angle_deg: 1.0
 
 # State options
-enable_camera_extrinsic_calibration: true
 enable_camera_intrinsic_calibration: false
 gravity: 9.8065
 num_clones: 11
-num_persistent_features: 0
 
 # Tracker
 equalization_method: histogram

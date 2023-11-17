@@ -45,13 +45,11 @@ pixel_standerd_deviation: 1.0
 curvature_correction: false
 min_angle_deg: 0.0
 
-enable_camera_extrinsic_calibration: true
 enable_camera_intrinsic_calibration: true
 
 gravity: 9.81
 
 num_clones: 11
-num_persistent_features: 0
 min_track_length: 5
 
 equalization_method: none

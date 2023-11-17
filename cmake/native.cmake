@@ -20,11 +20,3 @@ target_link_libraries(msceqf_euroc ${PROJECT_NAME}_lib pthread)
 add_executable(msceqf_uzhfpv examples/uzhfpv/uzhfpv.cpp)
 target_include_directories(msceqf_uzhfpv PRIVATE ${include_dirs})
 target_link_libraries(msceqf_uzhfpv ${PROJECT_NAME}_lib pthread)
-
-add_executable(msceqf_synthetic examples/synthetic/synthetic.cpp)
-target_include_directories(msceqf_synthetic PRIVATE ${include_dirs})
-target_link_libraries(msceqf_synthetic ${PROJECT_NAME}_lib pthread)
-
-add_executable(msceqf_synthetic_images examples/synthetic_images/synthetic_images.cpp)
-target_include_directories(msceqf_synthetic_images PRIVATE ${include_dirs})
-target_link_libraries(msceqf_synthetic_images ${PROJECT_NAME}_lib pthread)

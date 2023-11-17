@@ -62,11 +62,10 @@ bool ZeroVelocityUpdater::zvUpdate(MSCEqFState& X, const SystemState& xi0) const
   // Update state
   X.state_.at(MSCEqFStateElementName::Dd)
       ->updateLeft(inn.segment(X.index(MSCEqFStateElementName::Dd), X.dof(MSCEqFStateElementName::Dd)));
-  if (X.opts().enable_camera_extrinsics_calibration_)
-  {
-    X.state_.at(MSCEqFStateElementName::E)
-        ->updateLeft(inn.segment(X.index(MSCEqFStateElementName::E), X.dof(MSCEqFStateElementName::E)));
-  }
+
+  X.state_.at(MSCEqFStateElementName::E)
+      ->updateLeft(inn.segment(X.index(MSCEqFStateElementName::E), X.dof(MSCEqFStateElementName::E)));
+
   if (X.opts().enable_camera_intrinsics_calibration_)
   {
     X.state_.at(MSCEqFStateElementName::L)

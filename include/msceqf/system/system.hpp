@@ -69,12 +69,10 @@ class SystemState
   {
     preallocate();
 
-    if (opts.enable_camera_extrinsics_calibration_)
-    {
-      insertSystemStateElement(std::make_pair(
-          SystemStateElementName::S,
-          createSystemStateElement<CameraExtrinsicState>(std::make_tuple(opts.initial_camera_extrinsics_))));
-    }
+    insertSystemStateElement(std::make_pair(
+        SystemStateElementName::S,
+        createSystemStateElement<CameraExtrinsicState>(std::make_tuple(opts.initial_camera_extrinsics_))));
+
     if (opts.enable_camera_intrinsics_calibration_)
     {
       insertSystemStateElement(std::make_pair(

@@ -78,29 +78,23 @@ void ProjectionHelperZ1::residualJacobianBlock(const MSCEqFState& X,
   // Precompute P = L * pi(C_f) if intrinsics are calibrated, P = pi(C_f) otherwise
   Vector3 P = X.opts().enable_camera_intrinsics_calibration_ ? X.L().asMatrix() * pi(C_f) : pi(C_f);
 
+  // Precompute A = [wedge(G0_f) -I]
+  Matrix<3, 6> A = Matrix<3, 6>::Zero();
+  A.block<3, 3>(0, 0) = SO3::wedge(G0_f);
+  A.block<3, 3>(0, 3) = -Matrix3::Identity();
+
   if (X.opts().enable_camera_intrinsics_calibration_)
   {
     C_block_row.block(0, cols_map.at(MSCEqFStateElementName::L), block_rows_, X.dof(MSCEqFStateElementName::L))
         .noalias() = xi0.K().asMatrix().block<2, 2>(0, 0) * UpdaterHelper::Xi(P);
   }
 
-  if (X.opts().enable_camera_extrinsics_calibration_)
+  if (feat.clone_timestamp_ != feat.anchor_timestamp_)
   {
-    Matrix<3, 6> A = Matrix<3, 6>::Zero();
-    A.block<3, 3>(0, 0) = SO3::wedge(G0_f);
-    A.block<3, 3>(0, 3) = -Matrix3::Identity();
-
-    if (feat.clone_timestamp_ != feat.anchor_timestamp_)
-    {
-      C_block_row.block(0, cols_map.at(feat.clone_timestamp_), block_rows_, X.dof(feat.clone_timestamp_)).noalias() =
-          D * clone_E.R().transpose() * A;
-      C_block_row.block(0, cols_map.at(feat.anchor_timestamp_), block_rows_, X.dof(feat.anchor_timestamp_)) =
-          -C_block_row.block(0, cols_map.at(feat.clone_timestamp_), block_rows_, X.dof(feat.clone_timestamp_));
-    }
-  }
-  else
-  {
-    // [TODO] Ct if extrinsics are not calibrated
+    C_block_row.block(0, cols_map.at(feat.clone_timestamp_), block_rows_, X.dof(feat.clone_timestamp_)).noalias() =
+        D * clone_E.R().transpose() * A;
+    C_block_row.block(0, cols_map.at(feat.anchor_timestamp_), block_rows_, X.dof(feat.anchor_timestamp_)) =
+        -C_block_row.block(0, cols_map.at(feat.clone_timestamp_), block_rows_, X.dof(feat.clone_timestamp_));
   }
 
   switch (feature_representation_)
@@ -122,7 +116,6 @@ void ProjectionHelperZ1::residualJacobianBlock(const MSCEqFState& X,
       break;
   }
 
-  // Residual
   if (X.opts().enable_camera_intrinsics_calibration_)
   {
     delta_block_row = feat.uv_ - (xi0.K().asMatrix() * P).segment<2>(0);

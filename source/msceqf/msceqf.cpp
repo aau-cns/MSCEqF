@@ -342,12 +342,10 @@ void MSCEqF::logInit() const
      << "T0:" << '\n'
      << xi0_.T().asMatrix() << '\n'
      << "b0:" << '\n'
-     << xi0_.b().transpose() << "\n";
+     << xi0_.b().transpose() << "\n"
+     << "S0:" << '\n'
+     << xi0_.S().asMatrix() << '\n';
 
-  if (opts_.state_options_.enable_camera_extrinsics_calibration_)
-  {
-    os << "S0:" << '\n' << xi0_.S().asMatrix() << '\n';
-  }
   if (opts_.state_options_.enable_camera_intrinsics_calibration_)
   {
     os << "K0:\n" << xi0_.K().asMatrix() << '\n';
@@ -357,18 +355,16 @@ void MSCEqF::logInit() const
      << "D:" << '\n'
      << X_.D().asMatrix() << '\n'
      << "delta:" << '\n'
-     << X_.delta().transpose() << '\n';
+     << X_.delta().transpose() << '\n'
+     << "E:" << '\n'
+     << X_.E().asMatrix() << '\n';
 
-  os << "Initial time: " << timestamp_ << '\n';
-
-  if (opts_.state_options_.enable_camera_extrinsics_calibration_)
-  {
-    os << "E:" << '\n' << X_.E().asMatrix() << '\n';
-  }
   if (opts_.state_options_.enable_camera_intrinsics_calibration_)
   {
     os << "L:" << '\n' << X_.L().asMatrix() << '\n';
   }
+
+  os << "Initial time: " << timestamp_ << '\n';
 
   os << "Set initial MSCEqF covariance to:" << '\n' << X_.cov();
 

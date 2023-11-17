@@ -7,8 +7,8 @@ extrinsics_std: [3.0e-2, 3.0e-2, 3.0e-2, 3.0e-2, 3.0e-2, 3.0e-2]
 intrinsics_std: [1.0, 1.0, 1.0, 1.0]
 
 # IMU noise statistics
-accelerometer_noise_density: 2.0000e-2 #2.0000e-3  
-accelerometer_random_walk:   3.0000e-4 #3.0000e-3
+accelerometer_noise_density: 2.0000e-3  
+accelerometer_random_walk:   3.0000e-3
 gyroscope_noise_density: 1.6968e-04
 gyroscope_random_walk:   1.9393e-05
 
@@ -49,11 +49,9 @@ min_angle_deg: 0.0
 zero_velocity_update: enabled
 
 # State options
-enable_camera_extrinsic_calibration: true
 enable_camera_intrinsic_calibration: false
 gravity: 9.81
 num_clones: 11
-num_persistent_features: 0
 
 # Tracker
 equalization_method: histogram

@@ -29,7 +29,6 @@ TEST(SystemStateTest, SystemStateConstructionTest)
   MSCEqFOptions opts = parser.parseOptions();
 
   // Set specific options for this test independently by given parameters
-  opts.state_options_.enable_camera_extrinsics_calibration_ = true;
   opts.state_options_.enable_camera_intrinsics_calibration_ = true;
   opts.state_options_.num_persistent_features_ = 100;
 
@@ -304,19 +303,23 @@ TEST(MSCEqFStateTest, MSCEqFStateConstructionTest)
       }
 
       Matrix21 test_cov = Matrix21::Zero();
-      test_cov.block(state.index(MSCEqFStateElementName::Dd), state.index(MSCEqFStateElementName::Dd), 9, 9) = opts.state_options_.D_init_cov_;
-      test_cov.block(state.index(MSCEqFStateElementName::Dd) + 9, state.index(MSCEqFStateElementName::Dd) + 9, 6, 6) = opts.state_options_.delta_init_cov_;
-      test_cov.block(state.index(MSCEqFStateElementName::E), state.index(MSCEqFStateElementName::E), 6, 6) = opts.state_options_.E_init_cov_;
+      test_cov.block(state.index(MSCEqFStateElementName::Dd), state.index(MSCEqFStateElementName::Dd), 9, 9) =
+          opts.state_options_.D_init_cov_;
+      test_cov.block(state.index(MSCEqFStateElementName::Dd) + 9, state.index(MSCEqFStateElementName::Dd) + 9, 6, 6) =
+          opts.state_options_.delta_init_cov_;
+      test_cov.block(state.index(MSCEqFStateElementName::E), state.index(MSCEqFStateElementName::E), 6, 6) =
+          opts.state_options_.E_init_cov_;
 
       // Transform covariance to the new origin
       Matrix6 AdS0inv = xi0.S().invAdjoint();
       Matrix21 D = Matrix21::Identity();
-      D.block(state.index(MSCEqFStateElementName::Dd) + 9, state.index(MSCEqFStateElementName::Dd), 6, 6) = SE3::adjoint(xi0.b());
-      if (opts.state_options_.enable_camera_extrinsics_calibration_)
-      {
-        D.block(state.index(MSCEqFStateElementName::E), state.index(MSCEqFStateElementName::Dd), 6, 3) = AdS0inv.block<6, 3>(0, 0);
-        D.block(state.index(MSCEqFStateElementName::E), state.index(MSCEqFStateElementName::Dd) + 6, 6, 3) = AdS0inv.block<6, 3>(0, 3);
-      }
+      D.block(state.index(MSCEqFStateElementName::Dd) + 9, state.index(MSCEqFStateElementName::Dd), 6, 6) =
+          SE3::adjoint(xi0.b());
+      D.block(state.index(MSCEqFStateElementName::E), state.index(MSCEqFStateElementName::Dd), 6, 3) =
+          AdS0inv.block<6, 3>(0, 0);
+      D.block(state.index(MSCEqFStateElementName::E), state.index(MSCEqFStateElementName::Dd) + 6, 6, 3) =
+          AdS0inv.block<6, 3>(0, 3);
+
       test_cov = D * test_cov * D.transpose();
 
       MatrixEquality(state.covBlock(MSCEqFStateElementName::Dd), Matrix15(test_cov.block<15, 15>(0, 0)));
