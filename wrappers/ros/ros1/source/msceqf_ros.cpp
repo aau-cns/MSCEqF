@@ -54,8 +54,6 @@ MSCEqFRos::MSCEqFRos(const ros::NodeHandle &nh,
   {
     bag_.open(bagfile, rosbag::bagmode::Write);
   }
-
-  latest_imu_timestamp_ = -1.0;
 }
 
 void MSCEqFRos::callback_image(const sensor_msgs::Image::ConstPtr &msg)
@@ -76,14 +74,10 @@ void MSCEqFRos::callback_image(const sensor_msgs::Image::ConstPtr &msg)
   cam.timestamp_ = cv_ptr->header.stamp.toSec();
   cam.image_ = cv_ptr->image.clone();
 
-  cams_.push_back(cam);
-  std::sort(cams_.begin(), cams_.end());
-
-  while (!cams_.empty() && cams_.front().timestamp_ < latest_imu_timestamp_)
   {
-    sys_.processMeasurement(cams_.front());
-    publish(cams_.front());
-    cams_.pop_front();
+    std::lock_guard<std::mutex> lock(mutex_);
+    cams_.push_back(cam);
+    std::sort(cams_.begin(), cams_.end());
   }
 }
 
@@ -91,13 +85,31 @@ void MSCEqFRos::callback_imu(const sensor_msgs::Imu::ConstPtr &msg)
 {
   msceqf::Imu imu;
 
-  imu.timestamp_ = msg->header.stamp.toSec();
+  auto timestamp = msg->header.stamp.toSec();
+
+  imu.timestamp_ = timestamp;
   imu.ang_ << msg->angular_velocity.x, msg->angular_velocity.y, msg->angular_velocity.z;
   imu.acc_ << msg->linear_acceleration.x, msg->linear_acceleration.y, msg->linear_acceleration.z;
 
   sys_.processMeasurement(imu);
 
-  latest_imu_timestamp_ = imu.timestamp_;
+  if (!processing_)
+  {
+    processing_ = true;
+    std::thread th([&, timestamp] {
+      {
+        std::lock_guard<std::mutex> lock(mutex_);
+        while (!cams_.empty() && cams_.front().timestamp_ < timestamp)
+        {
+          sys_.processMeasurement(cams_.front());
+          publish(cams_.front());
+          cams_.pop_front();
+        }
+      }
+      processing_ = false;
+    });
+    th.detach();
+  }
 }
 
 void MSCEqFRos::publish(const msceqf::Camera &cam)

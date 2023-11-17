@@ -2,5 +2,11 @@ FROM osrf/ros:galactic-desktop
 
 RUN apt-get update && apt-get install -y nano git
 
-RUN mkdir -p /root/catkin_ws/src/msceqf
-COPY . /root/catkin_ws/src/msceqf/
+RUN mkdir -p /root/ws/src/msceqf
+COPY . /root/ws/src/msceqf/
+
+RUN apt update
+RUN echo 'source /root/ws/devel/setup.bash' >> /root/.bashrc
+RUN /bin/bash -c "source /root/.bashrc"
+
+WORKDIR /root

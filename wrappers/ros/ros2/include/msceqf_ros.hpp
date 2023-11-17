@@ -14,12 +14,13 @@
 
 #include <rclcpp/rclcpp.hpp>
 #include <Eigen/Eigen>
-#include <sensor_msgs/msg/Image.h>
-#include <sensor_msgs/msg/Imu.h>
-#include <sensor_msgs/msg/CameraInfo.h>
-#include <sensor_msgs/msg/PointCloud.h>
-#include <geometry_msgs/msg/PoseWithCovarianceStamped.h>
-#include <nav_msgs/msg/Path.h>
+#include <atomic>
+#include <sensor_msgs/msg/image.hpp>
+#include <sensor_msgs/msg/imu.hpp>
+#include <sensor_msgs/msg/camera_info.hpp>
+#include <sensor_msgs/msg/point_cloud.hpp>
+#include <geometry_msgs/msg/pose_with_covariance_stamped.hpp>
+#include <nav_msgs/msg/path.hpp>
 #include <opencv2/opencv.hpp>
 #include <cv_bridge/cv_bridge.h>
 #include <rosbag2_cpp/writer.hpp>
@@ -43,7 +44,7 @@ class MSCEqFRos
    * @param record Flag to record a bagfile
    * @param bagfile Bagfile name
    */
-  MSCEqFRos(const rclcpp::Node &node,
+  MSCEqFRos(std::shared_ptr<rclcpp::Node> node,
             const std::string &msceqf_config_filepath,
             const std::string &imu_topic,
             const std::string &cam_topic,
@@ -60,13 +61,13 @@ class MSCEqFRos
    * @brief Camera callback
    * @param Message message constant pointer
    */
-  void callback_image(const sensor_msgs::msg::Image::ConstSharedPtr &msg);
+  void callback_image(const sensor_msgs::msg::Image::SharedPtr &msg);
 
   /**
    * @brief IMU callback
    * @param Message message constant pointer
    */
-  void callback_imu(const sensor_msgs::msg::Imu::ConstSharedPtr &msg);
+  void callback_imu(const sensor_msgs::msg::Imu::SharedPtr &msg);
 
  private:
   /**
@@ -89,26 +90,26 @@ class MSCEqFRos
     int64_t sec64 = static_cast<int64_t>(floor(t));
     if (sec64 < 0 || sec64 > std::numeric_limits<uint32_t>::max())
       throw std::runtime_error("Time is out of dual 32-bit range");
-    sec = static_cast<uint32_t>(sec64);
-    nsec = static_cast<uint32_t>(boost::math::round((t - sec) * 1e9));
+    uint32_t sec = static_cast<uint32_t>(sec64);
+    uint32_t nsec = static_cast<uint32_t>(boost::math::round((t - sec) * 1e9));
     sec += (nsec / 1000000000ul);
     nsec %= 1000000000ul;
     return rclcpp::Time(sec, nsec);
   }
 
-  rclcpp::Node node_;  //<! ROS node
+  std::shared_ptr<rclcpp::Node> node_;  //<! ROS node
 
   msceqf::MSCEqF sys_;  //<! MSCEqF system
 
-  rclcpp::Subscription<sensor_msgs::msg::Image> sub_cam_;  //<! Camera subscriber
-  rclcpp::Subscription<sensor_msgs::msg::Imu> sub_imu_;    //<! IMU subscriber
+  rclcpp::Subscription<sensor_msgs::msg::Image::SharedPtr>::SharedPtr sub_cam_;  //<! Camera subscriber
+  rclcpp::Subscription<sensor_msgs::msg::Imu::SharedPtr>::SharedPtr sub_imu_;    //<! IMU subscriber
 
-  rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped> pub_pose_;  //<! Pose publisher
-  rclcpp::Publisher<sensor_msgs::msg::Image> pub_image_;                       //<! Image publisher
-  rclcpp::Publisher<nav_msgs::msg::Path> pub_path_;                            //<! Path publisher
-  rclcpp::Publisher<geometry_msgs::msg::PoseStamped> pub_extrinsics_;          //<! Extrinsics publisher
-  rclcpp::Publisher<sensor_msgs::msg::CameraInfo> pub_intrinsics_;             //<! Intrinsics publisher
-  rclcpp::Publisher<geometry_msgs::msg::PoseStamped> pub_origin_;              //<! Origin publisher
+  rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr pub_pose_;  //<! Pose publisher
+  rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr pub_image_;                       //<! Image publisher
+  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_path_;                            //<! Path publisher
+  rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pub_extrinsics_;          //<! Extrinsics publisher
+  rclcpp::Publisher<sensor_msgs::msg::CameraInfo>::SharedPtr pub_intrinsics_;             //<! Intrinsics publisher
+  rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pub_origin_;              //<! Origin publisher
 
   geometry_msgs::msg::PoseWithCovarianceStamped pose_;  //<! Pose message
   nav_msgs::msg::Path path_;                            //<! Path message
@@ -116,10 +117,12 @@ class MSCEqFRos
   sensor_msgs::msg::CameraInfo intrinsics_;             //<! Intrinsics message
   geometry_msgs::msg::PoseStamped origin_;              //<! Origin message
 
-  bool record_;              //<! Flag to record a bagfile
-  rosbag2_cpp::Writer bag_;  //<! Bagfile writer
+  std::deque<msceqf::Camera> cams_;       //!< Camera measurements
+  std::mutex mutex_;                      //!< Camera measurements mutex
+  std::atomic<bool> processing_ = false;  //!< Camera measurements processing flag
 
-  uint seq_ = 0;  //<! Sequence number
+  bool record_;                                      //<! Flag to record a bagfile
+  std::unique_ptr<rosbag2_cpp::Writer> bag_writer_;  //<! Bagfile writer
 };
 
 #endif  // MSCEQF_ROS_H

@@ -2,11 +2,11 @@
 <launch>
 
     <!-- arguments config -->
-    <arg name="config_filepath" default="/home/alfornasier/Catkin_ws/catkin_ws_msceqf/src/config/r15.yaml" />
+    <arg name="config_filepath" default="configfile.yaml" />
 
     <!-- arguments topics -->
-    <arg name="imu_topic"       default="/mus/imu" />
-    <arg name="cam_topic"       default="/mus/image" />
+    <arg name="imu_topic"       default="/imu" />
+    <arg name="cam_topic"       default="/image" />
     <arg name="pose_topic"      default="/pose" />
     <arg name="path_topic"      default="/path" />
     <arg name="image_topic"     default="/tracks" />

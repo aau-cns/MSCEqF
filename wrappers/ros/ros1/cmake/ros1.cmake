@@ -10,7 +10,7 @@ list(APPEND lib_sources
         wrappers/ros/ros1/source/msceqf_ros.cpp
 )
 
-add_library(${PROJECT_NAME}_lib STATIC ${lib_sources})
+add_library(${PROJECT_NAME}_lib SHARED ${lib_sources})
 target_link_libraries(${PROJECT_NAME}_lib ${libs})
 target_include_directories(${PROJECT_NAME}_lib PUBLIC ${catkin_INCLUDE_DIRS} ${include_dirs} wrappers/ros/ros1/include)
 install(TARGETS ${PROJECT_NAME}_lib

@@ -14,6 +14,7 @@
 
 #include <ros/ros.h>
 #include <Eigen/Eigen>
+#include <atomic>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/CameraInfo.h>
@@ -96,8 +97,9 @@ class MSCEqFRos
   sensor_msgs::CameraInfo intrinsics_;             //!< Intrinsics message
   geometry_msgs::PoseStamped origin_;              //!< Origin message
 
-  std::deque<msceqf::Camera> cams_;           //!< Camera measurements
-  std::atomic<double> latest_imu_timestamp_;  //!< Latest IMU timestamp
+  std::deque<msceqf::Camera> cams_;       //!< Camera measurements
+  std::mutex mutex_;                      //!< Camera measurements mutex
+  std::atomic<bool> processing_ = false;  //!< Camera measurements processing flag
 
   bool record_;      //!< Record flag
   rosbag::Bag bag_;  //!< Bagfile
