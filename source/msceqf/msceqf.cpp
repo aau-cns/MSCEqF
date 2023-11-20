@@ -140,7 +140,7 @@ void MSCEqF::processCameraMeasurement(Camera& cam)
 
   xi_ = Symmetry::phi(X_, xi0_);
 
-  if (X_.opts().enable_camera_intrinsics_calibration_)
+  if (X_.opts().enable_camera_intrinsics_calibration_ && X_.covBlock(MSCEqFStateElementName::L).trace() < 1.0e-4)
   {
     track_manager_.cam()->setIntrinsics(xi_.k());
   }
@@ -234,7 +234,7 @@ void MSCEqF::processFeaturesMeasurement(TriangulatedFeatures& features)
 
   xi_ = Symmetry::phi(X_, xi0_);
 
-  if (X_.opts().enable_camera_intrinsics_calibration_)
+  if (X_.opts().enable_camera_intrinsics_calibration_ && X_.covBlock(MSCEqFStateElementName::L).trace() < 1.0e-4)
   {
     track_manager_.cam()->setIntrinsics(xi_.k());
   }
