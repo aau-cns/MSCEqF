@@ -18,7 +18,7 @@ It is based on the recent advances in equivaraint inertial navigation systems [[
 - Supports unit-plane projection method
 - Supports anchored euclidean, anchored inverse depth and anchored polar feature representation methods
 - Includes a static initialization routine as well as parametric initialization with custom origin
-- Includes an equivariant zero-velocity update routine
+- Includes an equivariant zero velocity update routine
 
 ### Vision frontend features
 
@@ -26,6 +26,15 @@ It is based on the recent advances in equivaraint inertial navigation systems [[
 - Supports a grid-based multi-thread parallel feature extraction 
 - Supports different features detector including FAST and Shi-Tomasi
 - Supports different image enhancment tecniques, including Histogram and CLAHE
+
+### Future roadmap
+
+ - [x] ROS1 wrapper
+ - [x] ROS2 wrapper
+ - [x] Equivariant Zero velocity Update (EqZVU)
+ - [ ] Unit-sphere projection method support
+ - [ ] Equivariant Persistent (SLAM) features update support
+
 
 ## Dependencies
 
@@ -54,7 +63,10 @@ $ cd msceqf/build/<build_type>
 $ ./msceqf_tests
 ```
 
-### Run example
+### Run example (Euroc)
+
+After downloading the [Euroc](https://projects.asl.ethz.ch/datasets/doku.php?id=kmavvisualinertialdatasets) follows
+
 ```sh
 $ cd msceqf/build/<build_type>
 $ ./msceqf_euroc <sequence_name> <euroc_dataset_folder> <euroc_example_folder>
@@ -87,6 +99,12 @@ $ xhost +
 $ docker run --net=host -it --gpus all --env="NVIDIA_DRIVER_CAPABILITIES=all" --env="DISPLAY" --env="QT_X11_NO_MITSHM=1" --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" msceqf:ros<ros_version> .
 ```
 
+If Nvidia drivere are not supported, simply run docker as follows
+
+```sh
+$ docker run --net=host -it --gpus all --env="NVIDIA_DRIVER_CAPABILITIES=all" --env="DISPLAY" --env="QT_X11_NO_MITSHM=1" --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" msceqf:ros<ros_version> .
+```
+
 ## License
 
 This software is made available to the public to use (source-available), licensed under the terms of the BSD-2-Clause-License with no commercial use allowed, the full terms of which are made available in the [LICENSE](LICENSE) file. 
@@ -98,7 +116,6 @@ If you use this software in an academic research setting, please cite the corres
 @article{fornasier2023msceqf,
   title={MSCEqF: A Multi State Constraint Equivariant Filter for Vision-aided Inertial Navigation},
   author={Fornasier, Alessandro and van Goor, Pieter and Allak, Eren and Mahony, Robert and Weiss, Stephan},
-  journal={arXiv preprint arXiv:XXXX.XXXXX},
   year={2023}
 }
 
