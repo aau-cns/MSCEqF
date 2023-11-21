@@ -35,6 +35,9 @@ It is based on the recent advances in equivaraint inertial navigation systems [[
  - [ ] Unit-sphere projection method support
  - [ ] Equivariant Persistent (SLAM) features update support
 
+## Documentation
+
+Doxygen documentation is available here: [MSCEqF documentation](https://aau-cns.github.io/MSCEqF)
 
 ## Dependencies
 
@@ -116,6 +119,7 @@ If you use this software in an academic research setting, please cite the corres
 @article{fornasier2023msceqf,
   title={MSCEqF: A Multi State Constraint Equivariant Filter for Vision-aided Inertial Navigation},
   author={Fornasier, Alessandro and van Goor, Pieter and Allak, Eren and Mahony, Robert and Weiss, Stephan},
+  journal={arXiv preprint arXiv:2311.11649},
   year={2023}
 }
 
