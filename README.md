@@ -108,6 +108,105 @@ If Nvidia drivere are not supported, simply run docker as follows
 $ docker run --net=host -it --gpus all --env="NVIDIA_DRIVER_CAPABILITIES=all" --env="DISPLAY" --env="QT_X11_NO_MITSHM=1" --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" msceqf:ros<ros_version> .
 ```
 
+## Usage with custom dataset and/or with ROS
+
+Utilizing MSCEqF with a custom dataset or specific sensors is a straightforward process. Follow these steps for seamless integration:
+
+### Dataset/Sensor preparation
+
+Ensure you possess the camera intrinsic and extrinsic parameters calibration if working with a custom dataset. In case you are working with real sensors, perform a camera calibration before starting. We recommend using [Kalibr](https://github.com/ethz-asl/kalibr) for efficient camera calibration.
+
+### MSCEqF configuration file
+
+Navigate to the desired location to store the filter configuration file:
+
+```sh
+cd <path_where_to_store_the_filter_configfile>
+nano <configfile_name>.yaml
+```
+
+Populate your configuration file with the following settings:
+
+```yaml
+# Initial standard deviations (attitude, velocity, position, bias, extrinsics, instrinsics)
+extended_pose_std: [1.0e-1, 1.0e-1, 1.0e-9, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-9, 1.0e-9, 1.0e-9]
+bias_std: [1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1, 1.0e-1]
+extrinsics_std: [1.0e-2, 1.0e-2, 1.0e-2, 1.0e-2, 1.0e-2, 1.0e-2]
+intrinsics_std: [1.0, 1.0, 1.0, 1.0]
+
+# IMU noise statistics
+accelerometer_noise_density: 1.0-2
+accelerometer_random_walk:   1.0e-3
+gyroscope_noise_density: 1.0e-3
+gyroscope_random_walk:   1.0e-4
+
+# Camera calibration (according to kalibr format, both T_imu_cam and T_cam_imu)
+distortion_coeffs: [0.0, 0.0, 0.0, 0.0]
+distortion_model: radtan
+resolution: [320, 240]
+intrinsics: [250.0, 250.0, 160.0, 120.0]
+T_imu_cam: 
+  - [1.0, 0.0, 0.0, 0.0]
+  - [0.0, -1.0, 0.0, 0.0]
+  - [0.0, 0.0, -1.0, 0.0]
+  - [0.0, 0.0, 0.0, 1.0]
+
+# Initializer options
+# For IMU only motion detection set static_initializer_disparity_threshold: 0.0
+# For DISPARITY only motion detection set static_initializer_acc_threshold: 0.0
+static_initializer_imu_window: 1.0
+static_initializer_disparity_window: 0.5
+static_initializer_acc_threshold: 0.25
+static_initializer_disparity_threshold: 1.0
+
+# Propagator options
+# For numerical exponential computation (costly) set state_transition_order: -1
+# For approximated first-order exponential computation (recommended on low-power hardware) set state_transition_order: 0
+state_transition_order: 0
+imu_buffer_max_size: 1000
+
+# Updater options
+# Possible options for zero_velocity_update are enabled, disabled, beginning
+refine_traingulation: true
+feature_min_depth: 0.1
+feature_max_depth: 20
+feature_refinement_max_iterations: 20
+feature_refinement_tollerance: 1e-10
+measurement_projection_method: unit_plane
+feature_representation: anchored_inverse_depth
+pixel_standerd_deviation: 1.0
+curvature_correction: true
+zero_velocity_update: enabled
+
+# State options
+enable_camera_intrinsic_calibration: false
+gravity: 9.81
+num_clones: 11
+
+# Tracker options
+# Possible options for feature_detector are fast and shi-tomasi
+equalization_method: histogram
+optical_flow_pyramid_levels: 3
+detector_pyramid_levels: 1
+feature_detector: fast
+grid_x_size: 4
+grid_y_size: 4
+min_feature_pixel_distance: 15
+min_features: 100
+max_features: 120
+fast_threshold: 20
+shi_tomasi_quality_level: 0.75
+
+# Track Manager
+max_track_length: 400
+
+# Logger level 
+# Possible levels are 0: Full, 1: INFO, 2: WARN, 3: ERR, 4: INACTIVE
+logger_level: 1
+```
+
+Adjust values as needed and customize settings thresholds based on your specific requirements.
+
 ## License
 
 This software is made available to the public to use (source-available), licensed under the terms of the BSD-2-Clause-License with no commercial use allowed, the full terms of which are made available in the [LICENSE](LICENSE) file. 
