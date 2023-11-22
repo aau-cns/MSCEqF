@@ -46,6 +46,7 @@ feature_representation: anchored_inverse_depth
 pixel_standerd_deviation: 1.5
 curvature_correction: true
 min_angle_deg: 1.0
+zero_velocity_update: enabled
 
 # State options
 enable_camera_intrinsic_calibration: false

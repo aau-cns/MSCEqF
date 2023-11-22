@@ -45,7 +45,6 @@ measurement_projection_method: unit_plane
 feature_representation: anchored_euclidean
 pixel_standerd_deviation: 1.0
 curvature_correction: true
-min_angle_deg: 0.0
 zero_velocity_update: enabled
 
 # State options
