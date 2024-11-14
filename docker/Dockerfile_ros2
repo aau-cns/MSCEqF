@@ -1,4 +1,5 @@
-FROM osrf/ros:galactic-desktop
+#FROM osrf/ros:galactic-desktop
+FROM osrf/ros:iron-desktop
 
 RUN apt-get update && apt-get install -y nano git
 
