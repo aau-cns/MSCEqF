@@ -1,0 +1,5 @@
+<map id="utils::is_streamable&lt; S, C, decltype(void(std::declval&lt; S &amp; &gt;()&lt;&lt; std::declval&lt; C const &amp; &gt;()))&gt;" name="utils::is_streamable&lt; S, C, decltype(void(std::declval&lt; S &amp; &gt;()&lt;&lt; std::declval&lt; C const &amp; &gt;()))&gt;">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,79,166,165"/>
+<area shape="rect" id="Node000002" title=" " alt="" coords="36,5,135,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="88,47,88,78,83,78,83,47"/>
+</map>

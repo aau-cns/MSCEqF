@@ -1,0 +1,13 @@
+<map id="msceqf::SystemStateElement" name="msceqf::SystemStateElement">
+<area shape="rect" id="Node000001" title="This struct represent the base struct for a general element of the system state." alt="" coords="5,104,198,130"/>
+<area shape="rect" id="Node000002" href="$structmsceqf_1_1_bias_state.html" title="This struct represent the IMU bias state of the system." alt="" coords="280,5,407,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="136,93,187,66,245,40,278,29,280,34,247,45,189,71,139,98"/>
+<area shape="rect" id="Node000003" href="$structmsceqf_1_1_camera_extrinsic_state.html" title="This struct represent the camera extrinsics state of the system." alt="" coords="246,55,441,80"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="182,98,276,78,277,84,183,103"/>
+<area shape="rect" id="Node000004" href="$structmsceqf_1_1_camera_intrinsic_state.html" title="This struct represent the camera intrinsics state of the system." alt="" coords="247,104,440,130"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="213,114,247,114,247,120,213,120"/>
+<area shape="rect" id="Node000005" href="$structmsceqf_1_1_extended_pose_state.html" title="This struct represent the extended pose state of the system." alt="" coords="251,153,436,179"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="183,131,277,150,276,155,182,136"/>
+<area shape="rect" id="Node000006" href="$structmsceqf_1_1_feature_state.html" title="This struct represent a single persistent feature state of the system." alt="" coords="271,203,416,228"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="139,136,189,163,247,189,280,200,278,205,245,194,187,168,136,140"/>
+</map>

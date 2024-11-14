@@ -1,0 +1,7 @@
+<map id="msceqf::TrackManager::activeTracksIds" name="msceqf::TrackManager::activeTracksIds">
+<area shape="rect" id="Node000001" title="Get all the ids corresponding to active tracks at a given timestamp. Active tracks are defined as tra..." alt="" coords="409,5,562,46"/>
+<area shape="rect" id="Node000002" href="$classmsceqf_1_1_visualizer.html#af0b6220ad8dbb4d1925ba9121be6631e" title="Camera image with overlayed tracks." alt="" coords="233,5,361,46"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="393,28,361,28,361,23,393,23"/>
+<area shape="rect" id="Node000003" href="$classmsceqf_1_1_visualizer.html#a49e6c6116457f74dd68d81382c4e154b" title="Visualize imge with history of tracks." alt="" coords="5,5,185,46"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="217,28,185,28,185,23,217,23"/>
+</map>

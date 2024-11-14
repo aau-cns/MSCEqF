@@ -1,0 +1,5 @@
+<map id="msceqf::RadtanCamera" name="msceqf::RadtanCamera">
+<area shape="rect" id="Node000001" title="This class represent a pinhole camera with radtan distortion model." alt="" coords="6,79,163,105"/>
+<area shape="rect" id="Node000002" href="$classmsceqf_1_1_pinhole_camera.html" title="This class represnt the base class for any pinhole camera type." alt="" coords="5,5,164,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="87,46,87,79,82,79,82,46"/>
+</map>

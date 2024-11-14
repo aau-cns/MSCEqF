@@ -1,0 +1,11 @@
+<map id="msceqf::Visualizer::visualizeImageWithTracks" name="msceqf::Visualizer::visualizeImageWithTracks">
+<area shape="rect" id="Node000001" title="Visualize imge with history of tracks." alt="" coords="5,63,185,103"/>
+<area shape="rect" id="Node000002" href="$classmsceqf_1_1_visualizer.html#af0b6220ad8dbb4d1925ba9121be6631e" title="Camera image with overlayed tracks." alt="" coords="233,63,361,103"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="185,80,217,80,217,86,185,86"/>
+<area shape="rect" id="Node000003" href="$classmsceqf_1_1_track_manager.html#a0c0ff31e29de9e63a454a58af7c9b931" title="Get all the ids corresponding to active tracks at a given timestamp. Active tracks are defined as tra..." alt="" coords="424,5,578,46"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="361,62,411,48,412,53,362,68"/>
+<area shape="rect" id="Node000004" href="$classmsceqf_1_1_track_manager.html#afe813535e2b8bc3fa2f68ea611fb7015" title="Get the camera pointer." alt="" coords="409,70,593,96"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="361,80,393,80,393,86,361,86"/>
+<area shape="rect" id="Node000005" href="$classmsceqf_1_1_track_manager.html#acd15a87fdc24b43e2cb9f41e179a85e3" title="Get all the tracks." alt="" coords="424,120,578,161"/>
+<area shape="poly" id="edge4_Node000002_Node000005" title=" " alt="" coords="362,98,412,113,411,118,361,104"/>
+</map>
