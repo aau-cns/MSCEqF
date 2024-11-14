@@ -25,25 +25,25 @@
 
 namespace msceqf
 {
-class OptionParser
-{
- public:
-  /**
+  class OptionParser
+  {
+  public:
+    /**
    * @brief Option parser constructor
    *
    * @param filepath Parameter file
    */
-  OptionParser(const std::string& filepath);
+    OptionParser(const std::string &filepath);
 
-  /**
+    /**
    * @brief Parse oprion and create MSCEqFOptions struct
    *
    * @return MSCEqFOptions
    */
-  MSCEqFOptions parseOptions();
+    MSCEqFOptions parseOptions();
 
- private:
-  /**
+  private:
+    /**
    * @brief Read a parameter from the YAML file and store it in a matrix or vector.
    * A vector needs to be specified as [a, b, c, ..., z] in the YAMl file.
    * A matrix needs to be specified as a a list of vectors, each representing a row of the matrix.
@@ -55,64 +55,64 @@ class OptionParser
    * @param param Parameter to be read
    * @return true if parameter correctly parsed, false otherwise
    */
-  template <int Rows, int Cols>
-  [[nodiscard]] bool read(Matrix<Rows, Cols>& x, const std::string& param)
-  {
-    if (node_[param])
+    template <int Rows, int Cols>
+    [[nodiscard]] bool read(Matrix<Rows, Cols> &x, const std::string &param)
     {
-      using vector = std::vector<fp>;
-      using vectorvector = std::vector<std::vector<fp>>;
+      if (node_[param])
+      {
+        using vector = std::vector<fp>;
+        using vectorvector = std::vector<std::vector<fp>>;
 
-      int rows = Rows;
-      int cols = Cols;
+        int rows = Rows;
+        int cols = Cols;
 
-      if constexpr (Rows == 1 || Cols == 1)
-      {
-        vector vec = node_[param].as<vector>();
-        if constexpr (Rows == -1)
+        if constexpr (Rows == 1 || Cols == 1)
         {
-          rows = vec.size();
+          vector vec = node_[param].as<vector>();
+          if constexpr (Rows == -1)
+          {
+            rows = vec.size();
+          }
+          else if (Cols == -1)
+          {
+            cols = vec.size();
+          }
+          x = Map<Matrix<Rows, Cols>>(vec.data(), rows, cols);
         }
-        else if (Cols == -1)
+        else
         {
-          cols = vec.size();
+          vectorvector mat = node_[param].as<vectorvector>();
+          vector vec = utils::flatten(mat);
+          if constexpr (Rows == 1 && Cols == 1)
+          {
+            rows = mat.size();
+            cols = vec.size() / mat.size();
+          }
+          x = Map<Matrix<Rows, Cols, Eigen::RowMajor>>(vec.data(), rows, cols);
         }
-        x = Map<Matrix<Rows, Cols>>(vec.data(), rows, cols);
-      }
-      else
-      {
-        vectorvector mat = node_[param].as<vectorvector>();
-        vector vec = utils::flatten(mat);
-        if constexpr (Rows == 1 && Cols == 1)
+        if constexpr (Rows == 1)
         {
-          rows = mat.size();
-          cols = vec.size() / mat.size();
+          utils::Logger::info("Parameter: [" + param + "] found. Option set to:" +
+                              (std::ostringstream{} << x).str());
         }
-        x = Map<Matrix<Rows, Cols, Eigen::RowMajor>>(vec.data(), rows, cols);
-      }
-      if constexpr (Rows == 1)
-      {
-        utils::Logger::info("Parameter: [" + param + "] found. Option set to:" +
-                            static_cast<std::ostringstream&>(std::ostringstream() << x).str());
-      }
-      else if (Cols == 1)
-      {
-        utils::Logger::info("Parameter: [" + param + "] found. Option set to: " +
-                            static_cast<std::ostringstream&>(std::ostringstream() << x.transpose()).str());
-      }
-      else
-      {
-        utils::Logger::info("Parameter: [" + param + "] found. Option set to: \n" +
-                            static_cast<std::ostringstream&>(std::ostringstream() << x).str());
-      }
+        else if (Cols == 1)
+        {
+          utils::Logger::info("Parameter: [" + param + "] found. Option set to: " +
+                              (std::ostringstream{} << x.transpose()).str());
+        }
+        else
+        {
+          utils::Logger::info("Parameter: [" + param + "] found. Option set to: \n" +
+                              (std::ostringstream{} << x).str());
+        }
 
-      return true;
+        return true;
+      }
+      utils::Logger::warn("Parameter: [" + param + "] not found");
+      return false;
     }
-    utils::Logger::warn("Parameter: [" + param + "] not found");
-    return false;
-  }
 
-  /**
+    /**
    * @brief Read a parameter from the YAML file and store it in a quaternion.
    * The quaternion needs to be specified as [x, y, z, w] in the YAML file.
    * the function perform quaternion normalization.
@@ -122,23 +122,23 @@ class OptionParser
    * @param parameter Parameter to be read
    * @return true if parameter correctly parsed, false otherwise
    */
-  template <typename Scalar>
-  [[nodiscard]] bool read(Quaternion& q, const std::string& param)
-  {
-    if (node_[param])
+    template <typename Scalar>
+    [[nodiscard]] bool read(Quaternion &q, const std::string &param)
     {
-      using vector = std::vector<fp>;
-      vector vec = node_[param].as<vector>();
-      q = Quaternion(vec).normalize();
-      utils::Logger::info("Parameter: [" + param + "] found. Option set to: \n" +
-                          static_cast<std::ostringstream&>(std::ostringstream() << q).str());
-      return true;
+      if (node_[param])
+      {
+        using vector = std::vector<fp>;
+        vector vec = node_[param].as<vector>();
+        q = Quaternion(vec).normalize();
+        utils::Logger::info("Parameter: [" + param + "] found. Option set to: \n" +
+                            (std::ostringstream{} << q).str());
+        return true;
+      }
+      utils::Logger::warn("Parameter: [" + param + "] not found");
+      return false;
     }
-    utils::Logger::warn("Parameter: [" + param + "] not found");
-    return false;
-  }
 
-  /**
+    /**
    * @brief Read a parameter from the YAML file and store it in a variable of type T.
    *
    * @tparam T type of the variable where the parameter has to be stored in
@@ -146,33 +146,33 @@ class OptionParser
    * @param param
    * @return true if parameter correctly parsed, false otherwise
    */
-  template <typename T>
-  [[nodiscard]] bool read(T& p, const std::string& param)
-  {
-    if (node_[param])
+    template <typename T>
+    [[nodiscard]] bool read(T &p, const std::string &param)
     {
-      p = node_[param].as<T>();
-      utils::Logger::info("Parameter: [" + param + "] found. Option set to: " +
-                          static_cast<std::ostringstream&>(std::ostringstream() << p).str());
-      return true;
+      if (node_[param])
+      {
+        p = node_[param].as<T>();
+        utils::Logger::info("Parameter: [" + param + "] found. Option set to: " +
+                            (std::ostringstream{} << p).str());
+        return true;
+      }
+      utils::Logger::warn("Parameter: [" + param + "] not found");
+      return false;
     }
-    utils::Logger::warn("Parameter: [" + param + "] not found");
-    return false;
-  }
 
-  template <typename T, typename Convertible>
-  void readDefault(T& p, const Convertible& def, const std::string& param)
-  {
-    static_assert(std::is_convertible_v<Convertible, T>);
-    if (!read(p, param))
+    template <typename T, typename Convertible>
+    void readDefault(T &p, const Convertible &def, const std::string &param)
     {
-      p = def;
-      utils::Logger::warn("Parameter: [" + param + "] set to default value: " +
-                          static_cast<std::ostringstream&>(std::ostringstream() << p).str());
+      static_assert(std::is_convertible_v<Convertible, T>);
+      if (!read(p, param))
+      {
+        p = def;
+        utils::Logger::warn("Parameter: [" + param + "] set to default value: " +
+                            (std::ostringstream{} << p).str());
+      }
     }
-  }
 
-  /**
+    /**
    * @brief Parse the camera parmaeters, including extrinsics and intrinsics from the YAML file.
    * The camera parameters has to be defined according to Kalibr convention
    *
@@ -185,53 +185,53 @@ class OptionParser
    * @param mask
    * @param mask_type
    */
-  void parseCameraParameters(SE3& extrinsics,
-                             In& intrinsics,
-                             DistortionModel& distortion_model,
-                             VectorX& distortion_coefficients,
-                             Vector2& resolution,
-                             fp& timeshift_cam_imu,
-                             cv::Mat& mask,
-                             MaskType& mask_type);
+    void parseCameraParameters(SE3 &extrinsics,
+                               In &intrinsics,
+                               DistortionModel &distortion_model,
+                               VectorX &distortion_coefficients,
+                               Vector2 &resolution,
+                               fp &timeshift_cam_imu,
+                               cv::Mat &mask,
+                               MaskType &mask_type);
 
-  /**
+    /**
    * @brief Parse the given origin (initial state) and the initial time
    *
    * @param T
    * @param b
    * @param t0
    */
-  void parseGivenOrigin(SE23& T, Vector6& b, fp& t0);
+    void parseGivenOrigin(SE23 &T, Vector6 &b, fp &t0);
 
-  /**
+    /**
    * @brief Parse the image preprocessing equalization method
    *
    * @param eq
    */
-  void parseEqualizationMethod(EqualizationMethod& eq);
+    void parseEqualizationMethod(EqualizationMethod &eq);
 
-  /**
+    /**
    * @brief Parse the feature representation
    *
    * @param rep
    */
-  void parseFeatureRepresentation(FeatureRepresentation& rep);
+    void parseFeatureRepresentation(FeatureRepresentation &rep);
 
-  /**
+    /**
    * @brief Parse the projection method
    *
    * @param proj
    */
-  void parseProjectionMethod(ProjectionMethod& proj);
+    void parseProjectionMethod(ProjectionMethod &proj);
 
-  /**
+    /**
    * @brief Parse the feature detector type
    *
    * @param detector
    */
-  void parseDetectorType(FeatureDetector& detector);
+    void parseDetectorType(FeatureDetector &detector);
 
-  /**
+    /**
    * @brief Parse the initial covariance
    *
    * @param D_cov Covariance of the D element of the MSCEqF state
@@ -240,9 +240,9 @@ class OptionParser
    * @param L_cov Covariance of the L element of the MSCEqF state (Identity by default)
    *
    */
-  void parseInitialCovariance(Matrix9& D_cov, Matrix6& delta_cov, Matrix6& E_cov, Matrix4& L_cov);
+    void parseInitialCovariance(Matrix9 &D_cov, Matrix6 &delta_cov, Matrix6 &E_cov, Matrix4 &L_cov);
 
-  /**
+    /**
    * @brief Parse the process noise
    *
    * @param w_std Standard deviation of the process noise of the angular velocity
@@ -250,28 +250,28 @@ class OptionParser
    * @param bw_std Standard deviation of the process noise of the gyroscope bias
    * @param ba_std Standard deviation of the process noise of the accelerometer bias
    */
-  void parseProcessNoise(fp& w_std, fp& a_std, fp& bw_std, fp& ba_std);
+    void parseProcessNoise(fp &w_std, fp &a_std, fp &bw_std, fp &ba_std);
 
-  /**
+    /**
    * @brief Parse the measurement noise, it transforms it in normalized pixel noise if intrinsics parameter are not
    * refined online.
    *
    * @param pix_std Standard deviation of the measurement noise of the pixel coordinates
    * @param opts State options
    */
-  void parsePixStd(fp& pix_std, const StateOptions& opts);
+    void parsePixStd(fp &pix_std, const StateOptions &opts);
 
-  /**
+    /**
    * @brief Parse the zero velocity update method
    *
    * @param zvu zero velocity update method
    */
-  void parseZeroVelocityUpdate(ZeroVelocityUpdate& zvu);
+    void parseZeroVelocityUpdate(ZeroVelocityUpdate &zvu);
 
-  YAML::Node node_;       //!< YAML node
-  std::string filepath_;  //!< filepath
-};
+    YAML::Node node_;      //!< YAML node
+    std::string filepath_; //!< filepath
+  };
 
-}  // namespace msceqf
+} // namespace msceqf
 
-#endif  // OPTIONS_HPP
+#endif // OPTIONS_HPP
