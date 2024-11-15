@@ -53,16 +53,17 @@ MSCEqF has the following dependencies which are automatically downloaded and lin
 ## Getting started
 ### ROS free setup
 ```sh
-$ git clone <url> msceqf
+$ git clone https://github.com/aau-cns/MSCEqF.git msceqf
 $ cd msceqf
-$ mkdir -p build/<build_type>
-$ cd build/<build_type> && cmake -DCMAKE_BUILD_TYPE=<build_type> -DBUILD_TESTS=ON ../..
-$ cmake --build . --config Debug --target all -j && cd ../..
+$ export BUILD_TYPE=<TYPE>  # Replace <TYPE> with one of these: Release, Debug, RelWithDebInfo, ...
+$ mkdir -p build/$BUILD_TYPE
+$ cd build/$BUILD_TYPE && cmake -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DBUILD_TESTS=ON ../..
+$ cmake --build . --config $BUILD_TYPE --target all -j && cd ../..
 ```
 
 ### Run tests
 ```sh
-$ cd msceqf/build/<build_type>
+$ cd msceqf/build/$BUILD_TYPE
 $ ./msceqf_tests
 ```
 
@@ -71,24 +72,26 @@ $ ./msceqf_tests
 After downloading the [Euroc](https://projects.asl.ethz.ch/datasets/doku.php?id=kmavvisualinertialdatasets) follows
 
 ```sh
-$ cd msceqf/build/<build_type>
+$ cd msceqf/build/$BUILD_TYPE
 $ ./msceqf_euroc <sequence_name> <euroc_dataset_folder> <euroc_example_folder>
 ```
 
 ### ROS1 setup
 ```sh
 $ cd ws/src
-$ git clone <url> msceqf
+$ git clone https://github.com/aau-cns/MSCEqF.git msceqf
 $ cd msceqf
-$ catkin build -DCMAKE_BUILD_TYPE=<build_type> -DROS_BUILD=ON
+$ export BUILD_TYPE=<TYPE>  # Replace <TYPE> with one of these: Release, Debug, RelWithDebInfo, ...
+$ catkin build -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DROS_BUILD=ON
 ```
 
 ### ROS2 setup
 ```sh
 $ cd ws/src
-$ git clone <url> msceqf
+$ git clone https://github.com/aau-cns/MSCEqF.git msceqf
 $ cd msceqf
-$ colcon build --event-handlers console_cohesion+ --cmake-args -DCMAKE_BUILD_TYPE=<build_type> --cmake-args -DROS_BUILD=ON
+$ export BUILD_TYPE=<TYPE>  # Replace <TYPE> with one of these: Release, Debug, RelWithDebInfo, ...
+$ colcon build --event-handlers console_cohesion+ --cmake-args -DCMAKE_BUILD_TYPE=$BUILD_TYPE --cmake-args -DROS_BUILD=ON
 ```
 
 ### Docker setup
@@ -97,15 +100,16 @@ $ sudo apt update
 $ sudo apt install -y nvidia-docker2
 $ sudo systemctl restart docker
 $ cd <path_to_msceqf_folder>
-$ docker build --network=host -t msceqf:ros<ros_version> -f docker/Dockerfile_ros<ros_version>
+$ export ROS_VERSION=<Version>  # Enter either 1 or 2 (e.g. ROS_VERSION=1)
+$ docker build --network=host -t msceqf:ros$ROS_VERSION -f docker/Dockerfile_ros$ROS_VERSION
 $ xhost +
-$ docker run --net=host -it --gpus all --env="NVIDIA_DRIVER_CAPABILITIES=all" --env="DISPLAY" --env="QT_X11_NO_MITSHM=1" --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" msceqf:ros<ros_version> .
+$ docker run --net=host -it --gpus all --env="NVIDIA_DRIVER_CAPABILITIES=all" --env="DISPLAY" --env="QT_X11_NO_MITSHM=1" --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" msceqf:ros$ROS_VERSION .
 ```
 
 If Nvidia drivere are not supported, simply run docker as follows
 
 ```sh
-$ docker run --net=host -it --gpus all --env="NVIDIA_DRIVER_CAPABILITIES=all" --env="DISPLAY" --env="QT_X11_NO_MITSHM=1" --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" msceqf:ros<ros_version> .
+$ docker run --net=host -it --gpus all --env="NVIDIA_DRIVER_CAPABILITIES=all" --env="DISPLAY" --env="QT_X11_NO_MITSHM=1" --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" msceqf:ros$ROS_VERSION .
 ```
 
 ## Usage with custom dataset and/or with ROS
