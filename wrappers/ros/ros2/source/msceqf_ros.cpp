@@ -30,10 +30,10 @@ MSCEqFRos::MSCEqFRos(std::shared_ptr<rclcpp::Node> node,
     : node_(node), sys_(msceqf_config_filepath)
 {
   sub_cam_ = node_->create_subscription<sensor_msgs::msg::Image>(
-      cam_topic, rclcpp::SensorDataQoS(), std::bind(&MSCEqFRos::callback_image, this, std::placeholders::_1));
+      cam_topic,rclcpp::SensorDataQoS(), std::bind(&MSCEqFRos::callback_image, this, std::placeholders::_1));
   sub_imu_ = node_->create_subscription<sensor_msgs::msg::Imu>(
-      imu_topic, rclcpp::SensorDataQoS(), std::bind(&MSCEqFRos::callback_imu, this, std::placeholders::_1));
-
+     imu_topic, rclcpp::SensorDataQoS(), std::bind(&MSCEqFRos::callback_imu, this, std::placeholders::_1));
+   
   utils::Logger::info("Subscribing: " + std::string(sub_cam_->get_topic_name()));
   utils::Logger::info("Subscribing: " + std::string(sub_imu_->get_topic_name()));
 
@@ -59,7 +59,7 @@ MSCEqFRos::MSCEqFRos(std::shared_ptr<rclcpp::Node> node,
   }
 }
 
-void MSCEqFRos::callback_image(const sensor_msgs::msg::Image::SharedPtr &msg)
+void MSCEqFRos::callback_image(const sensor_msgs::msg::Image::SharedPtr msg)
 {
   cv_bridge::CvImageConstPtr cv_ptr;
   try
@@ -84,7 +84,7 @@ void MSCEqFRos::callback_image(const sensor_msgs::msg::Image::SharedPtr &msg)
   }
 }
 
-void MSCEqFRos::callback_imu(const sensor_msgs::msg::Imu::SharedPtr &msg)
+void MSCEqFRos::callback_imu(const sensor_msgs::msg::Imu::SharedPtr msg)
 {
   msceqf::Imu imu;
 

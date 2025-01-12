@@ -22,7 +22,7 @@ int main(int argc, char **argv)
   rclcpp::NodeOptions options;
   options.allow_undeclared_parameters(true);
   options.automatically_declare_parameters_from_overrides(true);
-  auto node = std::make_shared<rclcpp::Node>("msceqf_ros", options);
+  auto node = std::make_shared<rclcpp::Node>("msceqf_ros2", options);
 
   // Parameters from launchfile
   std::string config_filepath, imu_topic, cam_topic, pose_topic, path_topic, image_topic, extrinsics_topic,

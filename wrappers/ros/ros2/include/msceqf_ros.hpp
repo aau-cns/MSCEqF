@@ -61,13 +61,13 @@ class MSCEqFRos
    * @brief Camera callback
    * @param Message message constant pointer
    */
-  void callback_image(const sensor_msgs::msg::Image::SharedPtr &msg);
+  void callback_image(const sensor_msgs::msg::Image::SharedPtr msg);
 
   /**
    * @brief IMU callback
    * @param Message message constant pointer
    */
-  void callback_imu(const sensor_msgs::msg::Imu::SharedPtr &msg);
+  void callback_imu(const sensor_msgs::msg::Imu::SharedPtr msg);
 
  private:
   /**
@@ -100,9 +100,9 @@ class MSCEqFRos
   std::shared_ptr<rclcpp::Node> node_;  //<! ROS node
 
   msceqf::MSCEqF sys_;  //<! MSCEqF system
-
-  rclcpp::Subscription<sensor_msgs::msg::Image::SharedPtr>::SharedPtr sub_cam_;  //<! Camera subscriber
-  rclcpp::Subscription<sensor_msgs::msg::Imu::SharedPtr>::SharedPtr sub_imu_;    //<! IMU subscriber
+  
+rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr sub_cam_;  //<! Camera subscriber
+  rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr sub_imu_;    //<! IMU subscriber
 
   rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr pub_pose_;  //<! Pose publisher
   rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr pub_image_;                       //<! Image publisher
