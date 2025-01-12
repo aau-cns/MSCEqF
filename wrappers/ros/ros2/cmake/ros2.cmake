@@ -44,5 +44,6 @@ ament_export_libraries(${PROJECT_NAME}_lib)
 add_executable(msceqf_ros2 wrappers/ros/ros2/source/msceqf_ros_node.cpp)
 ament_target_dependencies(msceqf_ros2 ${ament_libraries})
 target_link_libraries(msceqf_ros2 ${PROJECT_NAME}_lib)
+install(TARGETS msceqf_ros2 DESTINATION lib/${PROJECT_NAME})
 
 ament_package()
