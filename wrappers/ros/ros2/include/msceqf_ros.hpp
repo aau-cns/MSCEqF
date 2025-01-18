@@ -24,12 +24,13 @@
 #include <opencv2/opencv.hpp>
 #include <cv_bridge/cv_bridge.h>
 #include <rosbag2_cpp/writer.hpp>
+#include <cmath>
 
 #include "msceqf/msceqf.hpp"
 
 class MSCEqFRos
 {
- public:
+public:
   /**
    * @brief Constructor
    * @param node Node
@@ -69,7 +70,7 @@ class MSCEqFRos
    */
   void callback_imu(const sensor_msgs::msg::Imu::SharedPtr msg);
 
- private:
+private:
   /**
    * @brief Publish pose, images and path messages
    *
@@ -91,38 +92,38 @@ class MSCEqFRos
     if (sec64 < 0 || sec64 > std::numeric_limits<uint32_t>::max())
       throw std::runtime_error("Time is out of dual 32-bit range");
     uint32_t sec = static_cast<uint32_t>(sec64);
-    uint32_t nsec = static_cast<uint32_t>(boost::math::round((t - sec) * 1e9));
+    uint32_t nsec = static_cast<uint32_t>(std::round((t - sec) * 1e9));
     sec += (nsec / 1000000000ul);
     nsec %= 1000000000ul;
     return rclcpp::Time(sec, nsec);
   }
 
-  std::shared_ptr<rclcpp::Node> node_;  //<! ROS node
+  std::shared_ptr<rclcpp::Node> node_; //<! ROS node
 
-  msceqf::MSCEqF sys_;  //<! MSCEqF system
-  
-rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr sub_cam_;  //<! Camera subscriber
-  rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr sub_imu_;    //<! IMU subscriber
+  msceqf::MSCEqF sys_; //<! MSCEqF system
 
-  rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr pub_pose_;  //<! Pose publisher
-  rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr pub_image_;                       //<! Image publisher
-  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_path_;                            //<! Path publisher
-  rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pub_extrinsics_;          //<! Extrinsics publisher
-  rclcpp::Publisher<sensor_msgs::msg::CameraInfo>::SharedPtr pub_intrinsics_;             //<! Intrinsics publisher
-  rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pub_origin_;              //<! Origin publisher
+  rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr sub_cam_; //<! Camera subscriber
+  rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr sub_imu_;   //<! IMU subscriber
 
-  geometry_msgs::msg::PoseWithCovarianceStamped pose_;  //<! Pose message
-  nav_msgs::msg::Path path_;                            //<! Path message
-  geometry_msgs::msg::PoseStamped extrinsics_;          //<! Extrinsics message
-  sensor_msgs::msg::CameraInfo intrinsics_;             //<! Intrinsics message
-  geometry_msgs::msg::PoseStamped origin_;              //<! Origin message
+  rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr pub_pose_; //<! Pose publisher
+  rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr pub_image_;                      //<! Image publisher
+  rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr pub_path_;                           //<! Path publisher
+  rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pub_extrinsics_;         //<! Extrinsics publisher
+  rclcpp::Publisher<sensor_msgs::msg::CameraInfo>::SharedPtr pub_intrinsics_;            //<! Intrinsics publisher
+  rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pub_origin_;             //<! Origin publisher
 
-  std::deque<msceqf::Camera> cams_;       //!< Camera measurements
-  std::mutex mutex_;                      //!< Camera measurements mutex
-  std::atomic<bool> processing_ = false;  //!< Camera measurements processing flag
+  geometry_msgs::msg::PoseWithCovarianceStamped pose_; //<! Pose message
+  nav_msgs::msg::Path path_;                           //<! Path message
+  geometry_msgs::msg::PoseStamped extrinsics_;         //<! Extrinsics message
+  sensor_msgs::msg::CameraInfo intrinsics_;            //<! Intrinsics message
+  geometry_msgs::msg::PoseStamped origin_;             //<! Origin message
 
-  bool record_;                                      //<! Flag to record a bagfile
-  std::unique_ptr<rosbag2_cpp::Writer> bag_writer_;  //<! Bagfile writer
+  std::deque<msceqf::Camera> cams_;      //!< Camera measurements
+  std::mutex mutex_;                     //!< Camera measurements mutex
+  std::atomic<bool> processing_ = false; //!< Camera measurements processing flag
+
+  bool record_;                                     //<! Flag to record a bagfile
+  std::unique_ptr<rosbag2_cpp::Writer> bag_writer_; //<! Bagfile writer
 };
 
-#endif  // MSCEQF_ROS_H
+#endif // MSCEQF_ROS_H
