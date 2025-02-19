@@ -88,14 +88,9 @@ private:
    */
   static rclcpp::Time fromSec(double t)
   {
-    int64_t sec64 = static_cast<int64_t>(floor(t));
-    if (sec64 < 0 || sec64 > std::numeric_limits<uint32_t>::max())
-      throw std::runtime_error("Time is out of dual 32-bit range");
-    uint32_t sec = static_cast<uint32_t>(sec64);
-    uint32_t nsec = static_cast<uint32_t>(std::round((t - sec) * 1e9));
-    sec += (nsec / 1000000000ul);
-    nsec %= 1000000000ul;
-    return rclcpp::Time(sec, nsec);
+    const auto sec = std::chrono::duration<double>(t);
+    const auto nsec = std::chrono::duration_cast<std::chrono::nanoseconds>(sec);
+    return rclcpp::Time(nsec.count());
   }
 
   std::shared_ptr<rclcpp::Node> node_; //<! ROS node

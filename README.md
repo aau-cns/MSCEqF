@@ -139,7 +139,7 @@ extrinsics_std: [1.0e-2, 1.0e-2, 1.0e-2, 1.0e-2, 1.0e-2, 1.0e-2]
 intrinsics_std: [1.0, 1.0, 1.0, 1.0]
 
 # IMU noise statistics
-accelerometer_noise_density: 1.0-2
+accelerometer_noise_density: 1.0e-2
 accelerometer_random_walk:   1.0e-3
 gyroscope_noise_density: 1.0e-3
 gyroscope_random_walk:   1.0e-4
