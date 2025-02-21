@@ -101,7 +101,7 @@ $ sudo apt install -y nvidia-docker2
 $ sudo systemctl restart docker
 $ cd <path_to_msceqf_folder>
 $ export ROS_VERSION=<Version>  # Enter either 1 or 2 (e.g. ROS_VERSION=1)
-$ docker build --network=host -t msceqf:ros$ROS_VERSION -f docker/Dockerfile_ros$ROS_VERSION
+$ docker build --network=host -t msceqf:ros$ROS_VERSION -f docker/Dockerfile_ros$ROS_VERSION .
 $ xhost +
 $ docker run --net=host -it --gpus all --env="NVIDIA_DRIVER_CAPABILITIES=all" --env="DISPLAY" --env="QT_X11_NO_MITSHM=1" --volume="/tmp/.X11-unix:/tmp/.X11-unix:rw" msceqf:ros$ROS_VERSION .
 ```
