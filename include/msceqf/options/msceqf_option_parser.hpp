@@ -97,13 +97,19 @@ namespace msceqf
         }
         else if (Cols == 1)
         {
-          utils::Logger::info("Parameter: [" + param + "] found. Option set to: " +
-                              (std::ostringstream{} << x.transpose()).str());
+          utils::Logger::info("Parameter: [" + param + "] found. Option set to: " + ([](const auto& val) {
+            std::ostringstream oss;
+            oss << val;
+            return oss.str();
+          })(x.transpose()));
         }
         else
         {
-          utils::Logger::info("Parameter: [" + param + "] found. Option set to: \n" +
-                              (std::ostringstream{} << x).str());
+          utils::Logger::info("Parameter: [" + param + "] found. Option set to: \n" + ([](const auto& val) {
+            std::ostringstream oss;
+            oss << val;
+            return oss.str();
+          })(x));
         }
 
         return true;
@@ -130,8 +136,11 @@ namespace msceqf
         using vector = std::vector<fp>;
         vector vec = node_[param].as<vector>();
         q = Quaternion(vec).normalize();
-        utils::Logger::info("Parameter: [" + param + "] found. Option set to: \n" +
-                            (std::ostringstream{} << q).str());
+        utils::Logger::info("Parameter: [" + param + "] found. Option set to: \n" + ([](const auto& val) {
+          std::ostringstream oss;
+          oss << val;
+          return oss.str();
+        })(q));
         return true;
       }
       utils::Logger::warn("Parameter: [" + param + "] not found");
@@ -152,8 +161,11 @@ namespace msceqf
       if (node_[param])
       {
         p = node_[param].as<T>();
-        utils::Logger::info("Parameter: [" + param + "] found. Option set to: " +
-                            (std::ostringstream{} << p).str());
+        utils::Logger::info("Parameter: [" + param + "] found. Option set to: " + ([](const auto& val) {
+          std::ostringstream oss;
+          oss << val;
+          return oss.str();
+        })(p));
         return true;
       }
       utils::Logger::warn("Parameter: [" + param + "] not found");
@@ -167,8 +179,11 @@ namespace msceqf
       if (!read(p, param))
       {
         p = def;
-        utils::Logger::warn("Parameter: [" + param + "] set to default value: " +
-                            (std::ostringstream{} << p).str());
+        utils::Logger::warn("Parameter: [" + param + "] set to default value: " + ([](const auto& val) {
+          std::ostringstream oss;
+          oss << val;
+          return oss.str();
+        })(p));
       }
     }
 
