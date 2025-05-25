@@ -25,9 +25,9 @@ T_imu_cam:
 timeshift_cam_imu: 0.0
 
 static_initializer_imu_window: 2.0
-static_initializer_disparity_window: 0.0
 static_initializer_acc_threshold: 0.1
-static_initializer_disparity_threshold: 0.0
+checker_disparity_window: 0.0
+checker_disparity_threshold: 0.0
 identity_bias_origin: false
 init_with_given_state: false
 

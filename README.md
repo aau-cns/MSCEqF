@@ -156,12 +156,14 @@ T_imu_cam:
   - [0.0, 0.0, 0.0, 1.0]
 
 # Initializer options
-# For IMU only motion detection set static_initializer_disparity_threshold: 0.0
+# For IMU only motion detection set checker_disparity_threshold: 0.0
 # For DISPARITY only motion detection set static_initializer_acc_threshold: 0.0
 static_initializer_imu_window: 1.0
-static_initializer_disparity_window: 0.5
 static_initializer_acc_threshold: 0.25
-static_initializer_disparity_threshold: 1.0
+
+# Checker
+checker_disparity_window: 0.5
+checker_disparity_threshold: 1.0
 
 # Propagator options
 # For numerical exponential computation (costly) set state_transition_order: -1

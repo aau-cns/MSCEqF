@@ -24,9 +24,11 @@ T_imu_cam:
 
 # Initializer
 static_initializer_imu_window: 1.0
-static_initializer_disparity_window: 0.5
 static_initializer_acc_threshold: 0.0
-static_initializer_disparity_threshold: 1.0
+
+# Checker
+checker_disparity_window: 0.5
+checker_disparity_threshold: 1.0
 
 # Propagator
 state_transition_order: -1
