@@ -1,0 +1,6 @@
+<map id="msceqf::Tracker::processCamera" name="msceqf::Tracker::processCamera">
+<area shape="rect" id="Node000001" title="This method process the input camera measurement. If first pre&#45;process the camera image,..." alt="" coords="5,22,172,62"/>
+<area shape="rect" id="Node000002" href="$classmsceqf_1_1_tracker.html#ab0998a6999526305b7e0b4d958de7f93" title="Get the camera pointer." alt="" coords="220,29,365,55"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="172,40,204,40,204,45,172,45"/>
+<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="258,31,252,21,256,11,270,5,292,3,317,5,330,12,328,17,316,10,292,8,271,10,259,15,257,20,263,27"/>
+</map>

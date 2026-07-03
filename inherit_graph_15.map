@@ -1,0 +1,7 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="Node000000" href="$classmsceqf_1_1_pinhole_camera.html" title="This class represnt the base class for any pinhole camera type." alt="" coords="5,31,164,56"/>
+<area shape="rect" id="Node000001" href="$structmsceqf_1_1_equidistant_camera.html" title=" " alt="" coords="212,5,391,31"/>
+<area shape="poly" id="edge5_Node000000_Node000001" title=" " alt="" coords="178,30,211,26,212,31,179,35"/>
+<area shape="rect" id="Node000002" href="$structmsceqf_1_1_radtan_camera.html" title="This class represent a pinhole camera with radtan distortion model." alt="" coords="223,55,380,80"/>
+<area shape="poly" id="edge6_Node000000_Node000002" title=" " alt="" coords="179,51,223,56,223,62,179,57"/>
+</map>

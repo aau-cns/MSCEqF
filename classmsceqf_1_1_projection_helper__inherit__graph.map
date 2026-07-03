@@ -1,0 +1,7 @@
+<map id="msceqf::ProjectionHelper" name="msceqf::ProjectionHelper">
+<area shape="rect" id="Node000001" title="ProjectionHelper interface. This class provides an interface to the implementation of the projection ..." alt="" coords="116,5,282,31"/>
+<area shape="rect" id="Node000002" href="$classmsceqf_1_1_projection_helper_s2.html" title="ProjectionHelperS2 class. This class provides an implementation of the projection on the unit sphere ..." alt="" coords="5,79,188,105"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="171,42,116,81,112,76,168,38"/>
+<area shape="rect" id="Node000003" href="$classmsceqf_1_1_projection_helper_z1.html" title="ProjectionHelperZ1 class. This class provides an implementation of the projection on the unit plane a..." alt="" coords="211,79,392,105"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="230,38,286,76,283,81,227,42"/>
+</map>

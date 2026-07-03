@@ -1,0 +1,7 @@
+<map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
+<area shape="rect" id="Node000000" href="$classmsceqf_1_1_projection_helper.html" title="ProjectionHelper interface. This class provides an interface to the implementation of the projection ..." alt="" coords="5,31,172,56"/>
+<area shape="rect" id="Node000001" href="$classmsceqf_1_1_projection_helper_s2.html" title="ProjectionHelperS2 class. This class provides an implementation of the projection on the unit sphere ..." alt="" coords="220,5,402,31"/>
+<area shape="poly" id="edge7_Node000000_Node000001" title=" " alt="" coords="187,30,219,26,220,31,187,35"/>
+<area shape="rect" id="Node000002" href="$classmsceqf_1_1_projection_helper_z1.html" title="ProjectionHelperZ1 class. This class provides an implementation of the projection on the unit plane a..." alt="" coords="220,55,402,80"/>
+<area shape="poly" id="edge8_Node000000_Node000002" title=" " alt="" coords="188,51,220,55,219,60,187,57"/>
+</map>

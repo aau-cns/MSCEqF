@@ -1,0 +1,5 @@
+<map id="msceqf::CameraExtrinsicState" name="msceqf::CameraExtrinsicState">
+<area shape="rect" id="Node000001" title="This struct represent the camera extrinsics state of the system." alt="" coords="5,79,201,105"/>
+<area shape="rect" id="Node000002" href="$classmsceqf_1_1_system_state_element.html" title="This struct represent the base struct for a general element of the system state." alt="" coords="7,5,199,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="106,46,106,79,100,79,100,46"/>
+</map>

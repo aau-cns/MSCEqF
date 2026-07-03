@@ -1,0 +1,5 @@
+<map id="msceqf::Track::size" name="msceqf::Track::size">
+<area shape="rect" id="Node000001" title="Return the amount of features (size of uvs_)." alt="" coords="218,5,350,31"/>
+<area shape="rect" id="Node000002" href="$structmsceqf_1_1_track.html#aab82b71fb82726c14eda7cfcf6feba0a" title="Comparison operator with other tracks for sorting based on track length." alt="" coords="5,5,170,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="202,21,170,21,170,16,202,16"/>
+</map>

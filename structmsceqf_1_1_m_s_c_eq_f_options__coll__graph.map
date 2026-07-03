@@ -1,0 +1,25 @@
+<map id="msceqf::MSCEqFOptions" name="msceqf::MSCEqFOptions">
+<area shape="rect" id="Node000001" title=" " alt="" coords="1010,219,1178,244"/>
+<area shape="rect" id="Node000002" href="$structmsceqf_1_1_track_manager_options.html" title=" " alt="" coords="614,59,812,84"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="828,62,909,71,949,82,988,99,1023,125,1052,158,1089,217,1084,220,1048,161,1020,129,985,103,948,87,908,76,828,67"/>
+<area shape="rect" id="Node000003" href="$structmsceqf_1_1_tracker_options.html" title=" " alt="" coords="303,59,462,84"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="478,69,614,69,614,74,478,74"/>
+<area shape="rect" id="Node000004" href="$structmsceqf_1_1_camera_options.html" title=" " alt="" coords="5,5,166,31"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="181,28,279,45,328,56,327,61,278,50,180,34"/>
+<area shape="rect" id="Node000005" href="$structmsceqf_1_1_fast_options.html" title=" " alt="" coords="15,59,156,84"/>
+<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="171,69,302,69,302,74,171,74"/>
+<area shape="rect" id="Node000006" href="$structmsceqf_1_1_g_f_t_t_options.html" title=" " alt="" coords="11,112,160,138"/>
+<area shape="poly" id="edge5_Node000003_Node000006" title=" " alt="" coords="175,113,278,97,337,82,338,88,279,102,176,119"/>
+<area shape="rect" id="Node000007" href="$structmsceqf_1_1_state_options.html" title=" " alt="" coords="640,112,786,138"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="802,124,893,134,941,144,987,158,1040,186,1079,216,1076,220,1037,191,985,163,940,149,892,139,801,129"/>
+<area shape="rect" id="Node000008" href="$structmsceqf_1_1_checker_options.html" title=" " alt="" coords="632,165,795,191"/>
+<area shape="poly" id="edge7_Node000001_Node000008" title=" " alt="" coords="811,183,987,205,1039,215,1038,221,986,210,810,188"/>
+<area shape="rect" id="Node000009" href="$structmsceqf_1_1_initializer_options.html" title=" " alt="" coords="630,219,796,244"/>
+<area shape="poly" id="edge8_Node000001_Node000009" title=" " alt="" coords="812,229,1010,229,1010,234,812,234"/>
+<area shape="rect" id="Node000010" href="$structmsceqf_1_1_propagator_options.html" title=" " alt="" coords="624,272,802,298"/>
+<area shape="poly" id="edge9_Node000001_Node000010" title=" " alt="" coords="817,277,900,269,986,257,1048,242,1050,247,987,262,901,275,818,282"/>
+<area shape="rect" id="Node000011" href="$structmsceqf_1_1_updater_options.html" title=" " alt="" coords="632,325,794,351"/>
+<area shape="poly" id="edge10_Node000001_Node000011" title=" " alt="" coords="809,336,896,327,942,318,985,304,1012,291,1038,275,1077,243,1081,247,1041,279,1015,296,987,309,943,323,897,332,810,341"/>
+<area shape="rect" id="Node000012" href="$structmsceqf_1_1_zero_velocity_updater_options.html" title=" " alt="" coords="619,375,807,416"/>
+<area shape="poly" id="edge11_Node000001_Node000012" title=" " alt="" coords="823,400,863,397,905,391,947,380,985,363,1020,336,1049,303,1070,270,1084,243,1089,246,1075,273,1053,306,1024,340,988,367,948,385,906,396,864,402,823,405"/>
+</map>

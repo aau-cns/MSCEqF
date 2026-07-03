@@ -1,0 +1,4 @@
+<map id="msceqf::Imu::W" name="msceqf::Imu::W">
+<area shape="rect" id="Node000001" title="get the IMU measurement as an extended matrix (ang, acc, 0)^ (SE23 lie algebra element)" alt="" coords="5,29,116,55"/>
+<area shape="poly" id="edge1_Node000001_Node000001" title=" " alt="" coords="78,16,72,10,60,8,50,10,44,14,43,20,46,28,41,30,37,21,39,11,47,5,61,3,75,5,82,12"/>
+</map>

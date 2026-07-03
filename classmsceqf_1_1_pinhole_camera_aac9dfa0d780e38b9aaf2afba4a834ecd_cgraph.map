@@ -1,0 +1,5 @@
+<map id="msceqf::PinholeCamera::undistort" name="msceqf::PinholeCamera::undistort">
+<area shape="rect" id="Node000001" title="Undistort given distorted point in Eigen format (std::vector&lt;Eigen::Vector2f&gt;)." alt="" coords="5,5,164,46"/>
+<area shape="rect" id="Node000002" href="$classmsceqf_1_1_pinhole_camera.html#a5175a8d0505b607ed1a234d1579bbdc1" title="Normalize multiple features uv coordinates in Eigen format (std::vector&lt;Eigen::Vector2f&gt;)." alt="" coords="212,5,370,46"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="164,23,196,23,196,28,164,28"/>
+</map>

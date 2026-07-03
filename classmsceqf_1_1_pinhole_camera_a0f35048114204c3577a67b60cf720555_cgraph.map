@@ -1,0 +1,5 @@
+<map id="msceqf::PinholeCamera::setIntrinsics" name="msceqf::PinholeCamera::setIntrinsics">
+<area shape="rect" id="Node000001" title="Set the value of the intrinsic parameters." alt="" coords="5,5,164,46"/>
+<area shape="rect" id="Node000002" href="$classmsceqf_1_1_pinhole_camera.html#a282aa4f8f7bc9d6044a52a9c811718d0" title="Get camera intrinsics parameter (fx, fy, cx, cy) as a 4 vector." alt="" coords="212,5,370,46"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="164,23,196,23,196,28,164,28"/>
+</map>

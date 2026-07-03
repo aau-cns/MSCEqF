@@ -1,0 +1,5 @@
+<map id="msceqf::TrackManager::cam" name="msceqf::TrackManager::cam">
+<area shape="rect" id="Node000001" title="Get the camera pointer." alt="" coords="207,13,391,38"/>
+<area shape="rect" id="Node000002" href="$classmsceqf_1_1_track_manager.html#a22727a0d230248e3786cb6cae36178b1" title="Process a single camera measurement. Forward camera measurement to tracker, and update tracks." alt="" coords="5,5,159,46"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="191,28,159,28,159,23,191,23"/>
+</map>

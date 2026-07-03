@@ -1,0 +1,11 @@
+<map id="msceqf::PinholeCamera::normalize" name="msceqf::PinholeCamera::normalize">
+<area shape="rect" id="Node000001" title="Normalize multiple features uv coordinates in Eigen format (std::vector&lt;Eigen::Vector2f&gt;)." alt="" coords="233,104,391,145"/>
+<area shape="rect" id="Node000002" href="$structmsceqf_1_1_equidistant_camera.html#a819c5607c1f0913c6e6bb77c5de43b3f" title="Undistort given distorted point in OpenCV format (std::vector&lt;cv::Point2f&gt;)." alt="" coords="5,5,185,46"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="258,99,184,61,154,49,156,44,186,57,261,94"/>
+<area shape="rect" id="Node000003" href="$classmsceqf_1_1_pinhole_camera.html#a00b6ab4337fd7db73e51eaac8d736632" title="Undistort given distorted point in OpenCV format (std::vector&lt;cv::Point2f&gt;)." alt="" coords="16,71,174,111"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="217,113,174,106,175,101,218,107"/>
+<area shape="rect" id="Node000004" href="$classmsceqf_1_1_pinhole_camera.html#aac9dfa0d780e38b9aaf2afba4a834ecd" title="Undistort given distorted point in Eigen format (std::vector&lt;Eigen::Vector2f&gt;)." alt="" coords="16,136,174,177"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="218,141,175,147,174,142,217,136"/>
+<area shape="rect" id="Node000005" href="$structmsceqf_1_1_radtan_camera.html#a6bbf98ed9be455ecf0e58a5c93b6f41d" title="Undistort given distorted point in OpenCV format (std::vector&lt;cv::Point2f&gt;)." alt="" coords="17,201,173,242"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="260,155,186,191,156,203,154,198,184,186,258,150"/>
+</map>

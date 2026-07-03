@@ -1,0 +1,5 @@
+<map id="msceqf::RadtanCamera::undistort" name="msceqf::RadtanCamera::undistort">
+<area shape="rect" id="Node000001" title="Undistort given distorted point in OpenCV format (std::vector&lt;cv::Point2f&gt;)." alt="" coords="5,5,162,46"/>
+<area shape="rect" id="Node000002" href="$classmsceqf_1_1_pinhole_camera.html#a5175a8d0505b607ed1a234d1579bbdc1" title="Normalize multiple features uv coordinates in Eigen format (std::vector&lt;Eigen::Vector2f&gt;)." alt="" coords="210,5,368,46"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="162,23,194,23,194,28,162,28"/>
+</map>

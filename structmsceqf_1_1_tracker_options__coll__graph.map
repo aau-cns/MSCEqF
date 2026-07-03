@@ -1,0 +1,9 @@
+<map id="msceqf::TrackerOptions" name="msceqf::TrackerOptions">
+<area shape="rect" id="Node000001" title=" " alt="" coords="180,102,340,128"/>
+<area shape="rect" id="Node000002" href="$structmsceqf_1_1_camera_options.html" title=" " alt="" coords="5,5,166,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="113,39,167,76,222,99,220,104,165,80,110,43"/>
+<area shape="rect" id="Node000003" href="$structmsceqf_1_1_fast_options.html" title=" " alt="" coords="190,5,331,31"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="263,46,263,101,258,101,258,46"/>
+<area shape="rect" id="Node000004" href="$structmsceqf_1_1_g_f_t_t_options.html" title=" " alt="" coords="355,5,504,31"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="400,42,336,80,289,104,286,99,334,76,397,38"/>
+</map>
