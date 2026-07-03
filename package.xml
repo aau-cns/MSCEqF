@@ -8,7 +8,7 @@
   <maintainer email="alessandro.fornasier@aau.at">Alessandro Fornasier</maintainer>
   <author email="alessandro.fornasier@aau.at">Alessandro Fornasier</author>
 
-  <license>BSD-2 with additional conditions</license>
+  <license>Apache-2.0</license>
 
     <buildtool_depend condition="$ROS_VERSION == 1">catkin</buildtool_depend>
     <depend condition="$ROS_VERSION == 1">cmake_modules</depend>
