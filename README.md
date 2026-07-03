@@ -32,7 +32,6 @@ It is based on the recent advances in equivaraint inertial navigation systems [[
  - [x] ROS1 wrapper
  - [x] ROS2 wrapper
  - [x] Equivariant Zero velocity Update (EqZVU)
- - [ ] Unit-sphere projection method support
  - [ ] Equivariant Persistent (SLAM) features update support
 
 ## Documentation
